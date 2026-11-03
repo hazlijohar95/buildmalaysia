@@ -1,0 +1,11 @@
+reference/
+data/raw/**/*.pdf
+data/raw/**/*.txt
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+.DS_Store
