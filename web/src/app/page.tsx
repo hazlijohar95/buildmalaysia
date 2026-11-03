@@ -55,6 +55,10 @@ export default async function OverviewPage({ searchParams }: Props) {
     getFiscalTotals(YEAR),
   ]);
 
+  if (!totals) {
+    return <p>No statement has been loaded for {YEAR} yet.</p>;
+  }
+
   const pct = utilisation(totals.total_revised_sen, totals.total_actual_sen);
 
   return (
@@ -82,6 +86,12 @@ export default async function OverviewPage({ searchParams }: Props) {
           value={`${pct.toFixed(1)}%`}
         />
       </div>
+      <p className="text-xs -mt-6 mb-8" style={{ color: "var(--muted)" }}>
+        Totals as printed in the statement (JUMLAH KESELURUHAN MENGURUS),{" "}
+        <CitationLink docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
+        Actual spending includes the RM5,293,447,361.93 transfer to the Development Fund
+        (Kumpulan Wang Pembangunan). data.gov.my reports operating expenditure without it.
+      </p>
 
       {/* Charged vs Supply split */}
       {(totals.charged_revised_sen > 0 || totals.supply_revised_sen > 0) && (

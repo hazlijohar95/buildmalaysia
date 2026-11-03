@@ -37,8 +37,8 @@ export async function getVoteSummaries(
 ): Promise<VoteSummaryRow[]> {
   const validSort: Record<SortKey, string> = {
     code: "v.code",
-    revised_sen: "pt.revised_sen",
-    actual_sen: "pt.actual_sen",
+    revised_sen: "pt.revised_sen desc",
+    actual_sen: "pt.actual_sen desc",
   };
   const orderExpr = validSort[sort] ?? "v.code";
 
@@ -60,6 +60,7 @@ export async function getVoteSummaries(
       on pt.vote_code  = v.code
      and pt.fiscal_year = v.fiscal_year
      and pt.scope       = 'vote'
+     and pt.object_code is null
     join source_document sd on sd.id = pt.document_id
     where v.fiscal_year = ${year}
     order by ${sql.unsafe(orderExpr)}
@@ -85,6 +86,9 @@ export interface FiscalTotals {
   charged_actual_sen: Sen;
   supply_revised_sen: Sen;
   supply_actual_sen: Sen;
+  pdf_page: number;
+  book_page: number;
+  doc_url: string;
 }
 
 interface RawTotals {
@@ -97,34 +101,52 @@ interface RawTotals {
   charged_actual_sen: string;
   supply_revised_sen: string;
   supply_actual_sen: string;
+  pdf_page: number;
+  book_page: number;
+  doc_url: string;
 }
 
-export async function getFiscalTotals(year: number): Promise<FiscalTotals> {
+/**
+ * Headline figures are the totals the statement itself prints (JUMLAH KESELURUHAN
+ * MENGURUS and the two section totals), so each one cites the page it appears on.
+ */
+export async function getFiscalTotals(year: number): Promise<FiscalTotals | null> {
   const [row] = await sql<RawTotals[]>`
     select
-      sum(pt.original_sen)                                      as total_original_sen,
-      sum(pt.supplementary_sen)                                 as total_supplementary_sen,
-      sum(pt.virement_sen)                                      as total_virement_sen,
-      sum(pt.revised_sen)                                       as total_revised_sen,
-      sum(pt.actual_sen)                                        as total_actual_sen,
-      sum(pt.revised_sen) filter (where v.section = 'charged') as charged_revised_sen,
-      sum(pt.actual_sen)  filter (where v.section = 'charged') as charged_actual_sen,
-      sum(pt.revised_sen) filter (where v.section = 'supply')  as supply_revised_sen,
-      sum(pt.actual_sen)  filter (where v.section = 'supply')  as supply_actual_sen
-    from printed_total pt
-    join vote v on v.code = pt.vote_code and v.fiscal_year = pt.fiscal_year
-    where pt.fiscal_year = ${year} and pt.scope = 'vote'
+      st.original_sen      as total_original_sen,
+      st.supplementary_sen as total_supplementary_sen,
+      st.virement_sen      as total_virement_sen,
+      st.revised_sen       as total_revised_sen,
+      st.actual_sen        as total_actual_sen,
+      ch.revised_sen       as charged_revised_sen,
+      ch.actual_sen        as charged_actual_sen,
+      su.revised_sen       as supply_revised_sen,
+      su.actual_sen        as supply_actual_sen,
+      st.pdf_page,
+      st.book_page,
+      sd.url               as doc_url
+    from printed_total st
+    join source_document sd on sd.id = st.document_id
+    join printed_total ch
+      on ch.document_id = st.document_id and ch.scope = 'section'
+     and ch.section = 'charged' and ch.object_code is null
+    join printed_total su
+      on su.document_id = st.document_id and su.scope = 'section'
+     and su.section = 'supply' and su.object_code is null
+    where st.fiscal_year = ${year} and st.scope = 'statement' and st.object_code is null
   `;
+  if (!row) return null;
 
   return {
-    total_original_sen: parseSen(row.total_original_sen ?? "0"),
-    total_supplementary_sen: parseSen(row.total_supplementary_sen ?? "0"),
-    total_virement_sen: parseSen(row.total_virement_sen ?? "0"),
-    total_revised_sen: parseSen(row.total_revised_sen ?? "0"),
-    total_actual_sen: parseSen(row.total_actual_sen ?? "0"),
-    charged_revised_sen: parseSen(row.charged_revised_sen ?? "0"),
-    charged_actual_sen: parseSen(row.charged_actual_sen ?? "0"),
-    supply_revised_sen: parseSen(row.supply_revised_sen ?? "0"),
-    supply_actual_sen: parseSen(row.supply_actual_sen ?? "0"),
+    ...row,
+    total_original_sen: parseSen(row.total_original_sen),
+    total_supplementary_sen: parseSen(row.total_supplementary_sen),
+    total_virement_sen: parseSen(row.total_virement_sen),
+    total_revised_sen: parseSen(row.total_revised_sen),
+    total_actual_sen: parseSen(row.total_actual_sen),
+    charged_revised_sen: parseSen(row.charged_revised_sen),
+    charged_actual_sen: parseSen(row.charged_actual_sen),
+    supply_revised_sen: parseSen(row.supply_revised_sen),
+    supply_actual_sen: parseSen(row.supply_actual_sen),
   };
 }

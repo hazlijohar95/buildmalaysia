@@ -145,6 +145,7 @@ export async function getVoteHeader(
       on pt.vote_code  = v.code
      and pt.fiscal_year = v.fiscal_year
      and pt.scope       = 'vote'
+     and pt.object_code is null
     join source_document sd on sd.id = pt.document_id
     where v.fiscal_year = ${year} and v.code = ${voteCode}
   `;
@@ -169,6 +170,7 @@ export async function getProgrammeTotals(
      and pt.vote_code      = p.vote_code
      and pt.fiscal_year    = p.fiscal_year
      and pt.scope          = 'programme'
+     and pt.object_code is null
     join source_document sd on sd.id = pt.document_id
     where p.fiscal_year = ${year} and p.vote_code = ${voteCode}
     order by p.code

@@ -53,7 +53,7 @@ export default async function VoteDetailPage({ params }: Props) {
     <>
       {/* Back + breadcrumb */}
       <div className="mb-6 text-sm" style={{ color: "var(--muted)" }}>
-        <Link href="/">← Semua Undian</Link>
+        <Link href="/">← All votes</Link>
       </div>
 
       {/* Vote header */}

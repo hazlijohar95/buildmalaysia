@@ -30,7 +30,16 @@ FY2025: <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/202
 
 ```bash
 createdb buildmalaysia
-psql -d buildmalaysia -f supabase/migrations/*.sql
+for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia -f "$f"; done
+
+cd pipeline && uv sync
+uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildmalaysia
+uv run pytest                       # uses the buildmalaysia_pipeline db
+
+cd ../web && pnpm install
+DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:///buildmalaysia pnpm start
 ```
+
+`/methodology` is prerendered at build time, so rebuild the site after each ingest.
 
 Deploying to Supabase: `supabase link` then `supabase db push`.
