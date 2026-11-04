@@ -13,7 +13,6 @@ export interface NavLink {
   href: string;
   label: string;
   note?: string; // one line under the label in a menu panel
-  figure?: { value: string; label: string }; // a headline number on the link's card in a menu panel
   match: string[]; // path prefixes that mark the link active
 }
 
@@ -24,7 +23,6 @@ export type NavItem =
       label: string;
       links: NavLink[];
       years?: { title: string; links: NavLink[] }; // a compact grid of year links beside the main links
-      source: string; // where the menu's figures come from, shown along the panel's foot
     };
 
 // Sizes from buildcanada.com's nav: a 60px bar, 12px labels at 0.14em, 20px cell padding, 1px dividers,
@@ -33,9 +31,6 @@ const cell =
   "flex items-center whitespace-nowrap px-5 font-mono text-[12px] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors";
 const kicker = "font-mono text-[12px] uppercase tracking-[0.22em]";
 
-const COLUMNS = ["", "grid-cols-1", "grid-cols-2", "grid-cols-3"]; // literal, so Tailwind generates them
-// Over three links, the first widens to fill the grid's last row, so no cell is left empty.
-const SPAN = ["", "col-span-2", "col-span-3"];
 const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
 const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
 
@@ -104,7 +99,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
         // Dims the page under an open menu, so the panel reads as a layer above it.
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/30 motion-safe:animate-[nav-fade-in_200ms_ease-out]"
+          className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/20 motion-safe:animate-[nav-fade-in_200ms_ease-out]"
           onClick={() => setOpenMenu(null)}
         />
       )}
@@ -224,73 +219,56 @@ function MenuPanel({
   entering: boolean;
 }) {
   return (
-    // Dark, and the same colour as its open button, so the two read as one shape dropping from the bar.
+    // The same dark as its open button, so the two read as one shape dropping from the bar.
     <div
       id={id}
       className={cn(
-        "absolute inset-x-0 top-full bg-charcoal-1000 text-linen-50 shadow-[0_32px_64px_-24px_rgb(0_0_0/0.5)]",
-        entering && "motion-safe:animate-[nav-panel-in_260ms_cubic-bezier(0.2,0,0,1)]",
+        "absolute inset-x-0 top-full bg-charcoal-1000 text-linen-50 shadow-[0_24px_48px_-32px_rgb(0_0_0/0.6)]",
+        entering && "motion-safe:animate-[nav-panel-in_220ms_cubic-bezier(0.2,0,0,1)]",
       )}
     >
-      <div className={cn("grid gap-px bg-linen-50/15", item.years && "grid-cols-[minmax(0,2fr)_minmax(0,1fr)]")}>
-        <ul className={cn("m-0 grid list-none gap-px p-0", COLUMNS[Math.min(item.links.length, 3)])}>
-          {item.links.map((link, i) => {
-            const active = isActive(link);
-            return (
-              <li
-                key={link.href}
-                className={cn("flex", i === 0 && item.links.length > 3 && SPAN[(3 - (item.links.length % 3)) % 3])}
+      <div className="flex gap-16 px-10 py-10 xl:px-14 xl:py-12">
+        <ul className="m-0 grid flex-1 list-none grid-cols-3 gap-x-12 gap-y-9 p-0">
+          {item.links.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                aria-current={isActive(link) ? "page" : undefined}
+                className="group block no-underline text-linen-50"
               >
-                <Link
-                  href={link.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "group flex w-full flex-col bg-charcoal-1000 px-7 py-6 xl:px-8 no-underline text-linen-50 transition-colors duration-150 hover:bg-charcoal-900 focus-visible:bg-charcoal-900",
-                    active && "bg-charcoal-900 shadow-[inset_3px_0_0_var(--color-auburn-500)]",
-                  )}
-                >
-                  <span className={cn(kicker, "text-[11px] text-linen-50/50")}>
-                    {String(i + 1).padStart(2, "0")}
-                    {active && <span className="ml-3 text-auburn-400">You are here</span>}
+                <span className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
+                  {link.label}
+                  {isActive(link) && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-auburn-500" />}
+                  <span
+                    aria-hidden="true"
+                    className="text-linen-50/60 opacity-0 -translate-x-1 transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0"
+                  >
+                    →
                   </span>
-                  <span className="mt-3 flex items-center justify-between gap-3 font-display text-[22px] font-semibold tracking-tight">
-                    {link.label}
-                    <span
-                      aria-hidden="true"
-                      className="text-auburn-400 opacity-0 -translate-x-2 transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0"
-                    >
-                      →
-                    </span>
+                </span>
+                {link.note && (
+                  <span className="mt-1 block text-sm leading-snug text-linen-50/50 transition-colors duration-200 group-hover:text-linen-50/75">
+                    {link.note}
                   </span>
-                  {link.note && <span className="mt-1.5 text-sm leading-snug text-linen-50/70">{link.note}</span>}
-                  {link.figure && (
-                    <span className="mt-auto pt-6">
-                      <span className="block font-display text-3xl font-semibold tracking-tight tabular-nums">
-                        {link.figure.value}
-                      </span>
-                      <span className={cn(kicker, "mt-1 block text-[11px] text-linen-50/50")}>{link.figure.label}</span>
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
+                )}
+              </Link>
+            </li>
+          ))}
         </ul>
         {item.years && (
-          <div className="bg-charcoal-1000 px-7 py-6 xl:px-8">
-            <div className={cn(kicker, "text-[11px] text-linen-50/50")}>{item.years.title}</div>
-            <ul className="m-0 mt-4 grid list-none grid-cols-4 xl:grid-cols-5 gap-px bg-linen-50/20 border border-linen-50/20 p-0">
+          <div className="w-64 shrink-0 border-l border-linen-50/10 pl-12">
+            <div className={cn(kicker, "text-[11px] text-linen-50/40")}>{item.years.title}</div>
+            <ul className="m-0 mt-4 grid list-none grid-cols-5 gap-x-4 gap-y-3 p-0">
               {item.years.links.map((link) => (
-                <li key={link.href} className="flex">
+                <li key={link.href}>
                   <Link
                     href={link.href}
                     aria-current={isActive(link) ? "page" : undefined}
                     className={cn(
-                      kicker,
-                      "flex min-h-11 w-full items-center justify-center no-underline transition-colors duration-150",
+                      "font-mono text-[13px] tabular-nums no-underline underline-offset-[6px] transition-colors duration-150",
                       isActive(link)
-                        ? "bg-auburn-700 text-linen-50"
-                        : "bg-charcoal-1000 text-linen-50/85 hover:bg-linen-50 hover:text-charcoal-1000",
+                        ? "text-linen-50 underline decoration-auburn-500 decoration-2"
+                        : "text-linen-50/50 hover:text-linen-50",
                     )}
                   >
                     {link.label}
@@ -300,17 +278,6 @@ function MenuPanel({
             </ul>
           </div>
         )}
-      </div>
-      <div
-        className={cn(
-          kicker,
-          "flex items-center justify-between gap-6 border-t border-linen-50/15 px-7 py-3.5 xl:px-8 text-[11px] text-linen-50/50",
-        )}
-      >
-        <span>{item.source}</span>
-        <Link href="/methodology" className="text-linen-50/80 no-underline hover:text-linen-50">
-          How we check every number →
-        </Link>
       </div>
     </div>
   );
