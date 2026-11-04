@@ -69,3 +69,13 @@ Source: MOF, *Anggaran Perbelanjaan Persekutuan 2027* (586 pp, sha256 5caf1cc1â€
 - The summary's JUMLAH BESAR adds operating (which includes the transfer to the Development Fund) and development: 2025 RM417,989,789,082 = 336,069,262,969 + 81,920,526,113. Net of the transfer it is the site's RM412.70 bn.
 
 **Activity codes are not stable across years.** Of the 1,091 activities in the 2027 book, 1,024 reuse a code that JANM FY2025 also has, but only 765 under the same name; many of the rest are different activities (B.64 020400 is Universiti Putra Malaysia in FY2025 and Universiti Sains Malaysia in Budget 2027; B.64 020100 is Universiti Malaya, then Jabatan Pendidikan Tinggi). The site therefore compares budget and spending at vote level, where MOF restates past actuals itself and they agree with JANM, and never joins activities across documents by code.
+
+## Budget 2026 (MOF)
+
+*Anggaran Perbelanjaan Persekutuan 2026* (584 pp, LaTeX re-saved through macOS Quartz, sha256 e2eaeedfâ€¦).
+
+- Its actuals for 2023 and 2024 agree with JANM for 272 of 272 vote figures (270 to the ringgit, 2 within RM1.45).
+- Unlike Budget 2027, it rounds every printed figure on its own, so 19 totals are a ringgit or two off the sum of their printed parts in the actual columns (T.7 2024: 1,907,044 + 377,686 = 2,284,730, printed 2,284,731; JANM 2,284,730.59). The parser allows 50 sen x (parts + 1) in the actual columns and logs each case; estimates must add exactly.
+- Its original estimate for 2025 equals JANM FY2025's original estimate (Asal) for all 53 operating votes. Below vote level it restates 2025 in the 2026 structure: of 2,084 activity x object lines present in both, 1,249 are equal. The 2025 public service pay adjustment (activity "Pelarasan Sistem Saraan Perkhidmatan Awam (SSPA)" in JANM) is spread across other activities.
+- Development is not comparable this way: JANM's Lampiran 2 prints RM83.87 bn as the 2025 estimate, while the 2025 development budget as first approved was RM88.00 bn including the RM2 bn contingency reserve (Budget 2026, book p.34).
+- Headings carry footnotes on ministry changes, stored as `budget_vote_figure.note`: B/P.23 was Kementerian Sumber Asli, Alam Sekitar dan Perubahan Iklim in 2023; B/P.33 (Kementerian Alam Sekitar dan Air) was dissolved into B/P.23 in 2023; B/P.47 was Kementerian Komunikasi dan Digital in 2023; B/P.50 was created in 2024.

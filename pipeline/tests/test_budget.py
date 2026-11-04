@@ -41,9 +41,18 @@ def test_every_printed_total_in_the_summary_is_checked(pages: list[PageText]) ->
     assert grand == (40_862_924_471_200, 41_798_978_908_200, 42_120_200_000_000, 46_184_000_000_000)
 
 
-def test_a_one_ringgit_edit_to_a_vote_part_is_rejected(pages: list[PageText]) -> None:
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        # T.1 Emolumen. Estimates are whole ringgit and must add exactly: one ringgit fails.
+        ("7,602,000     7,602,000", "7,602,000     7,602,001"),
+        # Actuals may be off their parts by rounding (at most RM1.50 for two parts); RM5 fails.
+        ("7,601,986        7,602,000", "7,601,991        7,602,000"),
+    ],
+)
+def test_an_edit_to_a_vote_part_beyond_rounding_is_rejected(pages: list[PageText], old: str, new: str) -> None:
     page = pages[0]
-    edited = page.layout.replace("7,601,986        7,602,000", "7,601,987        7,602,000", 1)
+    edited = page.layout.replace(old, new, 1)
     assert edited != page.layout
     with pytest.raises(ParseError, match="T.01 parts"):
         parse_budget_summary([replace(page, layout=edited), *pages[1:]], 2027)
@@ -140,3 +149,44 @@ def test_lampiran_d_disagreeing_with_a_vote_table_is_rejected(book: list[PageTex
     altered = [*book[:index], replace(book[index], layout=edited), *book[index + 1 :]]
     with pytest.raises(ParseError, match="Lampiran D"):
         parse_development_estimates(altered, 2027)
+
+
+def test_budget_2026_restates_the_audited_years_and_the_2025_original_estimate() -> None:
+    source = BUDGET_SOURCES[2026]
+    pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
+    summary = parse_budget_summary(extract_pages(pdf, source.summary_pages), 2026, source.known_misprints)
+    assert (len(summary.votes), summary.checks) == (83, 153)
+    # Budget 2026 rounds each figure on its own: 19 totals are a ringgit or two off their parts.
+    assert len(summary.rounding) == 19
+    notes = {v.code: v.note for v in summary.votes if v.note}
+    assert set(notes) == {"B.23", "P.23", "B.33", "P.33", "B.47", "P.47", "B.50", "P.50"}
+    book = extract_pages(pdf, (source.summary_pages[1] + 1, source.page_count))
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        if conn.execute("select 1 from federal_spending where fiscal_year = 2025").fetchone() is None:
+            janm = SOURCES[2025]
+            janm_pdf = ensure_pdf(janm, DEFAULT_RAW_DIR)
+            load_year(
+                conn,
+                janm,
+                parse_statement(extract_pages(janm_pdf, janm.operating_pages), 2025),
+                parse_development(extract_pages(janm_pdf, janm.development_pages), 2025),
+                page_count(janm_pdf),
+                retrieved_at(janm_pdf),
+            )
+        result = load_budget(
+            conn,
+            source,
+            summary,
+            page_count(pdf),
+            retrieved_at(pdf),
+            parse_operating_estimates(book, 2026),
+            parse_development_estimates(book, 2026),
+        )
+        assert (result.operating_lines, result.operating_totals_reconciled) == (2270, 2482)
+        assert (result.development_projects, result.development_totals_reconciled) == (640, 86)
+        original = conn.execute(
+            "select count(*), count(*) filter (where matches) from budget_original_check"
+            " where document_id = %s and fiscal_year = 2025",
+            (source.id,),
+        ).fetchone()
+        assert original == (53, 53)

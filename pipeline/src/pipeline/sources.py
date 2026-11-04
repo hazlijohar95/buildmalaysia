@@ -175,9 +175,23 @@ class BudgetSource:
     page_count: int
     raw_path: str
     summary_pages: tuple[int, int]  # "Ringkasan Perbelanjaan Sebenar dan Anggaran ...", PDF pages
+    # Summary totals that disagree with their own parts beyond rounding: label -> printed
+    # minus computed, sen per column. Accepted exactly; an absent one fails the parse.
+    known_misprints: tuple[tuple[str, tuple[int, int, int, int]], ...] = ()
 
 
 BUDGET_SOURCES: dict[int, BudgetSource] = {
+    2026: BudgetSource(
+        id="mof-anggaran-perbelanjaan-2026",
+        publisher="Kementerian Kewangan Malaysia",
+        title="Anggaran Perbelanjaan Persekutuan 2026",
+        budget_year=2026,
+        url="https://belanjawan.mof.gov.my/pdf/belanjawan2026/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2026.pdf",
+        sha256="e2eaeedf711be21dff09ef4409882de25b3e48f936bc3c9c07f95dc8fac7cdf0",
+        page_count=584,
+        raw_path="mof/2026/Anggaran_Perbelanjaan_Persekutuan_2026.pdf",
+        summary_pages=(32, 45),
+    ),
     2027: BudgetSource(
         id="mof-anggaran-perbelanjaan-2027",
         publisher="Kementerian Kewangan Malaysia",

@@ -88,6 +88,8 @@ export interface BudgetCheck {
   actual_figures: number;
   actual_agree: number;
   actual_worst_sen: number;
+  original_votes: number; // operating votes whose original estimate is compared with the statement
+  original_matched: number;
 }
 
 /** Each loaded budget book with the live result of its reconciliation views. */
@@ -109,7 +111,10 @@ export async function getBudgetChecks(): Promise<BudgetCheck[]> {
       (select count(*) from budget_actual_check c where c.document_id = b.document_id
         and c.result in ('matches', 'rounding')) as actual_agree,
       (select coalesce(max(abs(c.diff_sen)), 0) from budget_actual_check c where c.document_id = b.document_id)
-        as actual_worst_sen
+        as actual_worst_sen,
+      (select count(*) from budget_original_check c where c.document_id = b.document_id) as original_votes,
+      (select count(*) from budget_original_check c where c.document_id = b.document_id and c.matches)
+        as original_matched
     from budget_document b join source_document sd on sd.id = b.document_id
     order by b.budget_year desc
   `;
@@ -127,5 +132,7 @@ export async function getBudgetChecks(): Promise<BudgetCheck[]> {
     actual_figures: Number(r.actual_figures),
     actual_agree: Number(r.actual_agree),
     actual_worst_sen: Number(r.actual_worst_sen),
+    original_votes: Number(r.original_votes),
+    original_matched: Number(r.original_matched),
   }));
 }

@@ -11,7 +11,7 @@ import {
   type BudgetProjectRow,
 } from "@/lib/queries/budget";
 import { getLoadedYears } from "@/lib/years";
-import { formatSen, type Sen } from "@/lib/money";
+import { formatSen, parseSen } from "@/lib/money";
 import { slugToVoteCode, voteCodeToSlug } from "@/lib/citations";
 import { columnLabel, requireBudgetYear } from "@/lib/budgetYear";
 import CitationLink from "@/components/CitationLink";
@@ -68,7 +68,7 @@ export default async function BudgetVotePage({ params }: Props) {
               {columnLabel(t.fiscal_year, t.basis)}
             </div>
             <div className={`text-sm tabnum ${i === totals.length - 1 ? "font-semibold" : ""}`}>
-              {formatSen(vote.amounts[i] ?? (0 as Sen))}
+              {formatSen(vote.amounts[i] ?? parseSen(0))}
             </div>
           </div>
         ))}
@@ -98,7 +98,7 @@ function Headings({ year, url, prior, headings }: { year: number; url: string; p
             <th>Code</th>
             <th>Programme / activity</th>
             <th className="text-right">Budget {prior} (RM)</th>
-            <th className="text-right">Proposed {year} (RM)</th>
+            <th className="text-right">Budget {year} (RM)</th>
             <th className="text-right">Change</th>
             <th className="text-right">Posts {year}</th>
             <th>Source</th>
@@ -139,7 +139,7 @@ function Projects({ year, url, prior, projects }: { year: number; url: string; p
             <th>Project</th>
             <th className="text-right">Total cost (RM)</th>
             <th className="text-right">Revised {prior} (RM)</th>
-            <th className="text-right">Proposed {year} (RM)</th>
+            <th className="text-right">Budget {year} (RM)</th>
             <th>Source</th>
           </tr>
         </thead>

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  getBudgetYears,
   getBudgetActualCheck,
   getBudgetSource,
   getBudgetTotals,
   getBudgetVotes,
   type BudgetVoteRow,
 } from "@/lib/queries/budget";
-import { formatSen, formatSenCompact, type Sen } from "@/lib/money";
+import { formatSen, formatSenCompact, type Sen, parseSen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
 import { columnLabel, requireBudgetYear } from "@/lib/budgetYear";
 import CitationLink from "@/components/CitationLink";
@@ -33,11 +34,12 @@ const SECTIONS: { letter: string; title: string; note: string }[] = [
 
 export default async function BudgetPage({ params }: Props) {
   const year = await requireBudgetYear((await params).budgetYear);
-  const [source, totals, votes, check] = await Promise.all([
+  const [source, totals, votes, check, years] = await Promise.all([
     getBudgetSource(year),
     getBudgetTotals(year),
     getBudgetVotes(year),
     getBudgetActualCheck(year),
+    getBudgetYears(),
   ]);
   const proposed = totals.at(-1);
   const current = totals.at(-2);
@@ -50,16 +52,31 @@ export default async function BudgetPage({ params }: Props) {
   return (
     <>
       <div className="mb-8">
+        {years.length > 1 && (
+          <nav className="flex gap-3 text-xs mb-4" aria-label="Budget year">
+            {[...years].sort().map((y) =>
+              y === year ? (
+                <span key={y} className="font-semibold" aria-current="page">
+                  Budget {y}
+                </span>
+              ) : (
+                <Link key={y} href={`/budget/${y}`} style={{ color: "var(--muted)" }}>
+                  Budget {y}
+                </Link>
+              ),
+            )}
+          </nav>
+        )}
         <h1 className="text-2xl font-semibold mb-1">Budget {year}</h1>
         <p style={{ color: "var(--muted)" }} className="text-sm max-w-2xl">
-          What the federal government proposes to spend in {year}, from the Ministry of Finance&apos;s{" "}
+          What the federal government set out to spend in {year} when the budget was tabled, from the Ministry of Finance&apos;s{" "}
           <em>Anggaran Perbelanjaan Persekutuan {year}</em>, beside the two years already spent and the{" "}
           {current.fiscal_year} budget.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3 p-4 rounded-lg border" style={{ borderColor: "var(--border)" }}>
-        <Stat label={`Proposed ${year}`} value={formatSenCompact(proposed.grand_total_sen)} change={change(proposed.grand_total_sen, current.grand_total_sen, current.fiscal_year)} />
+        <Stat label={`Budget ${year} as tabled`} value={formatSenCompact(proposed.grand_total_sen)} change={change(proposed.grand_total_sen, current.grand_total_sen, current.fiscal_year)} />
         <Stat label="Operating" value={formatSenCompact(proposed.operating_sen)} change={change(proposed.operating_sen, current.operating_sen, current.fiscal_year)} />
         <Stat label="Development" value={formatSenCompact(proposed.development_sen)} change={change(proposed.development_sen, current.development_sen, current.fiscal_year)} />
       </div>
@@ -74,7 +91,7 @@ export default async function BudgetPage({ params }: Props) {
           <>
             MOF&apos;s printed actuals for {totals[0].fiscal_year} and {totals[1].fiscal_year} agree with the audited
             statements for {agreedCount} of {checked} vote figures
-            {worst > 0 ? `, all within ${formatSen(worst as Sen)}` : ""}.
+            {worst > 0 ? `, all within ${formatSen(parseSen(worst))}` : ""}.
           </>
         )}
       </p>
@@ -124,7 +141,7 @@ function change(now: Sen, before: Sen, beforeYear: number): string | null {
 }
 
 function VoteRow({ year, url, vote }: { year: number; url: string; vote: BudgetVoteRow }) {
-  const [proposed, current] = [vote.amounts.at(-1) ?? (0 as Sen), vote.amounts.at(-2) ?? (0 as Sen)];
+  const [proposed, current] = [vote.amounts.at(-1) ?? parseSen(0), vote.amounts.at(-2) ?? parseSen(0)];
   const pct = current > 0 ? ((proposed - current) / current) * 100 : null;
   const href = `/budget/${year}/vote/${voteCodeToSlug(vote.vote_code)}`;
   return (
@@ -134,6 +151,11 @@ function VoteRow({ year, url, vote }: { year: number; url: string; vote: BudgetV
       </td>
       <td className="max-w-xs">
         <Link href={href}>{vote.heading}</Link>
+        {vote.note && (
+          <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }} lang="ms">
+            Note: {vote.note}
+          </div>
+        )}
       </td>
       {vote.amounts.map((a, i) => (
         <td key={i} className={`num ${i === vote.amounts.length - 1 ? "font-medium" : ""}`}>

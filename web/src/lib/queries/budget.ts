@@ -65,6 +65,7 @@ export async function getBudgetTotals(budgetYear: number): Promise<BudgetYearTot
 export interface BudgetVoteRow {
   vote_code: string;
   heading: string;
+  note: string | null; // footnote on the ministry heading, e.g. a rename or merger
   amounts: Sen[]; // one per column, oldest first
   pdf_page: number;
   book_page: number;
@@ -72,8 +73,10 @@ export interface BudgetVoteRow {
 
 /** Each vote's four figures as printed in the summary pages, in vote order. */
 export async function getBudgetVotes(budgetYear: number): Promise<BudgetVoteRow[]> {
-  const rows = await sql<{ vote_code: string; heading: string; amounts: string[]; pdf_page: number; book_page: number }[]>`
-    select f.vote_code, min(f.heading) as heading,
+  const rows = await sql<
+    { vote_code: string; heading: string; note: string | null; amounts: string[]; pdf_page: number; book_page: number }[]
+  >`
+    select f.vote_code, min(f.heading) as heading, min(f.note) as note,
            array_agg(f.total_sen::text order by f.fiscal_year) as amounts,
            min(f.pdf_page) as pdf_page, min(f.book_page) as book_page
     from budget_vote_figure f join budget_document d on d.document_id = f.document_id
@@ -186,4 +189,24 @@ export async function getBudgetActualCheck(budgetYear: number): Promise<{ result
     group by c.result order by c.result
   `;
   return rows.map((r) => ({ result: r.result, count: Number(r.count), worst_sen: Number(r.worst_sen) }));
+}
+
+/** The development budget as first approved for a fiscal year, from the next year's budget book. */
+export async function getOriginalDevelopmentBudget(
+  fiscalYear: number,
+): Promise<{ development_sen: Sen; contingency_sen: Sen; budget_year: number; url: string; pdf_page: number; book_page: number } | null> {
+  const [row] = await sql<
+    { development_sen: string; contingency_sen: string; budget_year: number; url: string; pdf_page: number; book_page: number }[]
+  >`
+    select t.development_sen, t.contingency_sen, d.budget_year, sd.url, t.pdf_page, t.book_page
+    from budget_total t
+    join budget_document d on d.document_id = t.document_id
+    join source_document sd on sd.id = d.document_id
+    where t.fiscal_year = ${fiscalYear} and t.basis = 'original_estimate'
+    order by d.budget_year
+    limit 1
+  `;
+  return row
+    ? { ...row, development_sen: parseSen(row.development_sen), contingency_sen: parseSen(row.contingency_sen) }
+    : null;
 }

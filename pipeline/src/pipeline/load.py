@@ -503,13 +503,14 @@ def load_budget(
                         vote.total.citation.pdf_page,
                         vote.total.citation.book_page,
                         vote.total.citation.text,
+                        vote.note,
                     )
                 )
         cur.executemany(
             """
             insert into budget_vote_figure (document_id, vote_code, heading, fiscal_year, basis, total_sen,
-              emoluments_sen, other_sen, direct_sen, loan_sen, pdf_page, book_page, source_text)
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+              emoluments_sen, other_sen, direct_sen, loan_sen, pdf_page, book_page, source_text, note)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             rows,
         )

@@ -12,6 +12,7 @@ import CitationLink from "@/components/CitationLink";
 import UtilBar from "@/components/UtilBar";
 import { getLoadedYears, requireYear } from "@/lib/years";
 import { planName } from "@/lib/plans";
+import { getOriginalDevelopmentBudget } from "@/lib/queries/budget";
 import YearNav from "@/components/YearNav";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -31,11 +32,12 @@ function sortParam(raw: string | string[] | undefined): DevelopmentSortKey {
 export default async function DevelopmentPage({ params, searchParams }: Props) {
   const year = await requireYear((await params).year);
   const sort = sortParam((await searchParams).sort);
-  const [votes, total, years, plan] = await Promise.all([
+  const [votes, total, years, plan, original] = await Promise.all([
     getDevelopmentVotes(year, sort),
     getDevelopmentStatementTotal(year),
     getLoadedYears(),
     getDevelopmentPlan(year),
+    getOriginalDevelopmentBudget(year),
   ]);
   const planCode = plan ?? "Plan";
 
@@ -65,6 +67,21 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
       <p className="text-xs mb-8 max-w-3xl" style={{ color: "var(--muted)" }}>
         Totals as printed (JUMLAH PERBELANJAAN PEMBANGUNAN),{" "}
         <CitationLink year={year} docUrl={total.doc_url} pdfPage={total.pdf_page} bookPage={total.book_page} spread />.{" "}
+        {original && (
+          <>
+            The estimate column is the year&apos;s allocation as the statement prints it; Budget {year} first
+            allocated {formatSen(original.development_sen)} for development, including a{" "}
+            {formatSenCompact(original.contingency_sen)} contingency reserve (
+            <CitationLink
+              year={original.budget_year}
+              source="MOF"
+              docUrl={original.url}
+              pdfPage={original.pdf_page}
+              bookPage={original.book_page}
+            />
+            ).{" "}
+          </>
+        )}
         {formatSen(total.actual_loan_sen)} of the year&apos;s actual was loan-funded (Pinjaman); the rest was paid
         directly (Cara Langsung). Total cost of all projects is {formatSen(total.total_cost_sen)}.
         {total.footnote && (

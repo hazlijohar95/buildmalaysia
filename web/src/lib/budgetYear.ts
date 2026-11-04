@@ -12,5 +12,5 @@ export async function requireBudgetYear(segment: string): Promise<number> {
 export function columnLabel(fiscalYear: number, basis: string): string {
   if (basis === "actual") return `Actual ${fiscalYear}`;
   if (basis === "original_estimate") return `Budget ${fiscalYear}`;
-  return `Budget ${fiscalYear} (proposed)`;
+  return `Budget ${fiscalYear} as tabled`;
 }

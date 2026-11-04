@@ -143,9 +143,19 @@ export default async function MethodologyPage() {
             <li>
               MOF&apos;s printed actuals agree with the audited statements for{" "}
               <Check matched={b.actual_agree} total={b.actual_figures} /> vote figures, all within{" "}
-              {formatSen(parseSen(b.actual_worst_sen))}: MOF prints whole ringgit, and some of its totals are sums
-              of parts already rounded.
+              {formatSen(parseSen(b.actual_worst_sen))}: MOF prints whole ringgit, and rounds either each figure
+              or the parts it adds.
             </li>
+            {b.original_votes > 0 && (
+              <li>
+                The book&apos;s original estimate for {b.budget_year - 1} equals the audited statement&apos;s original
+                estimate (Asal) for <Check matched={b.original_matched} total={b.original_votes} /> operating votes.
+                Below vote level the book restates {b.budget_year - 1} in its own structure (Budget 2026, for
+                example, spreads the 2025 public service pay adjustment, SSPA, which the statement keeps as an
+                activity of its own, across other activities), so its activity figures for that year are not the
+                ones Parliament approved.
+              </li>
+            )}
           </ul>
           <p className="text-sm">
             Activity codes are reused for different activities from one year to the next (B.64 020400 is Universiti

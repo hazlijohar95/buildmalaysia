@@ -88,7 +88,7 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         pages = page_count(pdf)
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
-        statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year)
+        statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year, source.known_misprints)
         book = extract_pages(pdf, (source.summary_pages[1] + 1, pages))
         operating = parse_operating_estimates(book, year)
         development = parse_development_estimates(book, year)
@@ -104,6 +104,10 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         return 1
     print(f"ingested {source.id} from {pdf}")
     print(f"  votes {result.votes}, printed totals checked {result.printed_checks}")
+    for label, diffs in source.known_misprints:
+        print(f"  known misprint accepted: {label} printed minus its parts {list(diffs)} sen")
+    for note in statement.rounding:
+        print(f"  rule ROUNDED_INDEPENDENTLY: {note}")
     print(
         f"  operating estimates: {len(operating.votes)} votes, activity lines {result.operating_lines},"
         f" printed totals reconciled {result.operating_totals_reconciled}"
