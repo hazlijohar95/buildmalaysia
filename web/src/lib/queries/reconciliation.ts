@@ -60,3 +60,18 @@ export async function getReconciliationSummary(
     mismatches,
   };
 }
+
+export interface ReconciliationCount {
+  total: number;
+  matched: number;
+}
+
+/** Lampiran 2: every printed group, vote and statement total, all nine columns. */
+export async function getDevelopmentReconciliation(year: number): Promise<ReconciliationCount> {
+  const [counts] = await sql<CountRow[]>`
+    select count(*) as total, count(*) filter (where matches) as matched
+    from development_reconciliation
+    where fiscal_year = ${year}
+  `;
+  return { total: parseInt(counts.total, 10), matched: parseInt(counts.matched, 10) };
+}

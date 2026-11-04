@@ -55,37 +55,37 @@ _NUMBER_IN_TEXT = re.compile(r"(?<!\S)\(?\d{1,3}(?:,\d{3})+(?:\.\d{2})?\)?(?!\S)
 
 
 @dataclass(frozen=True)
-class _Value:
+class Value:
     hundredths: int  # sen for amounts, hundredths of a percent for % Prestasi
     marks: str
     is_dash: bool
     has_decimals: bool
 
 
-def _value(token: str) -> _Value | None:
+def parse_value(token: str) -> Value | None:
     m = _VALUE.fullmatch(token)
     if m is None:
         return None
     if m["int"] is None:
-        return _Value(0, m["marks"], True, False)
+        return Value(0, m["marks"], True, False)
     n = int(m["int"].replace(",", "")) * 100 + int(m["dec"] or 0)
-    return _Value(-n if m["neg"] else n, m["marks"], False, m["dec"] is not None)
+    return Value(-n if m["neg"] else n, m["marks"], False, m["dec"] is not None)
 
 
 @dataclass(frozen=True)
 class _Split:
     label: str
-    values: list[_Value]  # the trailing numeric tokens, at most seven
+    values: list[Value]  # the trailing numeric tokens, at most seven
     ends: list[int]  # character column where each value ends in the layout line
 
 
 def _split(line: str) -> _Split:
     """Split a layout line into its label and up to seven trailing numeric tokens."""
-    values: list[_Value] = []
+    values: list[Value] = []
     ends: list[int] = []
     label_end = len(line)
     for token in reversed(list(re.finditer(r"\S+", line))):
-        value = _value(token.group())
+        value = parse_value(token.group())
         if value is None or len(values) == 7:
             break
         values.insert(0, value)
@@ -110,7 +110,7 @@ def _fill_blank_cell(row: _Split, reference: _Split) -> tuple[_Split, int] | Non
     missing = next(c for c in range(7) if c not in columns)
     if missing not in _BLANK_CELL_COLUMNS:
         return None
-    values = row.values[:missing] + [_Value(0, "", True, False)] + row.values[missing:]
+    values = row.values[:missing] + [Value(0, "", True, False)] + row.values[missing:]
     return _Split(row.label, values, []), missing
 
 
@@ -129,7 +129,7 @@ def expected_percent(actual: int, revised: int) -> int | None:
     return rounded
 
 
-def _check_row(values: list[_Value]) -> tuple[Amounts, str | None]:
+def _check_row(values: list[Value]) -> tuple[Amounts, str | None]:
     original, supplementary, virement, revised, actual, percent, variance = values
     amounts = Amounts(
         original.hundredths, supplementary.hundredths, virement.hundredths, revised.hundredths, actual.hundredths
@@ -512,7 +512,7 @@ class _Parser:
             line_no=self.where.line_no,
         )
 
-    def feed_row(self, label: str, values: list[_Value]) -> None:
+    def feed_row(self, label: str, values: list[Value]) -> None:
         marks = "".join(v.marks for v in values) + label[: len(label) - len(label.lstrip("*"))]
         label = label.lstrip("*").strip()
         amounts, error = _check_row(values)

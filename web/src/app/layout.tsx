@@ -25,6 +25,12 @@ export default function RootLayout({
               Build Malaysia
             </Link>
             <nav className="flex gap-4 text-sm">
+              <Link href="/2025/operating" style={{ color: "var(--muted)" }}>
+                Operating
+              </Link>
+              <Link href="/2025/development" style={{ color: "var(--muted)" }}>
+                Development
+              </Link>
               <Link href="/methodology" style={{ color: "var(--muted)" }}>
                 Methodology
               </Link>

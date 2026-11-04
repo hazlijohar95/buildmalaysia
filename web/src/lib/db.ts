@@ -1,6 +1,6 @@
 import postgres from "postgres";
 
-const url = process.env.DATABASE_URL ?? "postgresql:///buildmalaysia_web";
+const url = process.env.DATABASE_URL ?? "postgresql:///buildmalaysia";
 
 // One connection pool for the process lifetime. Next.js dev mode hot-reloads
 // modules, so we stash the client on globalThis to avoid exhausting connections.

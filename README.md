@@ -6,9 +6,10 @@ Research behind the design: [`specs/`](specs/). Build Canada's repos, cloned for
 
 ## First source
 
-JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), Lampiran 1: *Penyata Perbelanjaan Mengurus* (operating expenditure). It is audited by the National Audit Department and gives, for every vote → programme → activity → object group, the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
+JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. FY2025: <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
 
-FY2025: <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>, Lampiran 1 on PDF pages 103–212.
+- Lampiran 1, *Penyata Perbelanjaan Mengurus* (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
+- Lampiran 2, *Penyata Perbelanjaan Pembangunan* (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
 
 ## Layout
 
@@ -25,6 +26,8 @@ FY2025: <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/202
 - `vote`, `programme`, `activity`, `object_group`: the hierarchy. Names are kept in Bahasa Malaysia as printed (`name_ms`).
 - `printed_total`: every total line the document prints (activity, programme, vote, section, whole statement; per object group or overall).
 - `reconciliation` (view): recomputes each printed total from the leaves. `matches` must be true for every row.
+- `development_project`: one row per Lampiran 2 project, nine amounts in sen, citing both pages of its spread. `development_vote` and `development_group` hold the hierarchy; `development_printed_total` and the `development_reconciliation` view work as above.
+- `federal_spending` (view): the year's total, counting the operating account's transfer to the Development Fund once. `ministry_spending` (view): each ministry's supply vote B.nn beside its development vote P.nn.
 
 ## Local development
 
@@ -40,6 +43,6 @@ cd ../web && pnpm install
 DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:///buildmalaysia pnpm start
 ```
 
-`/methodology` is prerendered at build time, so rebuild the site after each ingest.
+`/` and `/methodology` are prerendered at build time, so rebuild the site after each ingest.
 
 Deploying to Supabase: `supabase link` then `supabase db push`.

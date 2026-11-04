@@ -8,8 +8,9 @@ from datetime import datetime
 import psycopg
 import pytest
 
-from pipeline.load import LoadResult, ReconciliationError, load_statement
-from pipeline.model import Statement
+from pipeline.development import parse_development
+from pipeline.load import ReconciliationError, YearLoad, load_year
+from pipeline.model import DevelopmentStatement, Statement
 from pipeline.parse import parse_statement
 from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, ensure_pdf, extract_pages, page_count, retrieved_at
 
@@ -21,7 +22,8 @@ SOURCE = SOURCES[2025]
 class Ingest:
     conn: psycopg.Connection
     statement: Statement
-    result: LoadResult
+    development: DevelopmentStatement
+    result: YearLoad
     pages: int
     retrieved: datetime
 
@@ -29,11 +31,12 @@ class Ingest:
 @pytest.fixture(scope="module")
 def ingest() -> Iterator[Ingest]:
     pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
-    statement = parse_statement(extract_pages(pdf, SOURCE), SOURCE.fiscal_year)
+    statement = parse_statement(extract_pages(pdf, SOURCE.operating_pages), SOURCE.fiscal_year)
+    development = parse_development(extract_pages(pdf, SOURCE.development_pages), SOURCE.fiscal_year)
     pages, retrieved = page_count(pdf), retrieved_at(pdf)
     with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
-        result = load_statement(conn, SOURCE, statement, pages, retrieved)
-        yield Ingest(conn, statement, result, pages, retrieved)
+        result = load_year(conn, SOURCE, statement, development, pages, retrieved)
+        yield Ingest(conn, statement, development, result, pages, retrieved)
 
 
 def scalar(conn: psycopg.Connection, sql: str) -> object:
@@ -43,13 +46,13 @@ def scalar(conn: psycopg.Connection, sql: str) -> object:
 
 
 def test_every_printed_total_reconciles(ingest: Ingest) -> None:
-    assert ingest.result.printed_totals == 2474
-    assert ingest.result.reconciled == 2474
+    assert ingest.result.operating.printed_totals == 2474
+    assert ingest.result.operating.reconciled == 2474
     assert scalar(ingest.conn, "select count(*) from reconciliation where document_id = %s and not matches") == 0
 
 
 def test_counts_and_statement_total(ingest: Ingest) -> None:
-    r = ingest.result
+    r = ingest.result.operating
     assert (r.votes, r.programmes, r.activities, r.lines) == (53, 279, 1123, 2309)
     sql = "select actual_sen from printed_total where document_id = %s and scope = 'statement' and object_code is null"
     assert scalar(ingest.conn, sql) == 33_606_926_296_850
@@ -82,7 +85,7 @@ def test_one_sen_edit_is_rejected_and_rolled_back(ingest: Ingest) -> None:
     bad = replace(ingest.statement, lines=(edited, *ingest.statement.lines[1:]))
 
     with pytest.raises(ReconciliationError) as error:
-        load_statement(ingest.conn, SOURCE, bad, ingest.pages, ingest.retrieved)
+        load_year(ingest.conn, SOURCE, bad, ingest.development, ingest.pages, ingest.retrieved)
 
     # Every total above T.01 / 010100 / Emolumen: activity, programme (object and all),
     # vote (object and all), section (object and all), statement (object and all).
@@ -98,7 +101,71 @@ def test_one_sen_edit_is_rejected_and_rolled_back(ingest: Ingest) -> None:
 
 
 def test_rerun_converges_to_the_same_rows(ingest: Ingest) -> None:
-    again = load_statement(ingest.conn, SOURCE, ingest.statement, ingest.pages, ingest.retrieved)
+    again = load_year(ingest.conn, SOURCE, ingest.statement, ingest.development, ingest.pages, ingest.retrieved)
     assert again == ingest.result
     assert scalar(ingest.conn, "select count(*) from operating_line where document_id = %s") == 2309
     assert scalar(ingest.conn, "select count(*) from printed_total where document_id = %s") == 2474
+    assert scalar(ingest.conn, "select count(*) from development_project where document_id = %s") == 918
+    assert scalar(ingest.conn, "select count(*) from development_printed_total where document_id = %s") == 89
+
+
+def test_every_development_total_reconciles(ingest: Ingest) -> None:
+    d = ingest.result.development
+    assert (d.votes, d.groups, d.projects, d.printed_totals, d.reconciled) == (31, 57, 918, 89, 89)
+    sql = "select count(*) from development_reconciliation where document_id = %s and not matches"
+    assert scalar(ingest.conn, sql) == 0
+
+
+def test_development_statement_total(ingest: Ingest) -> None:
+    row = ingest.conn.execute(
+        "select estimate_sen, actual_direct_sen, actual_loan_sen, actual_sen from development_printed_total"
+        " where document_id = %s and scope = 'statement'",
+        (SOURCE.id,),
+    ).fetchone()
+    # Book p.235: Anggaran 83,867,723,620; Sebenar 80,563,809,466.06 + 1,356,716,647.35 = 81,920,526,113.41.
+    assert row == (8_386_772_362_000, 8_056_380_946_606, 135_671_664_735, 8_192_052_611_341)
+    assert scalar(ingest.conn, "select sum(actual_sen) from development_project where document_id = %s") == (
+        8_192_052_611_341
+    )
+
+
+def test_every_development_row_cites_both_pages_of_its_spread(ingest: Ingest) -> None:
+    for table in ("development_project", "development_printed_total"):
+        bad = scalar(
+            ingest.conn,
+            f"select count(*) from {table} where document_id = %s and not ("
+            " pdf_page between 214 and 248 and pdf_page %% 2 = 0 and book_page = pdf_page - 14"
+            " and amounts_pdf_page = pdf_page + 1 and source_text <> '' and amounts_source_text <> '')",
+        )
+        assert bad == 0, table
+
+
+def test_parent_groups_sum_their_members(ingest: Ingest) -> None:
+    rows = ingest.conn.execute(
+        "select p.vote_code, p.name_ms, count(m.*) from development_group p"
+        " join development_group m on m.fiscal_year = p.fiscal_year and m.vote_code = p.vote_code"
+        "  and m.parent_ordinal = p.ordinal"
+        " where p.fiscal_year = 2025 group by 1, 2 order by 1",
+    ).fetchall()
+    assert rows == [
+        ("P.23", "Perhutanan Semenanjung, Sarawak dan Sabah", 3),
+        ("P.27", "Jalan Raya dan Jambatan Semenanjung, Sabah dan Sarawak", 3),
+    ]
+
+
+def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
+    first = ingest.development.projects[0]  # P.06 00100, directly under the vote header
+    edited = replace(first, amounts=replace(first.amounts, total_cost=first.amounts.total_cost + 1))
+    bad = replace(ingest.development, projects=(edited, *ingest.development.projects[1:]))
+
+    with pytest.raises(ReconciliationError) as error:
+        load_year(ingest.conn, SOURCE, ingest.statement, bad, ingest.pages, ingest.retrieved)
+
+    mismatches = error.value.mismatches
+    assert [m.key for m in mismatches] == ["vote total vote=P.06", "statement total"]
+    assert all(m.diffs_sen == (-1, 0, 0, 0, 0, 0, 0, 0, 0) for m in mismatches)
+    stored = scalar(
+        ingest.conn,
+        "select total_cost_sen from development_project where document_id = %s and (vote_code, code) = ('P.06', '00100')",
+    )
+    assert stored == first.amounts.total_cost

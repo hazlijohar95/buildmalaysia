@@ -109,3 +109,80 @@ class Statement:
     totals: tuple[PrintedTotal, ...]
     corrections: tuple[Correction, ...]
     unreferenced_notes: tuple[str, ...]  # notes defined under "Nota:" that no line carries
+
+
+# --- Lampiran 2 (Penyata Perbelanjaan Pembangunan) ----------------------------------
+
+
+class DevelopmentScope(StrEnum):
+    GROUP = "group"
+    VOTE = "vote"
+    STATEMENT = "statement"
+
+
+@dataclass(frozen=True)
+class DevelopmentAmounts:
+    total_cost: int  # Kos Keseluruhan
+    plan_actual_prior: int  # Perbelanjaan Sebenar RMKe-12 to the end of the prior year
+    estimate_direct: int  # Anggaran: Cara Langsung
+    estimate_loan: int  # Anggaran: Pinjaman
+    estimate: int  # Anggaran: Jumlah
+    actual_direct: int  # Perbelanjaan Sebenar: Cara Langsung
+    actual_loan: int  # Perbelanjaan Sebenar: Pinjaman
+    actual: int  # Perbelanjaan Sebenar: Jumlah
+    plan_actual_to_date: int  # Perbelanjaan Sebenar RMKe-12 to the end of the year
+
+
+@dataclass(frozen=True)
+class SpreadCitation:
+    """A row printed across a two-page spread: label and plan totals left, the year's figures right."""
+
+    left: Citation
+    right: Citation
+
+
+@dataclass(frozen=True)
+class DevelopmentVote:
+    code: str
+    name: str
+    citation: Citation
+
+
+@dataclass(frozen=True)
+class DevelopmentGroup:
+    vote_code: str
+    ordinal: int  # 1-based position within the vote
+    name: str
+    parent_ordinal: int | None
+    citation: Citation
+
+
+@dataclass(frozen=True)
+class DevelopmentProject:
+    vote_code: str
+    code: str
+    group_ordinal: int | None
+    name: str
+    amounts: DevelopmentAmounts
+    footnote: str | None
+    citation: SpreadCitation
+
+
+@dataclass(frozen=True)
+class DevelopmentTotal:
+    scope: DevelopmentScope
+    vote_code: str | None
+    group_ordinal: int | None
+    amounts: DevelopmentAmounts
+    footnote: str | None
+    citation: SpreadCitation
+
+
+@dataclass(frozen=True)
+class DevelopmentStatement:
+    fiscal_year: int
+    votes: tuple[DevelopmentVote, ...]
+    groups: tuple[DevelopmentGroup, ...]
+    projects: tuple[DevelopmentProject, ...]
+    totals: tuple[DevelopmentTotal, ...]
+    corrections: tuple[Correction, ...]

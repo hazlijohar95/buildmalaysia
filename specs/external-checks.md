@@ -18,3 +18,15 @@ data.gov.my datasets `federal_finance_year` and `federal_finance_year_oe` (CC BY
 The RM5,293,447,361.93 gap is the transfer to the Development Fund (*pindahan ke Kumpulan Wang Pembangunan*). Lampiran 1's footnote (*) says the grants and fixed charges total includes it; data.gov.my reports operating expenditure without it. Any page showing total operating spending must say which definition it uses.
 
 data.gov.my splits grants and fixed charges differently (retirement charges, debt service, subsidies, grants and transfers), so that object group is not compared one-to-one here.
+
+## FY2025 development expenditure: JANM Lampiran 2 vs data.gov.my
+
+Same dataset and fetch as above (`federal_finance_year`, 2025, RM million).
+
+| Item | JANM Lampiran 2 (book p.235, PDF p.249) | data.gov.my | Result |
+|---|---|---|---|
+| Development expenditure, actual | RM81,920,526,113.41 | 81,921 (`spending_de_gross`) | Match after rounding |
+
+data.gov.my also publishes `spending_de_net` (80,582), which Lampiran 2 does not print. The site reports the gross figure.
+
+Observed, not yet explained by a source: data.gov.my `revenue` for 2025 (336,069) equals Lampiran 1's operating total including the transfer to the Development Fund (RM336,069,262,968.50) to the million.

@@ -1,6 +1,6 @@
 # pipeline
 
-Fetches the JANM federal financial statements, parses Lampiran 1 (*Penyata Perbelanjaan Mengurus*, operating expenditure budget against actual) and loads it into Postgres. A load commits only when every total printed in the document equals the sum of the leaf lines under it, as computed by the `reconciliation` view in `supabase/migrations/`.
+Fetches the JANM federal financial statements, parses Lampiran 1 (*Penyata Perbelanjaan Mengurus*, operating expenditure budget against actual) and Lampiran 2 (*Penyata Perbelanjaan Pembangunan*, development expenditure by project), and loads both into Postgres. A load commits only when every total printed in the document equals the sum of the rows under it, as computed by the `reconciliation` and `development_reconciliation` views in `supabase/migrations/`.
 
 ## Requirements
 
@@ -19,9 +19,9 @@ uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildm
 The command:
 
 1. Uses `data/raw/janm/2025.pdf`, or downloads it from the URL in `src/pipeline/sources.py` if it is absent. It stops if the file's SHA-256 differs from the pinned hash. A download goes to a `.part` file and is renamed only after the hash matches.
-2. Extracts PDF pages 103–212 (Lampiran 1, Bahasa Malaysia) with `pdftotext`.
+2. Extracts PDF pages 103–212 (Lampiran 1) and 214–249 (Lampiran 2), both in Bahasa Malaysia, with `pdftotext`.
 3. Parses them into the typed model in `src/pipeline/model.py`. Any line it cannot place stops the run with the PDF page and line number.
-4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's vote/programme/activity hierarchy, inserts the new rows, and reads `reconciliation`. It commits only when every row matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
+4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads both reconciliation views. It commits only when every row of both matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
 
 Options: `--raw-dir` sets where source PDFs are kept (default `<repo>/data/raw`). `retrieved_at` is the local file's modification time.
 
@@ -31,7 +31,7 @@ Options: `--raw-dir` sets where source PDFs are kept (default `<repo>/data/raw`)
 uv run pytest
 ```
 
-`tests/test_ingest.py` loads the full FY2025 statement into `PIPELINE_DATABASE_URL` (default `postgresql:///buildmalaysia_pipeline`) and replaces that document's rows there. It also proves the gate: it loads a copy with one leaf's actual changed by one sen, and asserts that the load is rejected with exactly the nine totals above that leaf, and that the stored rows are unchanged.
+`tests/test_ingest.py` loads the full FY2025 statement into `PIPELINE_DATABASE_URL` (default `postgresql:///buildmalaysia_pipeline`) and replaces that document's rows there. It also proves the gate for both statements: a copy with one operating leaf's actual changed by one sen is rejected with exactly the nine totals above that leaf, a copy with one development project's total cost changed by one sen is rejected with exactly its vote and statement totals, and the stored rows are unchanged.
 
 The parser fixtures in `tests/fixtures/` are lines copied verbatim from the PDF. `uv run python tests/fixtures/build.py` rebuilds them and names the page and line of each.
 
@@ -48,6 +48,23 @@ The 2025 PDF has a clean text layer. `-layout` keeps each table row on one text 
 - Every row is checked as it is read: Asal + Tambahan + Viremen = Jumlah, Jumlah − Sebenar = Varian, and % Prestasi follows the convention below. `–` is zero and `(x)` is negative. Amounts are integer sen.
 - A vote total's label, joined across its wrapped lines, must equal `JUMLAH` plus the vote name. Duplicate votes, programmes, activities and (vote, activity, object) leaves are errors.
 - A footnote marker (`*`) on a total is resolved against the `Nota:` text and stored in `printed_total.footnote`. A marker on a leaf is an error, because `operating_line` has no column for it.
+
+## Lampiran 2 (development expenditure)
+
+`src/pipeline/development.py` holds `parse_development(pages, fiscal_year)`. The statement is printed in two-page spreads. The left page carries each row's label with two amounts (Kos Keseluruhan; RMKe-12 spending to the end of the prior year). The right page carries the same row's seven amounts (estimate and actual, each as Cara Langsung, Pinjaman and Jumlah; RMKe-12 spending to date). Rows without amounts on the left (vote headers, agency headings, wrapped names) have no row on the right, so the n-th left row with amounts pairs with the n-th right row, and each spread must pair exactly.
+
+Every row is checked as it is read: direct + loan = total for estimate and for actual, and prior plan spending + the year's actual = plan spending to date. The last check spans both pages, so a misaligned pair fails it.
+
+Projects sit under agency headings in capitals (`MAJLIS AMANAH RAKYAT (MARA)`), each closed by `Jumlah <name>`. A capitalised line inside an open group continues the project above it (`MASMA` under 15200). Projects printed after a vote's groups, with no heading, belong to the vote only. Footnote marks (`*03400`) resolve against the `Nota: *P.06 – Butiran 03400 - …` lines and are stored in `development_project.footnote`; every note must be used.
+
+| Rule | What it does | FY2025 occurrences (PDF page / book page) |
+|---|---|---|
+| `VOTE_NAMED_GROUP` | `Jumlah <vote name>` with no group open totals the projects printed under the vote header before the first heading. They become a group named after the vote. | p226/212 (P.24, 10 projects), p228/214 (P.26, 8 projects) |
+| `PARENT_GROUP_BY_NAME` | `Jumlah <stem> <A>, <B> dan <C>` with no group open totals the run of groups just closed whose names contain the stem and one of A, B, C. Those groups get it as their parent. | p224/210 (P.23 three forestry departments), p230/216 (P.27 JKR roads in Semenanjung, Sabah, Sarawak) |
+| `GROUP_TOTAL_NAME_DIFFERS` | A group total whose name differs from its heading still closes the open group, and the difference is logged. | p230/216 (`Suruhunjaya` for `SURUHANJAYA KOPERASI MALAYSIA (SKM)`) |
+| `DUPLICATED_WORD_COLLAPSED` | A project name with a word repeated straight after itself, from overlapping text in the PDF, keeps one copy. | p242/228 (P.47 31000, `Projek Jalur Lebar Berkelajuan Tinggi`) |
+
+The reconciliation view checks every group, parent group, vote and statement total in all nine columns, so a grouping rule that took the wrong projects fails the load.
 
 ### % Prestasi convention
 

@@ -24,8 +24,8 @@ class SourceDocument:
     sha256: str
     page_count: int
     raw_path: str  # relative to the raw data directory
-    first_page: int  # Lampiran 1 (BM) PDF page range, 1-based, inclusive
-    last_page: int
+    operating_pages: tuple[int, int]  # Lampiran 1 (BM), PDF pages, 1-based, inclusive
+    development_pages: tuple[int, int]  # Lampiran 2 (BM), whole two-page spreads
 
 
 SOURCES: dict[int, SourceDocument] = {
@@ -38,8 +38,8 @@ SOURCES: dict[int, SourceDocument] = {
         sha256="5dd1673c6c42420be1b1f70cd68881358e21768e82850e864c26f2421b24a515",
         page_count=458,
         raw_path="janm/2025.pdf",
-        first_page=103,
-        last_page=212,
+        operating_pages=(103, 212),
+        development_pages=(214, 249),
     ),
 }
 
@@ -103,10 +103,11 @@ def _pdftotext(path: Path, first: int, last: int, mode: str) -> list[str]:
     return pages[:-1]
 
 
-def extract_pages(path: Path, source: SourceDocument) -> list[PageText]:
-    layout = _pdftotext(path, source.first_page, source.last_page, "-layout")
-    raw = _pdftotext(path, source.first_page, source.last_page, "-raw")
+def extract_pages(path: Path, pages: tuple[int, int]) -> list[PageText]:
+    first, last = pages
+    layout = _pdftotext(path, first, last, "-layout")
+    raw = _pdftotext(path, first, last, "-raw")
     return [
-        PageText(pdf_page=source.first_page + i, layout=layout_text, raw=raw_text)
+        PageText(pdf_page=first + i, layout=layout_text, raw=raw_text)
         for i, (layout_text, raw_text) in enumerate(zip(layout, raw, strict=True))
     ]

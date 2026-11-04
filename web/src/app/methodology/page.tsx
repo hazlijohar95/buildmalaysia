@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getReconciliationSummary } from "@/lib/queries/reconciliation";
+import { getDevelopmentReconciliation, getReconciliationSummary } from "@/lib/queries/reconciliation";
 
 export const metadata: Metadata = {
   title: "Methodology",
@@ -8,8 +8,15 @@ export const metadata: Metadata = {
 const YEAR = 2025;
 
 export default async function MethodologyPage() {
-  const recon = await getReconciliationSummary(YEAR);
-  const allMatch = recon.total > 0 && recon.matched === recon.total;
+  const [recon, development] = await Promise.all([
+    getReconciliationSummary(YEAR),
+    getDevelopmentReconciliation(YEAR),
+  ]);
+  const allMatch =
+    recon.total > 0 &&
+    recon.matched === recon.total &&
+    development.total > 0 &&
+    development.matched === development.total;
 
   return (
     <>
@@ -33,6 +40,31 @@ export default async function MethodologyPage() {
           (Viremen/(Kurangan)), revised total (Jumlah), and actual spending
           (Sebenar). Variance (Varian) and utilisation percentage (% Prestasi)
           are derived from those five columns and not stored separately.
+        </p>
+
+        <p>
+          Development spending comes from Lampiran 2,{" "}
+          <em>Penyata Perbelanjaan Pembangunan</em> (Statement of Development
+          Expenditure), on PDF pages 214–249. Each row is printed across a
+          two-page spread. The left page gives the project code, name, total
+          cost and spending under the Twelfth Malaysia Plan (RMKe-12) up to the
+          end of the previous year. The right page gives the year&apos;s
+          estimate and actual spending, each split into direct (Cara Langsung)
+          and loan-funded (Pinjaman), and RMKe-12 spending to date. Projects are
+          grouped under agency headings, and every group, vote and statement
+          total is checked in all nine columns. Within each row, previous plan
+          spending plus the year&apos;s actual must equal plan spending to
+          date, which also proves the two halves of the spread were paired
+          correctly.
+        </p>
+
+        <p>
+          Total federal spending is operating plus development, less the
+          transfer from the operating account to the Development Fund
+          (Kumpulan Wang Pembangunan). That fund pays for development spending,
+          so the transfer would otherwise be counted twice. The result matches
+          data.gov.my&apos;s published operating and development figures to the
+          million.
         </p>
 
         <p>
@@ -77,7 +109,11 @@ export default async function MethodologyPage() {
         ) : (
           <>
             <p className="text-sm font-medium mb-1">
-              {recon.matched} of {recon.total} printed totals checked.{" "}
+              Development (Lampiran 2): {development.matched} of {development.total} printed totals
+              match.
+            </p>
+            <p className="text-sm font-medium mb-1">
+              Operating (Lampiran 1): {recon.matched} of {recon.total} printed totals checked.{" "}
               {allMatch ? (
                 <span style={{ color: "var(--accent)" }}>All match.</span>
               ) : (

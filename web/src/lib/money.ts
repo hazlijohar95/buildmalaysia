@@ -24,7 +24,7 @@ export function formatSen(sen: Sen): string {
   return `${sign}RM ${formatted}`;
 }
 
-/** Compact form for headlines, e.g. "RM 120.00 mil" or "RM 1.14 bil". */
+/** Compact form for headlines, e.g. "RM 120.00 m" or "RM 1.14 bn". */
 export function formatSenCompact(sen: Sen): string {
   const rm = sen / 100;
   const sign = rm < 0 ? "-" : "";
@@ -32,11 +32,11 @@ export function formatSenCompact(sen: Sen): string {
 
   if (abs >= 1_000_000_000) {
     const val = (abs / 1_000_000_000).toFixed(2);
-    return `${sign}RM ${val} bil`;
+    return `${sign}RM ${val} bn`;
   }
   if (abs >= 1_000_000) {
     const val = (abs / 1_000_000).toFixed(2);
-    return `${sign}RM ${val} juta`;
+    return `${sign}RM ${val} m`;
   }
   return formatSen(sen);
 }

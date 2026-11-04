@@ -55,17 +55,16 @@ describe("formatSen", () => {
 });
 
 describe("formatSenCompact", () => {
-  it("formats billions as bil", () => {
-    // 12,000,000,000 sen = RM 120,000,000 → 120.00 juta
-    // Actually 120 million → juta
+  it("formats millions as m", () => {
+    // 12,000,000,000 sen = RM 120,000,000
     const result = formatSenCompact(parseSen("12000000000"));
-    expect(result).toBe("RM 120.00 juta");
+    expect(result).toBe("RM 120.00 m");
   });
 
-  it("formats trillions (hypothetical) as bil", () => {
+  it("formats billions as bn", () => {
     // 100 billion RM = 10,000,000,000,000 sen
     const result = formatSenCompact(parseSen("10000000000000"));
-    expect(result).toBe("RM 100.00 bil");
+    expect(result).toBe("RM 100.00 bn");
   });
 
   it("falls back to full format for small amounts", () => {
@@ -76,7 +75,7 @@ describe("formatSenCompact", () => {
 
   it("formats negative compact correctly", () => {
     const result = formatSenCompact(parseSen("-12000000000"));
-    expect(result).toBe("-RM 120.00 juta");
+    expect(result).toBe("-RM 120.00 m");
   });
 });
 
