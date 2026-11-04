@@ -1,0 +1,97 @@
+@import "../colours/index.css";
+
+@theme {
+  /* --font-family-sankey: "Financier Text", ui-sans-serif, system-ui, sans-serif; */
+  --block-inner-padding-sankey: 16px;
+  --block-outer-padding-sankey: 16px;
+
+  /* Base text color for blocks and tooltips */
+  --color-text-base-sankey: var(--color-linen-100);
+
+  /* Negative/Deficit visualization */
+
+  /* Hover state for negative links */
+  --color-neg-hover-sankey: var(--color-lake-900);
+
+  /* Stripes for negative blocks */
+  --color-neg-highlight-sankey: var(--color-lake-900);
+  --color-neg-active-sankey: var(--color-pine-400);
+  --color-neg-text-active-sankey: var(--color-linen-100);
+  --color-neg-base-sankey: var(--color-lake-400);
+  --color-neg-text-base-sankey: var(--color-linen-100);
+
+  /* Helper text colors */
+
+  /* Text for short/small blocks */
+  --color-short-text-sankey: var(--color-linen-100);
+  /* Color for difference/deficit blocks */
+  --color-difference-sankey: var(--color-nickel-300);
+  --color-difference-text-sankey: var(--color-linen-100);
+
+  /* Chart background */
+  --color-background-sankey: var(--color-charcoal-1000);
+
+  /* Highlighting interactions */
+
+  /* Undifferentiated - for when you want all the same */
+  /*
+    To Activate: replace side-chart variants with these values
+    To Deactivate: make the side-chart variants unique again
+  */
+
+  /* Highlighted Current Node -- "Highlight Current Sankey" => "hcs" */
+  --color-hcs: var(--color-linen-600);
+  /* Highlighted Nodes in Flow -- "Highlight Block Sankey" => "hbs" */
+  --color-hbs: var(--color-linen-500);
+  --color-hbs-ds: var(--color-linen-500); /* Downstream (further from center) */
+  /* Highlighted Differences in Flow -- "Highlight Difference Sankey" => "hds" */
+  --color-hds: var(--color-linen-700);
+  /* Highlighted Links in Flow -- "Highlight Flow Sankey" => "hfs" */
+  --color-hfs: var(--color-charcoal-700);
+  --color-hfs-ds: var(--color-charcoal-700);
+
+  /* Spending Use */
+  /* Highlighted Current Node */
+  --color-hcs-spending: var(--color-auburn-600);
+  /* Highlighted Nodes in Flow */
+  --color-hbs-spending: var(--color-auburn-500);
+  /* Unused - Highlighted "downstream" (more right) Nodes in Flow */
+  --color-hbs-spending-ds: var(--color-auburn-500);
+  /* Highlighted Differences in Flow */
+  --color-hds-spending: var(--color-copper-500);
+  /* Highlighted Links in Flow */
+  --color-hfs-spending: var(--color-copper-700);
+  /* Unused - Highlighted "downstream" (more right) Links in Flow */
+  --color-hfs-spending-ds: var(--color-copper-700);
+
+  /* Revenue Use */
+  /* Selected/Current node highlight */
+  --color-hcs-revenue: var(--color-lake-500);
+  /* Highlighted Nodes in Flow */
+  --color-hbs-revenue: var(--color-lake-400);
+  /* Unused - Highlighted "downstream" (more left) Nodes in Flow */
+  --color-hbs-revenue-ds: var(--color-lake-400);
+  /* Highlighted Differences in Flow */
+  --color-hds-revenue: var(--color-aurora-700);
+  /* Highlighted Links in Flow */
+  --color-hfs-revenue: var(--color-aurora-800);
+  /* Unused - Highlighted "downstream" (more left) Links in Flow */
+  --color-hfs-revenue-ds: var(--color-aurora-800);
+}
+
+/*
+  --color-text-base: #f6ebe3;
+  --color-neg-hover: #19464f;
+  --color-neg-highlight: #19464f;
+  --color-neg-active: #38a0b4;
+  --color-neg-text-active: #f6ebe3;
+  --color-neg-text-base: #38a0b4;
+  --color-short-text: #f6ebe3;
+  --color-difference: #a8a19b;
+  --color-difference-text: #f6ebe3;
+  --color-background: #272727;
+  --color-secondary-active: #932f2f;
+  --color-primary-active: #471717;
+  --color-revenue-secondary-active: #38a0b4;
+  --color-revenue-primary-active: #19464f;
+*/

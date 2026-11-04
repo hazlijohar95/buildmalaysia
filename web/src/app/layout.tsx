@@ -1,62 +1,38 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
+import Header, { type NavItem } from "@/components/MainLayout/Header";
+import Footer from "@/components/MainLayout/Footer";
 import { getLoadedYears } from "@/lib/years";
 import { getBudgetYears } from "@/lib/queries/budget";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif", display: "swap" });
+const sans = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Build Malaysia", template: "%s | Build Malaysia" },
+  title: { default: "Build Malaysia: the facts about government spending", template: "%s | Build Malaysia" },
   description:
-    "How the Malaysian federal government budgets and spends public money. Every figure links to the page of the official source document.",
+    "How the Malaysian federal government budgets and spends public money, from the audited statements and the budget books. Every figure links to the page it came from.",
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [[latest], [budget]] = await Promise.all([getLoadedYears(), getBudgetYears()]);
+  const items: NavItem[] = [
+    { href: "/", label: "Home", match: "/" },
+    { href: "/spending", label: "Spending", match: "/spending" },
+    { href: "/ministries", label: "Ministries", match: "/ministries" },
+    ...(budget ? [{ href: `/budget/${budget}`, label: "Budget", match: "/budget" }] : []),
+    ...(latest ? [{ href: `/${latest}`, label: "By year", match: `/${latest}` }] : []),
+  ];
   return (
-    <html lang="en" className={inter.className}>
-      <body className="min-h-screen font-sans text-sm">
-        <header className="border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
-            <Link href="/" className="font-semibold text-base no-underline" style={{ color: "var(--fg)" }}>
-              Build Malaysia
-            </Link>
-            <nav className="flex gap-4 text-sm">
-              <Link href={latest ? `/${latest}/operating` : "/"} style={{ color: "var(--muted)" }}>
-                Operating
-              </Link>
-              <Link href={latest ? `/${latest}/development` : "/"} style={{ color: "var(--muted)" }}>
-                Development
-              </Link>
-              {budget && (
-                <Link href={`/budget/${budget}`} style={{ color: "var(--muted)" }}>
-                  Budget {budget}
-                </Link>
-              )}
-              <Link href="/methodology" style={{ color: "var(--muted)" }}>
-                Methodology
-              </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
-        <footer
-          className="border-t mt-16 py-6 text-xs"
-          style={{ borderColor: "var(--border)", color: "var(--muted)" }}
-        >
-          <div className="max-w-6xl mx-auto px-4">
-            Data: Jabatan Akauntan Negara Malaysia,{" "}
-            <em>Penyata Kewangan Kerajaan Persekutuan</em>, the audited federal financial statements; and
-            Kementerian Kewangan, <em>Anggaran Perbelanjaan Persekutuan</em>, the federal budget.{" "}
-            <Link href="/methodology">Sources and checks</Link>.
-          </div>
-        </footer>
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+      <body className="min-h-screen p-2 md:p-4">
+        <div className="min-h-[calc(100vh-1rem)] md:min-h-[calc(100vh-2rem)] border-2 border-foreground flex flex-col">
+          <Header items={items} cta={{ href: "/methodology", label: "Methodology", match: "/methodology" }} />
+          <main className="flex-1">{children}</main>
+          <Footer spendingYear={latest} budgetYear={budget} />
+        </div>
       </body>
     </html>
   );

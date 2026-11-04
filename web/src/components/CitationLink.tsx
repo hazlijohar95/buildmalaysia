@@ -1,3 +1,4 @@
+import { cn } from "@/lib/cn";
 import { citationHref, citationLabel, type CitedSource } from "@/lib/citations";
 
 interface Props {
@@ -27,8 +28,7 @@ export default function CitationLink({
       href={citationHref(docUrl, pdfPage)}
       target="_blank"
       rel="noopener noreferrer"
-      className={className}
-      style={{ color: "var(--muted)", fontSize: "0.7rem", whiteSpace: "nowrap" }}
+      className={cn("text-[0.7rem] whitespace-nowrap text-charcoal-600", className)}
     >
       {citationLabel(year, bookPage, spread, source)}
     </a>

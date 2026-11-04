@@ -1,0 +1,16 @@
+@import "../colours/index.css";
+
+@theme inline {
+  --color-chart-1: var(--color-auburn-400);
+  --color-chart-2: var(--color-pine-400);
+  --color-chart-3: var(--color-lake-400);
+  --color-chart-4: var(--color-aurora-400);
+  --color-chart-5: var(--color-copper-400);
+  --color-chart-6: var(--color-maritime-400);
+  --color-chart-7: var(--color-auburn-700);
+  --color-chart-8: var(--color-pine-700);
+  --color-chart-9: var(--color-lake-700);
+  --color-chart-10: var(--color-aurora-700);
+  --color-chart-11: var(--color-copper-700);
+  --color-chart-12: var(--color-maritime-700);
+}

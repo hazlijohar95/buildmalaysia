@@ -1,0 +1,444 @@
+
+#revenue-chart-root {
+  width: 40%;
+}
+
+#spending-chart-root {
+  width: 60%;
+}
+
+.spending-only {
+  #revenue-chart-root {
+    display: none;
+  }
+
+  #spending-chart-root {
+    width: 60%;
+  }
+}
+
+/* Optionally adjust min-width to fit the charts */
+.sankey-chart-container {
+  position: relative;
+  background-color: var(--color-background-sankey);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .sankey-chart-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sankey-chart-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--color-background-sankey);
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(246, 235, 227, 0.1);
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .sankey-chart-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .search-container {
+    width: 320px;
+  }
+
+  .search-select-placeholder {
+    height: 38px;
+    background-color: var(--color-background-sankey);
+    border: 1px solid var(--color-difference-sankey);
+    border-radius: 4px;
+    color: var(--color-text-base-sankey);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .node-tooltip {
+    z-index: 20;
+    min-width: 200px;
+    max-width: 320px;
+    position: fixed;
+    background-color: var(--color-background-sankey);
+    color: var(--color-text-base-sankey);
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(246, 235, 227, 0.1);
+    pointer-events: all;
+  }
+
+  .node-tooltip-name {
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .node-tooltip-amount {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .node-tooltip-percentage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .node-tooltip-overall {
+    font-size: 11px;
+    color: var(--color-short-text-sankey);
+    line-height: 1.2;
+  }
+
+  .node-tooltip-department {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+
+  .node-tooltip-link {
+    color: var(--color-neg-base-sankey);
+    text-decoration: none;
+    font-size: 11px;
+  }
+
+  .node-tooltip-link:hover {
+    color: var(--color-neg-hover-sankey);
+    text-decoration: underline;
+  }
+  .charts {
+    width: 100%;
+    padding: 1rem 1.5rem 0px 1rem;
+    flex-grow: 1;
+    display: flex;
+    column-gap: 0.5rem;
+    height: 100%;
+  }
+
+  .chart {
+    flex: 1 1 auto;
+  }
+
+  .chart.search-results {
+    padding-top: 50px;
+    width: 60%;
+    margin: 0 auto;
+  }
+
+  .sankey-chart {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    column-gap: 30px;
+    flex: 1 1 auto;
+  }
+
+  .sankey-chart[data-direction="left-to-right"] {
+    flex-direction: row;
+  }
+
+  .sankey-chart[data-direction="right-to-left"] {
+    flex-direction: row-reverse;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    row-gap: 30px;
+    flex: 1 1 0%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  .column.narrow {
+    width: 36px;
+    flex: 0 0 auto;
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    row-gap: 13px;
+  }
+
+  .block {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0px 10px;
+
+    color: var(--color-text-base-sankey);
+    display: flex;
+
+    align-content: center;
+    flex-direction: row;
+
+    position: relative;
+    min-height: 1px;
+
+    scroll-padding-bottom: 3.5rem;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: var(--block-inner-padding-sankey);
+    padding-right: var(--block-outer-padding-sankey);
+  }
+
+  .sankey-chart-svg {
+    pointer-events: none;
+  }
+
+  .block.fake {
+    pointer-events: none;
+  }
+
+  .block.negative {
+    background-image: linear-gradient(
+      135deg,
+      var(--color-neg-base-sankey) 16.67%,
+      var(--color-background-sankey) 16.67%,
+      var(--color-background-sankey) 50%,
+      var(--color-neg-base-sankey) 50%,
+      var(--color-neg-base-sankey) 66.67%,
+      var(--color-background-sankey) 66.67%,
+      var(--color-background-sankey) 100%
+    );
+    background-size: 10px 10px;
+  }
+
+  .sankey-chart-svg .link {
+    opacity: 0.5;
+  }
+
+  .column.narrow .block {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .label {
+    font-size: 0.7rem;
+    color: var(--color-short-text-sankey);
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: wrap;
+    padding: 2px;
+    font-size: 0.8rem;
+    line-height: 1.25em;
+    z-index: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    margin: 0;
+  }
+
+  .block.short .label-name {
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .block.short .label {
+    display: flex;
+    align-items: center;
+    font-size: 0.7rem;
+  }
+
+  .block.with-background .label {
+    background-color: var(--color-background-sankey);
+  }
+
+  .block.difference .label {
+    background-color: var(--color-background-sankey);
+  }
+
+  #revenue-chart-root .block.current-node {
+    background-color: var(--color-revenue-primary-active) !important;
+  }
+
+  .label .label-amount {
+    font-weight: 700;
+    min-width: 60px;
+  }
+
+  .column.narrow .label {
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+    white-space: nowrap;
+    margin: 0;
+    padding: 2px 0;
+    transform: rotate(180deg);
+    writing-mode: vertical-rl;
+    direction: rtl;
+    text-orientation: sideways;
+  }
+
+  .column.narrow .label .label-amount {
+    min-width: unset;
+    width: unset;
+  }
+
+  .column.narrow .block.difference {
+    background-color: var(--color-background-sankey) !important;
+    background-image: linear-gradient(
+      135deg,
+      var(--color-difference-sankey) 16.67%,
+      var(--color-background-sankey) 16.67%,
+      var(--color-background-sankey) 50%,
+      var(--color-difference-sankey) 50%,
+      var(--color-difference-sankey) 66.67%,
+      var(--color-background-sankey) 66.67%,
+      var(--color-background-sankey) 100%
+    );
+    background-size: 10px 10px;
+    font-weight: 500;
+  }
+
+  .column.narrow .label {
+    display: flex;
+    flex-direction: row;
+    flex-flow: row-reverse;
+    gap: 4px;
+  }
+
+  .column[data-level="0"] .group {
+    row-gap: 0px;
+  }
+
+  .column .group:last-child .block:last-child {
+    margin-bottom: 15px;
+  }
+
+  /* ==========================================================================
+     Highlighting
+     ========================================================================== */
+
+  /* Current Node - The specific node being hovered/selected */
+  .block.highlight.current-node {
+    background-color: var(--color-hcs) !important;
+  }
+
+  #spending-chart-root .block.highlight.current-node {
+    background-color: var(--color-hcs-spending) !important;
+  }
+
+  #revenue-chart-root .block.highlight.current-node {
+    background-color: var(--color-hcs-revenue) !important;
+  }
+
+  /* Highlighted Block (Generic) - Applied to any node in the highlight path */
+  .block.highlight {
+    background-color: var(--color-hbs-ds) !important;
+    background-image: none !important;
+  }
+
+  #spending-chart-root .block.highlight {
+    background-color: var(--color-hbs-spending-ds) !important;
+  }
+
+  #revenue-chart-root .block.highlight {
+    background-color: var(--color-hbs-revenue-ds) !important;
+  }
+
+  /* Highlighted Block (Generic) - Upstream - Covers!! `block.highlight` */
+  .column.narrow .block.difference.highlight {
+    background-color: var(--color-hbs) !important;
+    background-image: none !important;
+  }
+
+  #spending-chart-root .column.narrow .block.difference.highlight {
+    background-color: var(--color-hbs-spending) !important;
+  }
+
+  #revenue-chart-root .column.narrow .block.difference.highlight {
+    background-color: var(--color-hbs-revenue) !important;
+  }
+
+  /* Highlighted Box (Upstream/Path) - "Difference" box matching flow */
+  .highlight-box {
+    fill: var(--color-hds) !important;
+    stroke: none;
+  }
+
+  #spending-chart-root .highlight-box {
+    fill: var(--color-hds-spending) !important;
+  }
+
+  #revenue-chart-root .highlight-box {
+    fill: var(--color-hds-revenue) !important;
+  }
+
+  /* Highlighted Link (Downstream) - Links flowing out from the node */
+  .link.highlight {
+    opacity: 0.7 !important;
+    fill: var(--color-hfs-ds) !important;
+  }
+
+  #spending-chart-root .link.highlight {
+    fill: var(--color-hfs-spending-ds) !important;
+  }
+
+  #revenue-chart-root .link.highlight {
+    fill: var(--color-hfs-revenue-ds) !important;
+  }
+
+  /* Highlighted Link (Upstream) - Drawn path flowing into the node */
+  .highlight-link {
+    fill: var(--color-hfs) !important;
+    stroke: none;
+    opacity: 0.7 !important;
+  }
+
+  #spending-chart-root .highlight-link {
+    fill: var(--color-hfs-spending) !important;
+  }
+
+  #revenue-chart-root .highlight-link {
+    fill: var(--color-hfs-revenue) !important;
+  }
+
+  /* Label contrast fix for highlighted blocks without background */
+  .block.highlight:not(.with-background) .label {
+    color: var(--color-text-base-sankey) !important;
+  }
+
+  /* Highlighted Short Block z-index fix - Ensures label appears above others */
+  .block.short.highlight.current-node {
+    z-index: 2;
+  }
+
+  @media (max-width: 992px) {
+    .block {
+      padding: 0px 6px;
+    }
+  }
+}
+
+/* Node labels that link to a ministry page read like the other labels. */
+.sankey-chart-container .label-name a {
+  color: inherit;
+  text-decoration: none;
+}
+.sankey-chart-container .label-name a:hover {
+  text-decoration: underline;
+}

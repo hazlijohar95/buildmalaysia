@@ -1,0 +1,47 @@
+@import "../colours/index.css";
+
+@theme {
+  --color-background: var(--color-linen-100);
+  --color-foreground: var(--color-charcoal-1000);
+  --color-card: var(--color-steel-50);
+  --color-card-foreground: var(--color-charcoal-1000);
+  --color-popover: var(--color-linen-50);
+  --color-popover-foreground: var(--color-charcoal-1000);
+  --color-primary: var(--color-auburn-800);
+  --color-primary-foreground: var(--color-linen-50);
+  --color-secondary: var(--color-nickel-100);
+  --color-secondary-foreground: var(--color-charcoal-900);
+
+  --color-muted: var(--color-linen-200);
+  --color-dmuted: var(--color-nickel-200);
+  --color-smuted: var(--color-steel-200);
+  --color-muted-foreground: var(--color-charcoal-800);
+  --color-dmuted-foreground: var(--color-charcoal-700);
+  --color-smuted-foreground: var(--color-charcoal-600);
+
+  --color-accent: var(--color-nickel-100);
+  --color-accent-foreground: var(--color-charcoal-1000);
+  --color-destructive: var(--color-auburn-500);
+  --color-destructive-foreground: var(--color-linen-50);
+  --color-border: var(--color-charcoal-200);
+  --color-input: var(--color-charcoal-200);
+  --color-ring: var(--color-auburn-800);
+
+  --color-link: var(--color-maritime-700);
+  --color-link-hover: var(--color-maritime-800);
+  --color-link-visited: var(--color-aurora-600);
+  --color-link-visited-hover: var(--color-aurora-700);
+
+  --color-sidebar: var(--color-nickel-50);
+  --color-sidebar-foreground: var(--color-charcoal-1000);
+  --color-sidebar-primary: var(--color-auburn-800);
+  --color-sidebar-primary-foreground: var(--color-linen-100);
+  --color-sidebar-accent: var(--color-charcoal-100);
+  --color-sidebar-accent-foreground: var(--color-charcoal-1000);
+  --color-sidebar-border: var(--color-charcoal-100);
+  --color-sidebar-ring: var(--color-auburn-800);
+}
+
+.link {
+  @apply text-link hover:text-link-hover visited:text-link-visited visited:hover:text-link-visited-hover;
+}
