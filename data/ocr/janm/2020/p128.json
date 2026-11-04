@@ -1,0 +1,1285 @@
+{
+ "engine": "tesseract 5.5.3; glyph boxes from pdftocairo version 26.10.0 -svg",
+ "columns": [
+  56.32,
+  258.21,
+  326.71,
+  389.57,
+  458.07,
+  526.57
+ ],
+ "lines": [
+  {
+   "top": 160.96,
+   "label": "",
+   "cells": [
+    "RM",
+    "RM",
+    "RM",
+    "%"
+   ],
+   "shapes": [
+    "DD",
+    "DD",
+    "DD",
+    "D"
+   ],
+   "readings": [
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7"
+   ]
+  },
+  {
+   "top": 177.41,
+   "label": "PERBELANJAAN BEKALAN — (SAMB.)",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 194.09,
+   "label": "B.12 PERUNTUKAN KEPADA KUMPULAN WANG",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 202.54,
+   "label": "TERKANUN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 219.1,
+   "label": "010000 KUMPULAN WANG RIZAB NEGERI",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 229.35,
+   "label": "010100 Kumpulan Wang Rizab Negeri",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 237.68,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 248.28,
+   "label": "Jumlah 010100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 259.99,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "2": {
+     "500,000,000.00": 14,
+     "600,000,000.00": 1
+    }
+   }
+  },
+  {
+   "top": 271.48,
+   "label": "Jumlah 010000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 282.19,
+   "label": "020000 KUMPULAN WANG TABUNG BIASISWA SUKAN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 292.33,
+   "label": "020100 Kumpulan Wang Tabung Biasiswa Sukan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 300.78,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "2,000,000",
+    "2,000,000",
+    "2,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 311.37,
+   "label": "Jumlah 020100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "2,000,000",
+    "2,000,000",
+    "2,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 322.18,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "2,000,000",
+    "2,000,000",
+    "2,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 332.77,
+   "label": "Jumlah 020000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "2,000,000",
+    "2,000,000",
+    "2,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 343.48,
+   "label": "030000 KUMPULAN WANG PERSARAAN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 353.73,
+   "label": "030100 Kumpulan Wang Persaraan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 362.07,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 373.11,
+   "label": "Jumlah 030100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 14/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "2": {
+     "500,000,000.00": 14,
+     "600,000,000.00": 1
+    }
+   }
+  },
+  {
+   "top": 384.37,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 14/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "2": {
+     "500,000,000.00": 14,
+     "600,000,000.00": 1
+    }
+   }
+  },
+  {
+   "top": 395.41,
+   "label": "Jumlah 030000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "500,000,000",
+    "500,000,000",
+    "500,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 13/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "2": {
+     "600,000,000.00": 1,
+     "500,000,000.00": 13
+    }
+   }
+  },
+  {
+   "top": 406.57,
+   "label": "040000 TABUNG BANTUAN BENCANA NEGARA",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 416.82,
+   "label": "040100 Tabung Bantuan Bencana Negara",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 425.16,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "50,000,000",
+    "250,000,000",
+    "250,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 436.2,
+   "label": "Jumlah 040100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "50,000,000",
+    "250,000,000",
+    "250,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 447.46,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "50,000,000",
+    "250,000,000",
+    "250,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 458.5,
+   "label": "Jumlah 040000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "50,000,000",
+    "250,000,000",
+    "250,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DDD,DDD,DDD",
+    "DDD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 469.66,
+   "label": "050000 KUMPULAN WANG PEMBANGUNAN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 479.91,
+   "label": "050100 Kumpulan Wang Pembangunan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 488.25,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "100",
+    "100",
+    "474,705,193.19",
+    "474,705,193.19"
+   ],
+   "shapes": [
+    "1DD",
+    "1DD",
+    "DDD,DDD,1DD.1D",
+    "DDD,DDD,1DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 499.29,
+   "label": "Jumlah 050100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "100",
+    "100",
+    "474,705,193.19",
+    "474,705,193.19"
+   ],
+   "shapes": [
+    "1DD",
+    "1DD",
+    "DDD,DDD,1DD.1D",
+    "DDD,DDD,1DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 510.55,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "100",
+    "100",
+    "474,705,193.19",
+    "474,705,193.19"
+   ],
+   "shapes": [
+    "1DD",
+    "1DD",
+    "DDD,DDD,1DD.1D",
+    "DDD,DDD,1DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 521.59,
+   "label": "Jumlah 050000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "100",
+    "100",
+    "474,705,193.19",
+    "474,705,193.19"
+   ],
+   "shapes": [
+    "1DD",
+    "1DD",
+    "DDD,DDD,1DD.1D",
+    "DDD,DDD,1DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 532.75,
+   "label": "060000 TABUNG AMANAH LEMBAGA PEPERIKSAAN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 543.0,
+   "label": "060100 Tabung Amanah Lembaga Peperiksaan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 551.34,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "150,000,000",
+    "150,000,000",
+    "150,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 562.83,
+   "label": "Jumlah 060100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "150,000,000",
+    "150,000,000",
+    "150,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 574.32,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "150,000,000",
+    "150,000,000",
+    "150,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 585.81,
+   "label": "Jumlah 060000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "150,000,000",
+    "150,000,000",
+    "150,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 597.19,
+   "label": "070000 TABUNG MODAL PUSINGAN JABATAN",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 605.53,
+   "label": "PEMBANGUNAN KOPERASI",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 615.78,
+   "label": "070100 Tabung Modal Pusingan Jabatan Pembangunan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 624.12,
+   "label": "Koperasi",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 632.46,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "30,000,000",
+    "15,000,000",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "1D,DDD,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 643.95,
+   "label": "Jumlah 070100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "30,000,000",
+    "15,000,000",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "1D,DDD,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 655.44,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "30,000,000",
+    "15,000,000",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "1D,DDD,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 666.93,
+   "label": "Jumlah 070000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "30,000,000",
+    "15,000,000",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "1D,DDD,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 678.31,
+   "label": "080000 KUMPULAN WANG AMANAH SUKAN NEGARA",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 688.56,
+   "label": "080100 Kumpulan Wang Amanah Sukan Negara",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 696.9,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "80,000,000",
+    "80,000,000",
+    "80,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 707.49,
+   "label": "Jumlah 080100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "80,000,000",
+    "80,000,000",
+    "80,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 718.3,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "80,000,000",
+    "80,000,000",
+    "80,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 728.89,
+   "label": "Jumlah 080000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "80,000,000",
+    "80,000,000",
+    "80,000,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  }
+ ],
+ "below": [
+  {
+   "text": "(disambung...)",
+   "reading": "600dpi-t170-psm7",
+   "unknown_words": []
+  }
+ ]
+}

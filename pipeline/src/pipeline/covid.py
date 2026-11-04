@@ -3,9 +3,14 @@
 One flat list of programmes and a grand total ("Jumlah Keseluruhan"), printed across one
 two-page spread. The columns differ by year, so each source names its left- and
 right-page columns (`SourceDocument.covid_columns`). The row identities prove the
-naming: allocation + supplementary + virement = revised, revised - actual = variance,
-and spent before the year + actual = spent to date. A name may wrap above or below the
-line that carries its amounts.
+naming: allocation + supplementary + withdrawal + virement = revised, revised - actual =
+variance, and spent before the year + actual = spent to date. A name may wrap above or
+below the line that carries its amounts.
+
+FY2021-2023 are read from `pdftotext -layout` (parse_covid). FY2020's text layer holds a
+second, undrawn copy of the table shifted across the spread, so -layout interleaves the
+two; FY2020 is read from the words the pages draw, placed in the table's ruled rows and
+columns (parse_covid_drawn).
 """
 
 import re
@@ -13,11 +18,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from pipeline.development import trailing_values
-from pipeline.model import Citation, CovidAmounts, CovidFundLine, CovidFundStatement, SpreadCitation
+from pipeline.model import Citation, Correction, CovidAmounts, CovidFundLine, CovidFundStatement, SpreadCitation
+from pipeline.ocr import DrawnPage
 from pipeline.parse import PRINTER_SLUG, PageText, ParseError, Value
 
 COLUMNS = {
-    "ceiling", "spent_prior", "allocation", "supplementary", "virement",
+    "ceiling", "spent_prior", "allocation", "supplementary", "withdrawal", "virement",
     "revised", "actual", "variance", "percent", "spent_to_date",
 }  # fmt: skip
 _RUNNING_HEAD = re.compile(
@@ -123,32 +129,119 @@ def parse_covid(
             left.pdf_page, 1, "", f"{len(rows)} left rows (ending in the total) for {len(right_rows)} right rows"
         )
 
-    lines: list[CovidFundLine] = []
-    total: tuple[CovidAmounts, SpreadCitation] | None = None
+    built: list[_Built] = []
     for row, (at, values, names) in zip(rows, right_rows, strict=True):
         if not row.left:
             raise ParseError(row.first.pdf_page, row.first.line_no, row.first.text, "programme without amounts")
         cells = dict(zip(left_cols, row.left, strict=True)) | dict(zip(names, values, strict=True))
-        amount = {name: cells[name].hundredths if name in cells else 0 for name in COLUMNS}
-        if amount["allocation"] + amount["supplementary"] + amount["virement"] != amount["revised"]:
-            raise ParseError(at.pdf_page, at.line_no, at.text, "allocation + supplementary + virement != revised")
-        if "variance" in cells and amount["revised"] - amount["actual"] != amount["variance"]:
-            raise ParseError(at.pdf_page, at.line_no, at.text, "revised - actual != variance")
-        if amount["spent_prior"] + amount["actual"] != amount["spent_to_date"]:
-            raise ParseError(at.pdf_page, at.line_no, at.text, "spent before the year + actual != spent to date")
-        amounts = CovidAmounts(
-            amount["ceiling"], amount["spent_prior"], amount["allocation"], amount["supplementary"],
-            amount["virement"], amount["revised"], amount["actual"], amount["spent_to_date"],
-        )  # fmt: skip
         citation = SpreadCitation(
             Citation(row.first.pdf_page, row.first.book_page, row.first.line_no, "\n".join(row.lines)), at
         )
-        if row.code is None:
-            total = (amounts, citation)
-        else:
-            name = " ".join(" ".join(row.parts).split())
-            lines.append(CovidFundLine(row.code, name, amounts, citation))
-    assert total is not None
+        built.append(_Built(row.code, " ".join(" ".join(row.parts).split()), cells, citation))
+    return _statement(fiscal_year, built)
+
+
+@dataclass(frozen=True)
+class _Built:
+    code: str | None  # None for the grand total
+    name: str
+    cells: dict[str, Value]  # by column name; a column not printed is absent
+    citation: SpreadCitation
+
+
+def _statement(fiscal_year: int, rows: Sequence[_Built]) -> CovidFundStatement:
+    """Check each row's identities and assemble the statement; the last row is the total."""
+    if not rows or rows[-1].code is not None or any(r.code is None for r in rows[:-1]):
+        raise ParseError(0, 0, "", "Lampiran 3 must be programmes followed by one grand total")
+    lines = tuple(CovidFundLine(row.code, row.name, _amounts(row), row.citation) for row in rows[:-1] if row.code)
     if len({line.code for line in lines}) != len(lines):
-        raise ParseError(left.pdf_page, 1, "", "a programme code repeats")
-    return CovidFundStatement(fiscal_year, tuple(lines), total[0], total[1])
+        raise ParseError(rows[0].citation.left.pdf_page, 1, "", "a programme code repeats")
+    return CovidFundStatement(fiscal_year, lines, _amounts(rows[-1]), rows[-1].citation)
+
+
+def _amounts(row: _Built) -> CovidAmounts:
+    at = row.citation.right
+    amount = {name: row.cells[name].hundredths if name in row.cells else 0 for name in COLUMNS}
+    if amount["allocation"] + amount["supplementary"] + amount["withdrawal"] + amount["virement"] != amount["revised"]:
+        raise ParseError(
+            at.pdf_page, at.line_no, at.text, "allocation + supplementary + withdrawal + virement != revised"
+        )
+    if "variance" in row.cells and amount["revised"] - amount["actual"] != amount["variance"]:
+        raise ParseError(at.pdf_page, at.line_no, at.text, "revised - actual != variance")
+    if amount["spent_prior"] + amount["actual"] != amount["spent_to_date"]:
+        raise ParseError(at.pdf_page, at.line_no, at.text, "spent before the year + actual != spent to date")
+    return CovidAmounts(
+        amount["ceiling"], amount["spent_prior"], amount["allocation"], amount["supplementary"],
+        amount["withdrawal"], amount["virement"], amount["revised"], amount["actual"], amount["spent_to_date"],
+    )  # fmt: skip
+
+
+def _units_bottom(page: DrawnPage, amounts: int) -> float:
+    """The foot of the units line ("RM RM ..."; the % column's head may carry no unit)."""
+    for line in page.lines():
+        if [w.text for w in line] in (["RM"] * amounts, ["RM"] * (amounts - 1)):
+            return max(w.y1 for w in line)
+    raise ParseError(page.pdf_page, 1, "", f"no units line with {amounts} columns")
+
+
+def parse_covid_drawn(
+    left: DrawnPage, right: DrawnPage, fiscal_year: int, columns: tuple[tuple[str, ...], tuple[str, ...]]
+) -> tuple[CovidFundStatement, tuple[Correction, ...]]:
+    """FY2020: the spread read from the words each page draws (DrawnPage). A row is the band
+    between two of the table's horizontal rules, which run across both pages at the same
+    heights; a cell is the words between two vertical rules. The left page's first column is
+    the label; every other column must be named in `columns`. A cell with no word is read as
+    zero (rule BLANK_CELL_READ_AS_ZERO), and a cell holding a lone tick beside its amount
+    drops the tick (rule STRAY_MARK_IGNORED)."""
+    left_cols, right_cols = columns
+    if set(left_cols + right_cols) - COLUMNS or len(set(left_cols + right_cols)) != len(left_cols + right_cols):
+        raise ValueError(f"unknown or repeated Lampiran 3 columns: {columns}")
+    if len(left.columns) != len(left_cols) + 2 or len(right.columns) != len(right_cols) + 1:
+        raise ParseError(left.pdf_page, 1, "", "the spread's vertical rules do not match its columns")
+    if left.rules != right.rules:
+        raise ParseError(right.pdf_page, 1, "", "the two pages' horizontal rules differ")
+    left_book, right_book = left.book_page(), right.book_page()
+    if (right.pdf_page, right_book) != (left.pdf_page + 1, left_book + 1):
+        raise ParseError(right.pdf_page, 1, "", "right page does not follow its left page")
+    units = [_units_bottom(left, len(left_cols)), _units_bottom(right, len(right_cols))]
+    if abs(units[0] - units[1]) > 1:
+        raise ParseError(right.pdf_page, 1, "", "the two pages' units lines are not level")
+    corrections: list[Correction] = []
+    built: list[_Built] = []
+    for top, bottom in zip(left.rules, left.rules[1:]):
+        if bottom <= units[0]:
+            continue  # the column heads
+        top = max(top, units[0])
+        label_words = [w for w in left.words_in(top, bottom) if w.x1 <= left.columns[1]]
+        label = " ".join(w.text for w in label_words)
+        left_cells = left.cells(top, bottom, left.columns[1:])
+        right_cells = right.cells(top, bottom, right.columns)
+        for page in (left, right):
+            if page.unread_in(top, bottom):
+                raise ParseError(page.pdf_page, page.line_no(top), page.text(top, bottom), "glyphs drawn but not read")
+        if not label and not any(left_cells + right_cells):
+            continue  # a band between a double rule
+        m = _ROW.fullmatch(label)
+        code = m["code"] if m else None
+        if code is None and not _TOTAL.fullmatch(label):
+            raise ParseError(left.pdf_page, left.line_no(top), label, "row that is neither a programme nor the total")
+        at_left = Citation(left.pdf_page, left_book, left.line_no(top), left.text(top, bottom))
+        at_right = Citation(right.pdf_page, right_book, right.line_no(top), right.text(top, bottom))
+        cells: dict[str, Value] = {}
+        for name, text, at in [
+            *zip(left_cols, left_cells, [at_left] * len(left_cols), strict=True),
+            *zip(right_cols, right_cells, [at_right] * len(right_cols), strict=True),
+        ]:
+            if re.fullmatch(r"[`'‘’,]\s+\S+", text):
+                corrections.append(Correction("STRAY_MARK_IGNORED", f"{name}: dropped the tick in {text!r}", at))
+                text = text.split()[-1]
+            if not text:
+                corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {name} cell read as zero", at))
+                text = "-"
+            _, values, _ = trailing_values(text, 1)
+            if len(values) != 1 or values[0].marks:
+                raise ParseError(at.pdf_page, at.line_no, at.text, f"{name} cell {text!r} is not one amount")
+            cells[name] = values[0]
+        name = " ".join(label.split()[1:]) if code else ""
+        built.append(_Built(code, name, cells, SpreadCitation(at_left, at_right)))
+    return _statement(fiscal_year, built), tuple(corrections)

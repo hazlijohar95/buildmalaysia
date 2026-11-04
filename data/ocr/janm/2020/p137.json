@@ -1,0 +1,1411 @@
+{
+ "engine": "tesseract 5.5.3; glyph boxes from pdftocairo version 26.10.0 -svg",
+ "columns": [
+  66.31,
+  268.2,
+  336.7,
+  399.57,
+  468.07,
+  536.57
+ ],
+ "lines": [
+  {
+   "top": 161.46,
+   "label": "",
+   "cells": [
+    "RM",
+    "RM",
+    "RM",
+    "%"
+   ],
+   "shapes": [
+    "DD",
+    "DD",
+    "DD",
+    "D"
+   ],
+   "readings": [
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7",
+    "300dpi-t170-psm7"
+   ]
+  },
+  {
+   "top": 177.91,
+   "label": "PERBELANJAAN BEKALAN — (SAMB.)",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 194.59,
+   "label": "B.21 KEMENTERIAN PERTANIAN DAN INDUSTRI",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 202.93,
+   "label": "MAKANAN -— (SAMB.)",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 219.6,
+   "label": "010000 PENGURUSAN -— (SAMB.)",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 229.85,
+   "label": "010200 Perancangan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 238.19,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "8,703,300",
+    "8,699,100",
+    "7,689,980.89",
+    "88.40"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,1DD",
+    "D,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 246.53,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "4,414,600",
+    "4,534,016",
+    "4,152,387.05",
+    "91.58"
+   ],
+   "shapes": [
+    "D,D1D,DDD",
+    "D,DDD,D1D",
+    "D,1DD,DDD.DD",
+    "D1.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 254.86,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "5,604,000",
+    "9,197,691",
+    "9,171,077.98",
+    "99.71"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,1DD,DD1",
+    "D,1D1,DDD.DD",
+    "DD.D1"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 263.2,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "10,000",
+    "14,600",
+    "13,892.44",
+    "95.15"
+   ],
+   "shapes": [
+    "1D,DDD",
+    "1D,DDD",
+    "1D,DDD.DD",
+    "DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "2": {
+     "13,892.44": 14,
+     "19,892.44": 1
+    }
+   }
+  },
+  {
+   "top": 274.24,
+   "label": "Jumlah 010200",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "18,731,900",
+    "22,445,407",
+    "21,027,338.36",
+    "93.68"
+   ],
+   "shapes": [
+    "1D,DD1,DDD",
+    "DD,DDD,DDD",
+    "D1,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 13/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 285.51,
+   "label": "010300 Pembangunan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 293.84,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "18,521,400",
+    "18,677,400",
+    "16,237,920.15",
+    "86.94"
+   ],
+   "shapes": [
+    "1D,DD1,DDD",
+    "1D,DDD,DDD",
+    "1D,DDD,DDD.1D",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 302.18,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "19,738,000",
+    "18,209,943",
+    "13,583,501.08",
+    "74.59"
+   ],
+   "shapes": [
+    "1D,DDD,DDD",
+    "1D,DDD,DDD",
+    "1D,DDD,DD1.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 310.52,
+   "label": "30000 Aset",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "320,000",
+    "320,000",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DDD,DDD",
+    "DDD,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 318.86,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "218,100",
+    "266,707",
+    "238,304.19",
+    "89.35"
+   ],
+   "shapes": [
+    "D1D,1DD",
+    "DDD,DDD",
+    "DDD,DDD.1D",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 327.19,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "7,000",
+    "131,800",
+    "101,955.62",
+    "77.36"
+   ],
+   "shapes": [
+    "D,DDD",
+    "1D1,DDD",
+    "1D1,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 338.23,
+   "label": "Jumlah 010300",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "38,804,500",
+    "37,605,850",
+    "30,161,681.04",
+    "80.20"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DDD,DDD",
+    "DD,1D1,DD1.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 349.5,
+   "label": "Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "64,931,900",
+    "48,927,700",
+    "45,454,103.31",
+    "92.90"
+   ],
+   "shapes": [
+    "DD,DD1,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,1DD.D1",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 357.84,
+   "label": "Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "123,821,900",
+    "81,090,743",
+    "75,329,587.92",
+    "92.90"
+   ],
+   "shapes": [
+    "1DD,DD1,DDD",
+    "D1,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 366.17,
+   "label": "Aset",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "321,600",
+    "321,600",
+    "–",
+    "–"
+   ],
+   "shapes": [
+    "DD1,DDD",
+    "DD1,DDD",
+    "–",
+    "–"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "shape",
+    "shape"
+   ]
+  },
+  {
+   "top": 374.51,
+   "label": "Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "5,858,700",
+    "20,067,146",
+    "20,012,082.55",
+    "99.73"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "DD,DDD,1DD",
+    "DD,D1D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 382.85,
+   "label": "Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "30,200",
+    "206,507",
+    "164,337.81",
+    "79.58"
+   ],
+   "shapes": [
+    "DD,DDD",
+    "DDD,DDD",
+    "1DD,DDD.D1",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 393.44,
+   "label": "Jumlah 010000",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "194,964,300",
+    "150,613,696",
+    "140,960,111.59",
+    "93.59"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,D1D,DDD",
+    "1DD,DDD,111.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 404.14,
+   "label": "020000 BEKALAN MAKANAN NEGARA",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 414.39,
+   "label": "020100 Industri Padi dan Beras",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 422.73,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "36,496,400",
+    "36,601,705",
+    "34,320,708.09",
+    "93.77"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DD1,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 431.07,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "29,488,600",
+    "29,551,933",
+    "26,696,684.76",
+    "90.34"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,DD1,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 439.41,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "147,400",
+    "92,262",
+    "82,049.58",
+    "88.93"
+   ],
+   "shapes": [
+    "1DD,DDD",
+    "DD,DDD",
+    "DD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 447.74,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "62,100",
+    "62,100",
+    "60,300.00",
+    "97.10"
+   ],
+   "shapes": [
+    "DD,1DD",
+    "DD,1DD",
+    "DD,DDD.DD",
+    "DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 458.33,
+   "label": "Jumlah 020100",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "66,194,500",
+    "66,308,000",
+    "61,159,742.43",
+    "92.24"
+   ],
+   "shapes": [
+    "DD,1DD,DDD",
+    "DD,DDD,DDD",
+    "D1,1DD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 13/15"
+   ]
+  },
+  {
+   "top": 469.04,
+   "label": "020200 Pengairan dan Saliran Pertanian",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 477.48,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "6,163,500",
+    "6,163,500",
+    "6,081,767.61",
+    "98.67"
+   ],
+   "shapes": [
+    "D,1DD,DDD",
+    "D,1DD,DDD",
+    "D,DD1,DDD.D1",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 485.82,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "5,318,100",
+    "5,296,547",
+    "5,228,800.26",
+    "98.72"
+   ],
+   "shapes": [
+    "D,D1D,1DD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 496.41,
+   "label": "Jumlah 020200",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "11,481,600",
+    "11,460,047",
+    "11,310,567.87",
+    "98.70"
+   ],
+   "shapes": [
+    "11,DD1,DDD",
+    "11,DDD,DDD",
+    "11,D1D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 507.23,
+   "label": "020300 Pertanian",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 515.57,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "141,185,600",
+    "141,185,600",
+    "134,316,542.89",
+    "95.13"
+   ],
+   "shapes": [
+    "1D1,1DD,DDD",
+    "1D1,1DD,DDD",
+    "1DD,D1D,DDD.DD",
+    "DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 523.9,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "39,414,300",
+    "39,250,535",
+    "37,843,523.17",
+    "96.42"
+   ],
+   "shapes": [
+    "DD,D1D,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DDD.1D",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 532.24,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "50,000",
+    "65,000",
+    "19,250.00",
+    "29.62"
+   ],
+   "shapes": [
+    "DD,DDD",
+    "DD,DDD",
+    "1D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 540.57,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "10,000",
+    "70,000",
+    "69,955.67",
+    "99.94"
+   ],
+   "shapes": [
+    "1D,DDD",
+    "DD,DDD",
+    "DD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 551.16,
+   "label": "Jumlah 020300",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "180,659,900",
+    "180,571,135",
+    "172,249,271.73",
+    "95.39"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DD1,1DD",
+    "1DD,DDD,DD1.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 561.98,
+   "label": "020400 Perkhidmatan Veterinar",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 570.32,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "100,324,200",
+    "100,324,200",
+    "99,702,629.80",
+    "99.38"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 578.66,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "41,475,000",
+    "41,930,200",
+    "36,977,050.98",
+    "88.19"
+   ],
+   "shapes": [
+    "D1,DDD,DDD",
+    "D1,DDD,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 586.99,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "1,025,800",
+    "650,200",
+    "427,679.15",
+    "65.78"
+   ],
+   "shapes": [
+    "1,DDD,DDD",
+    "DDD,DDD",
+    "DDD,DDD.1D",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 595.33,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "10,000",
+    "10,400",
+    "9,235.50",
+    "88.80"
+   ],
+   "shapes": [
+    "1D,DDD",
+    "1D,DDD",
+    "D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 606.82,
+   "label": "Jumlah 020400",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "142,835,000",
+    "142,915,000",
+    "137,116,595.43",
+    "95.94"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,D1D,DDD",
+    "1DD,11D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 618.54,
+   "label": "020500 Perikanan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 626.88,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "124,806,300",
+    "114,806,300",
+    "114,787,855.85",
+    "99.98"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "11D,DDD,DDD",
+    "11D,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 635.21,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "52,697,600",
+    "52,190,639",
+    "43,588,568.56",
+    "83.52"
+   ],
+   "shapes": [
+    "DD,DDD,DDD",
+    "DD,1DD,DDD",
+    "DD,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 14/15",
+    "panel 15/15",
+    "panel 15/15"
+   ],
+   "votes": {
+    "1": {
+     "62,190,639": 1,
+     "52,190,639": 14
+    }
+   }
+  },
+  {
+   "top": 643.55,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "198,500",
+    "198,500",
+    "115,247.50",
+    "58.06"
+   ],
+   "shapes": [
+    "1DD,DDD",
+    "1DD,DDD",
+    "11D,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 651.89,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "–",
+    "176,200",
+    "172,340",
+    "97.81"
+   ],
+   "shapes": [
+    "–",
+    "1DD,DDD",
+    "1DD,DDD",
+    "DD.D1"
+   ],
+   "readings": [
+    "shape",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 663.38,
+   "label": "Jumlah 020500",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "177,702,400",
+    "167,371,639",
+    "158,664,011.91",
+    "94.80"
+   ],
+   "shapes": [
+    "1DD,DDD,DDD",
+    "1DD,DD1,DDD",
+    "1DD,DDD,D11.D1",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 675.09,
+   "label": "020600 Perkhidmatan Kuarantin dan Pemeriksaan Malaysia",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 683.32,
+   "label": "(MAQIS)",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "shapes": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "readings": [
+    "",
+    "",
+    "",
+    ""
+   ]
+  },
+  {
+   "top": 691.77,
+   "label": "10000 Emolumen",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "21,850,000",
+    "21,850,000",
+    "20,591,601.09",
+    "94.24"
+   ],
+   "shapes": [
+    "D1,DDD,DDD",
+    "D1,DDD,DDD",
+    "DD,DD1,DD1.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 12/15"
+   ]
+  },
+  {
+   "top": 700.11,
+   "label": "20000 Perkhidmatan dan Bekalan",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "5,925,000",
+    "7,446,700",
+    "7,280,250.70",
+    "97.76"
+   ],
+   "shapes": [
+    "D,DDD,DDD",
+    "D,DDD,DDD",
+    "D,DDD,DDD.DD",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 708.44,
+   "label": "40000 Pemberian dan Kenaan Bayaran Tetap",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "370,000",
+    "371,200",
+    "368,489.21",
+    "99.27"
+   ],
+   "shapes": [
+    "DDD,DDD",
+    "DD1,DDD",
+    "DDD,DDD.D1",
+    "DD.DD"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 716.78,
+   "label": "50000 Perbelanjaan-perbelanjaan Lain",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "–",
+    "3,000",
+    "3,000.00",
+    "100.00"
+   ],
+   "shapes": [
+    "–",
+    "D,DDD",
+    "D,DDD.DD",
+    "1DD.DD"
+   ],
+   "readings": [
+    "shape",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  },
+  {
+   "top": 728.27,
+   "label": "Jumlah 020600",
+   "label_reading": "600dpi-t170-psm7",
+   "cells": [
+    "28,145,000",
+    "29,670,900",
+    "28,243,341.00",
+    "95.19"
+   ],
+   "shapes": [
+    "DD,1DD,DDD",
+    "DD,DDD,DDD",
+    "DD,DDD,DD1.DD",
+    "DD.1D"
+   ],
+   "readings": [
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15",
+    "panel 15/15"
+   ]
+  }
+ ],
+ "below": [
+  {
+   "text": "(disambung...)",
+   "reading": "600dpi-t170-psm7",
+   "unknown_words": []
+  }
+ ]
+}

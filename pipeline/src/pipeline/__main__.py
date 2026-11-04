@@ -6,18 +6,16 @@ from pathlib import Path
 
 import psycopg
 
-from pipeline.covid import parse_covid
-from pipeline.development import parse_development
-from pipeline.gap import fill_gap, parse_english_vote_totals
+from pipeline.ocr import OcrError
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
-from pipeline.parse import ParseError, parse_statement
-from pipeline.revenue import parse_revenue
+from pipeline.parse import ParseError
 from pipeline.tax_schedule import ScheduleError, write_schedule
+from pipeline.year import parse_year
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -36,37 +34,16 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
         print(f"no source registered for {year}; known years: {sorted(SOURCES)}", file=sys.stderr)
         return 2
     try:
-        pdf = ensure_pdf(source, raw_dir)
-        pages = page_count(pdf)
-        if pages != source.page_count:
-            raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
-        operating = parse_statement(
-            extract_pages(pdf, source.operating_pages, source.operating_crop),
-            source.fiscal_year,
-            source.operating_columns,
-            tuple(g.after_pdf_page for g in source.known_gaps),
-        )
-        gap_log: list[str] = []
-        if source.known_gaps:
-            if source.english_operating_pages is None:
-                raise SourceError("a known gap needs Attachment 1's pages to check the totals above it")
-            english = parse_english_vote_totals(
-                extract_pages(pdf, source.english_operating_pages, source.operating_crop)
-            )
-            gap_votes = {s.vote_code for g in source.known_gaps for s in g.scopes}
-            operating, gap_log = fill_gap(operating, english, gap_votes)
-        development = parse_development(
-            extract_pages(pdf, source.development_pages, source.development_crop), source.fiscal_year, source.slug_pages
-        )
-        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year, source.slug_pages)
-        covid = (
-            parse_covid(extract_pages(pdf, source.covid_pages), source.fiscal_year, source.covid_columns)
-            if source.covid_pages
-            else None
-        )
+        parsed = parse_year(source, raw_dir)
+        pdf, operating, development, revenue, covid = (
+            parsed.pdf, parsed.operating, parsed.development, parsed.revenue, parsed.covid
+        )  # fmt: skip
         with psycopg.connect(database_url, autocommit=True) as conn:
-            result = load_year(conn, source, operating, development, revenue, pages, retrieved_at(pdf), covid)
-    except (SourceError, ParseError, ReconciliationError) as error:
+            result = load_year(
+                conn, source, operating, development, revenue, parsed.pages, retrieved_at(pdf), covid,
+                parsed.operating_ocr_engine,
+            )  # fmt: skip
+    except (SourceError, ParseError, ReconciliationError, OcrError) as error:
         print(f"ingest {year} failed: {error}", file=sys.stderr)
         return 1
 
@@ -89,9 +66,15 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
         print(f"  COVID-19 Fund (Lampiran 3): programmes {result.covid_lines}, total reconciled")
     for gap in source.known_gaps:
         print(f"  known gap {gap.id}: {o.over_gaps} printed totals have rows on the missing page")
-    for line in gap_log:
+    for line in parsed.gap_log:
         print(f"  gap check: {line}")
-    _print_corrections(operating.corrections + development.corrections + revenue.corrections)
+    if parsed.operating_ocr_engine is not None:
+        print(f"  Lampiran 1 read by OCR: {parsed.operating_ocr_engine}")
+        for hand in source.ocr_manual_readings:
+            print(
+                f"  manual reading: pdf page {hand.pdf_page} line top {hand.line_top} column {hand.column}: {hand.text!r}"
+            )
+    _print_corrections(operating.corrections + development.corrections + revenue.corrections + parsed.covid_corrections)
     for misprint in source.known_misprints:
         print(f"  known misprint accepted: {misprint.key}: {misprint.evidence}")
     for note in operating.unreferenced_notes:

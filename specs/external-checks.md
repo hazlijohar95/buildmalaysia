@@ -59,7 +59,42 @@ As in 2025, data.gov.my `revenue` equals Lampiran 1's operating total including 
 
 data.gov.my's balance identity treats the COVID-19 Fund as spending on top of operating and development: 2021 revenue 233,752 − 231,516 − development net 63,265 − 37,711 = −98,740 (`balance`). No operating line transfers money into the fund, so adding it counts nothing twice.
 
-FY2020 is not loaded: its Lampiran 1 tables have no text layer (outlined glyphs, no images), so they need OCR.
+FY2020 is loaded; see the next section.
+
+## FY2020
+
+Lampiran 1 has no text layer (its glyphs are drawn as outlines) and is read by OCR (`pipeline/src/pipeline/ocr.py`, README "FY2020"). Lampiran 2, Lampiran 3 and Note 5(a) are read from the text layer. The statement has no English Attachment 1 (the English part, PDF pp. 315-461, has the summary statements and notes but no vote-level attachment), so the vote-total check done for FY2019 is not possible; the object and statement totals are checked against the statement's own English statistics table instead.
+
+### Lampiran 1 totals against the statement's English statistics and data.gov.my
+
+*Federal Government Financial Statistics, 2011 - 2020* (PDF pp. 450-451, RM million) and data.gov.my `federal_finance_year` / `federal_finance_year_oe` (fetched 2026-11-04, RM million).
+
+| Item | Lampiran 1 (OCR, PDF p206) | Statistics table (PDF p451) | data.gov.my | Result |
+|---|---|---|---|---|
+| Emolumen | 82,996,331,516.40 | 82,996 | 82,996 (`emoluments`) | Match |
+| Perkhidmatan dan Bekalan | 29,323,431,027.05 | 29,323 | 29,323 (`supplies_services`) | Match |
+| Aset | 630,596,360.39 | 631 | 631 (`asset_acquisition`) | Match |
+| Pemberian dan Kenaan Bayaran Tetap | 111,163,055,081.18 | 111,163 | 27,533 + 34,495 + 19,793 + 28,868 = 110,689 | Match (statistics); data.gov.my excludes the 474.7 transfer below |
+| Perbelanjaan-perbelanjaan Lain | 961,533,257.29 | 962 | 961 (`other`) | Statistics match; data.gov.my RM1m lower (truncated, not rounded) |
+| JUMLAH KESELURUHAN MENGURUS | 225,074,947,242.31 | 225,075 | 225,076 (`revenue`) | Statistics match; data.gov.my RM1m higher |
+| Less the transfer to the Development Fund (footnote *, RM474,705,193.19) | 224,600,242,049.12 | 224,600 (p450, "excluding transfer") | 224,600 (`spending_oe`) | Match |
+
+### Lampiran 2 and Lampiran 3
+
+| Item | JANM FY2020 | Statistics table (p450) | data.gov.my | Result |
+|---|---|---|---|---|
+| Development, actual (Lampiran 2, PDF p247) | 51,359,855,763.46 | 51,360 | 51,360 (`spending_de_gross`) | Match after rounding |
+| COVID-19 Fund, actual (Lampiran 3, PDF p251) | 38,019,238,631.25 | 38,019 | 38,019 (`spending_covid19`) | Match after rounding |
+
+**Lampiran 2 cumulative spending, 2019 -> 2020 -> 2021.** FY2020's statement total for RMKe-11 spending to 31.12.2019 (RM197,147,567,507.58) equals FY2019's to-date column, and FY2020's to-date column (RM248,507,423,271.04) equals FY2021's left-page RMKe-11 spending to 31.12.2020. By project: all 968 FY2020 projects' to-date figures equal FY2021's (968 of 968 (vote, code) pairs); against FY2019, 817 of 819 pairs agree and the other two, P.10 81000 and P.28 81000, move RM37,757,215.00 between them (FY2019: 39,912,423.07 and 2,623,825.64; FY2020: 2,155,208.07 and 40,381,040.64), net zero.
+
+**Lampiran 3 against FY2021.** FY2021's Lampiran 3 prints each programme's spending to 31.12.2020 (`spent_prior`). It equals FY2020's Perbelanjaan Terkumpul (= the year's actual) for all 31 programmes, matched by code, and in total (RM38,019,238,631.25). The ceilings differ in 19 programmes: FY2021 raises the fund's ceiling from RM45 bn to RM110 bn.
+
+**federal_spending FY2020.** Operating less the transfer (224,600,242,049.12) + development (51,359,855,763.46) + COVID-19 Fund (38,019,238,631.25) = RM313,979,336,443.83, the `total_actual_sen` the site shows; 224,600 + 51,360 + 38,019 = 313,979 in data.gov.my.
+
+### Revenue (Note 5(a))
+
+The FY2021 note's 2020 Sebenar column equals FY2020's Sebenar for all 7 categories and all 27 items, matched by value; the FY2020 note's 2019 column equals FY2019's Sebenar for all 7 categories and 27 items. One item is renamed: FY2020's `Terimaan Lain` (RM39,850) is FY2021's `Terimaan Pelarasan`.
 
 ## Budget 2027 (MOF) against the audited statements
 

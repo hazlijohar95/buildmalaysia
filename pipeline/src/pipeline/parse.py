@@ -7,6 +7,7 @@ the classified lines into a Statement. A line the machine cannot place is a
 ParseError naming the PDF page and line; nothing is skipped silently.
 """
 
+import difflib
 import math
 import re
 from collections.abc import Sequence
@@ -51,6 +52,8 @@ class ParseError(Exception):
 _VALUE = re.compile(
     rf"(?P<marks>\**)(?:{DASH}|(?P<neg>\()?(?P<int>\d{{1,3}}(?:,\d{{3}})*)(?:\.(?P<dec>\d{{2}}))?(?(neg)\)))"
 )
+# "Jumlah" as OCR reads the italic J: "dumlah", "dumiah", "Jumiah", "JUMLAH" kept as is.
+_OCR_JUMLAH = re.compile(r"^(?:[dJjl]{1,2}[uv][mn]{1,2}[il1|]{1,2}a[hn]|JUMLAH|JUMIAH)(?= )")
 _UNSEPARATED = re.compile(r"\d{4,}\.\d{2}")
 _NUMBER_IN_TEXT = re.compile(r"(?<!\S)\(?\d{1,3}(?:,\d{3})+(?:\.\d{2})?\)?(?!\S)|(?<!\S)\d+\.\d{2}(?!\S)")
 
@@ -486,9 +489,10 @@ class _Pending:
 
 
 class _Parser:
-    def __init__(self, fiscal_year: int, layout: Layout, gaps_after: tuple[int, ...] = ()) -> None:
+    def __init__(self, fiscal_year: int, layout: Layout, gaps_after: tuple[int, ...] = (), ocr: bool = False) -> None:
         self.fiscal_year = fiscal_year
         self.layout = layout
+        self.ocr = ocr  # lines rebuilt from OCR (FY2020): labels are normalised, misprint rules off
         self.gaps_after = gaps_after  # PDF pages after which the document is known to lack a page
         self.in_gap = False  # the first lines after a known gap, until the first row
         self.gaps_seen: set[int] = set()  # gaps where a vote was found to resume
@@ -693,6 +697,8 @@ class _Parser:
 
     def feed_text(self, text: str) -> None:
         text = _DISAMBUNG_SUFFIX.sub("", text)
+        if self.ocr:
+            text = _OCR_JUMLAH.sub(lambda m: "JUMLAH" if m.group().isupper() else "Jumlah", text)
         if "!" in text:
             raise self.fail("'!' inside a line; only a trailing one is a text-layer artefact")
         samb = _SAMB.fullmatch(text)
@@ -757,8 +763,25 @@ class _Parser:
             marks=groups.get("mark") or "",
         )
 
+    def normalise_ocr_label(self, label: str) -> str:
+        """Named rule OCR_LABEL_NORMALISED (OCR pages only): "Jumlah" and the object-group names
+        are a closed vocabulary; an OCR reading within a small edit distance of one of them is
+        read as it. Codes and other names are never changed."""
+        fixed = _OCR_JUMLAH.sub(lambda m: "JUMLAH" if m.group().isupper() else "Jumlah", label)
+        prefix, rest = ("Jumlah ", fixed[7:]) if fixed.startswith("Jumlah ") else ("", fixed)
+        code = re.match(r"(0?[1-5]0000 )", rest)
+        head, name = (code.group(1), rest[code.end() :]) if code else ("", rest)
+        closest = difflib.get_close_matches(name, list(_OBJECT_LABELS), n=1, cutoff=0.85)
+        if closest and closest[0] != name and not re.search(r"\d", name):
+            fixed = prefix + head + closest[0]
+        if fixed != label:
+            self.corrections.append(Correction("OCR_LABEL_NORMALISED", f"{label!r} read as {fixed!r}", self.where))
+        return fixed
+
     def feed_row(self, label: str, values: list[Value]) -> None:
         self.note_keys = []
+        if self.ocr:
+            label = self.normalise_ocr_label(label)
         self.in_gap = False
         marks = "".join(v.marks for v in values) + label[: len(label) - len(label.lstrip("*"))]
         label = label.lstrip("*").strip()
@@ -816,6 +839,8 @@ class _Parser:
             case Kind.ACTIVITY_TOTAL:
                 self.transition(Event.ACTIVITY_TOTAL)
                 assert self.activity is not None and self.programme is not None and self.vote is not None
+                if match["code"] != self.activity.code and self.ocr:
+                    raise self.fail(f"activity total {match['code']} read in activity {self.activity.code}")
                 if match["code"] != self.activity.code:
                     # Named rule ACTIVITY_TOTAL_CODE_MISPRINTED: an activity total always
                     # closes the open activity. A missed header cannot hide here: its
@@ -839,6 +864,8 @@ class _Parser:
             case Kind.PROGRAMME_TOTAL:
                 self.transition(Event.PROGRAMME_TOTAL)
                 assert self.programme is not None and self.vote is not None
+                if match["code"] != self.programme.code and self.ocr:
+                    raise self.fail(f"programme total {match['code']} read in programme {self.programme.code}")
                 if match["code"] != self.programme.code:
                     # Named rule PROGRAMME_TOTAL_CODE_MISPRINTED: like an activity total, a
                     # programme total closes the open programme. A missed programme header
@@ -1195,9 +1222,13 @@ class _Parser:
 
 
 def parse_statement(
-    pages: Sequence[PageText], fiscal_year: int, columns: int = 7, gaps_after: tuple[int, ...] = ()
+    pages: Sequence[PageText],
+    fiscal_year: int,
+    columns: int = 7,
+    gaps_after: tuple[int, ...] = (),
+    ocr: bool = False,
 ) -> Statement:
-    parser = _Parser(fiscal_year, LAYOUTS[columns], gaps_after)
+    parser = _Parser(fiscal_year, LAYOUTS[columns], gaps_after, ocr)
     for page in pages:
         parser.feed_page(page)
     if set(gaps_after) - parser.gaps_seen:

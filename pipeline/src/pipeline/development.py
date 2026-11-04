@@ -46,6 +46,8 @@ _HEAD_WORDS = {
     "Maksud", "Kos", "Keseluruhan", "Sebenar", "Hingga", "Anggaran", "Tahun",
     "Cara", "Langsung", "Pinjaman", "Jumlah", "(", "sambungan)", "(sambungan)",
 }  # fmt: skip
+# FY2020 p239: overlapping copies of the column heads in the text layer fuse into "PerbelanjaanRM".
+_FUSED_HEAD = re.compile(r"(?:Perbelanjaan|Anggaran|Sebenar|Jumlah|RM)+")
 _FOOTER = re.compile(
     rf"\d{{1,3}}|LAMPIRAN 2 [-–] (?:PENYATA )?PERBELANJAAN PEMBANGUNAN|{PRINTER_SLUG}"
     # FY2016-2019 furniture inside the table area: the running head and the side tab's words.
@@ -208,8 +210,9 @@ class _Vote:
 
 
 class _Parser:
-    def __init__(self, fiscal_year: int, slug_pages: bool) -> None:
+    def __init__(self, fiscal_year: int, slug_pages: bool, raw_right_pages: frozenset[int] = frozenset()) -> None:
         self.fiscal_year = fiscal_year
+        self.raw_right_pages = raw_right_pages
         self.slug_pages = slug_pages  # FY2016-2019: book pages from the printer slug, not the running head
         self.votes: list[_Vote] = []
         self.vote: _Vote | None = None
@@ -267,7 +270,8 @@ class _Parser:
                         f"31.12.{self.fiscal_year - 1}",
                     }
                 )
-                if not words <= allowed:
+                fused = {w for w in words - allowed if self.slug_pages and _FUSED_HEAD.fullmatch(w)}
+                if not words - fused <= allowed:
                     raise ParseError(page.pdf_page, i + 1, line, "unexpected line in the page head")
         if self.slug_pages:
             book_pages.append(slug_book_page(page))
@@ -293,6 +297,32 @@ class _Parser:
             self.corrections.append(Correction("VOTE_HEADER_SPLIT", f"read as {joined!r}", at))
             out[i], out[j] = (line_no, joined), (out[j][0], "")
         return out
+
+    def raw_right_rows(self, page: PageText) -> list[tuple[int, str]]:
+        """Named rule HIDDEN_PAGE_IN_TEXT_LAYER: FY2020 p239's text layer holds, under the page
+        drawn, a second page's rows and column heads; -layout interleaves the two. The page's
+        own rows are read from its -raw text, between its units line and the hidden copy's
+        units line, and each must carry all seven amounts."""
+        raw = page.raw.split("\n")
+        units = [i for i, line in enumerate(raw) if _RIGHT_UNITS.fullmatch(line.strip())]
+        if len(units) != 2:
+            raise ParseError(
+                page.pdf_page, 1, "", f"expected the page's and a hidden copy's units lines, found {len(units)}"
+            )
+        rows = [(i + 1, line) for i, line in enumerate(raw[units[0] + 1 : units[1]], start=units[0] + 1)]
+        rows = [
+            (n, line)
+            for n, line in rows
+            if not re.fullmatch(
+                r"\d{1,3}|Perbelanjaan|.*Hingga.*|.*Sebenar.*|.*Anggaran.*|.*Langsung.*|\(sambungan\)", line.strip()
+            )
+        ]
+        for n, line in rows:
+            if len(trailing_values(line, 7)[1]) != 7:
+                raise ParseError(page.pdf_page, n, line, "row of the -raw text without seven amounts")
+        detail = f"{len(rows)} rows read from -raw; a hidden page follows at raw line {units[1] + 1}"
+        self.corrections.append(Correction("HIDDEN_PAGE_IN_TEXT_LAYER", detail, Citation(page.pdf_page, 0, 1, "")))
+        return rows
 
     def unbang(self, line: str) -> str:
         """FY2016-2018 text layers carry "!" glyphs the pages do not draw, after column heads,
@@ -356,6 +386,8 @@ class _Parser:
 
         candidates: list[tuple[Citation, list[Value], list[int]]] = []
         trailing_text: list[Citation] = []
+        if right.pdf_page in self.raw_right_pages:
+            right_lines = self.raw_right_rows(right)
         for line_no, line in right_lines:
             text = line.strip()
             at = Citation(right.pdf_page, right_book, line_no, text)
@@ -906,10 +938,12 @@ def _amounts(left: tuple[int, int], right: tuple[int, ...]) -> DevelopmentAmount
     return DevelopmentAmounts(left[0], left[1], *right)
 
 
-def parse_development(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool = False) -> DevelopmentStatement:
+def parse_development(
+    pages: Sequence[PageText], fiscal_year: int, slug_pages: bool = False, raw_right_pages: frozenset[int] = frozenset()
+) -> DevelopmentStatement:
     if len(pages) % 2:
         raise ParseError(pages[-1].pdf_page, 1, "", "Lampiran 2 page range is not whole spreads")
-    parser = _Parser(fiscal_year, slug_pages)
+    parser = _Parser(fiscal_year, slug_pages, raw_right_pages)
     for left, right in zip(pages[::2], pages[1::2], strict=True):
         parser.feed_spread(left, right)
     return parser.finish()

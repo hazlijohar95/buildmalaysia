@@ -13,6 +13,7 @@ from pathlib import Path
 
 import certifi
 
+from pipeline.ocr import ManualReading
 from pipeline.parse import PageText
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -79,6 +80,8 @@ class SourceDocument:
     # Lampiran 3 (COVID-19 Fund, FY2020-2023): its spread and the column names on each page.
     covid_pages: tuple[int, int] | None = None
     covid_columns: tuple[tuple[str, ...], tuple[str, ...]] = ((), ())
+    # FY2020: Lampiran 3 is read from the words its pages draw (covid.parse_covid_drawn).
+    covid_drawn: bool = False
     # Lampiran 1's columns: 7 (FY2021 on), or 4 (FY2016-2019: Asal, Dipinda, Amaun, %).
     operating_columns: int = 7
     # FY2016-2019: no page number in the running head; book pages come from the printer slug.
@@ -89,6 +92,15 @@ class SourceDocument:
     operating_crop: tuple[int, int, int, int] | None = None
     development_crop: tuple[int, int, int, int] | None = None
     known_gaps: tuple[KnownGap, ...] = ()
+    # FY2020: Lampiran 1's tables have no text layer and are read by OCR (ocr.py), cached in
+    # data/ocr/<raw path without .pdf>/.
+    operating_ocr: bool = False
+    # Cells of those pages that no OCR setting reads to their shape, read by eye from the crop.
+    ocr_manual_readings: tuple[ManualReading, ...] = ()
+    # Years whose Lampiran 1 words are the vocabulary for choosing among OCR label readings.
+    ocr_vocabulary_years: tuple[int, ...] = ()
+    # Lampiran 2 right pages whose rows are read from -raw (rule HIDDEN_PAGE_IN_TEXT_LAYER).
+    development_raw_right_pages: frozenset[int] = frozenset()
     # Attachment 1 (English, vote totals only): read where Lampiran 1 has a known gap.
     english_operating_pages: tuple[int, int] | None = None
 
@@ -162,6 +174,240 @@ SOURCES: dict[int, SourceDocument] = {
         covid_columns=(
             ("ceiling", "spent_prior"),
             ("allocation", "virement", "revised", "actual", "variance", "percent", "spent_to_date"),
+        ),
+    ),
+    2020: SourceDocument(
+        id="janm-penyata-kewangan-2020",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2020",
+        fiscal_year=2020,
+        url="https://www.anm.gov.my/images/dokumen/arkib/penyata-kewangan/2020_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="9f11465bd467e29e828a589875ba7e7e5dc85c2691b76bcbf259b4fde55e6695",
+        page_count=461,
+        raw_path="janm/2020.pdf",
+        operating_pages=(95, 206),
+        development_pages=(208, 247),
+        revenue_pages=(77, 78),
+        operating_columns=4,
+        operating_ocr=True,
+        ocr_vocabulary_years=(2019, 2021),
+        # Read by eye from 600-dpi crops of the page (data/ocr/janm/2020/manual/), where the OCR
+        # panel did not agree or a total proved its reading wrong.
+        ocr_manual_readings=(
+            ManualReading(
+                158,
+                477.82,
+                1,
+                "2,520,190",
+                "manual/p158-477.82-c1.png: B.28 010500 10000 Emolumen, Dipinda; panel split 9/5/1 between "
+                "2,520,190, 2,020,190 and 2,920,190; the crop shows 2,520,190",
+            ),
+            ManualReading(
+                183,
+                358.63,
+                2,
+                "7,582,228.65",
+                "manual/p183-358.63-c2.png: B.46 'Jumlah 040100', Amaun; panel split 8/7 between 7,582,228.65 "
+                "and 7,982,228.65; the crop shows 7,582,228.65",
+            ),
+            ManualReading(
+                100,
+                362.83,
+                -1,
+                "021000 Yuran Tambahan Saham Islamic Corporation for",
+                "manual/p100-362.83-label.png: label; OCR read '/slamic'",
+            ),
+            ManualReading(
+                133,
+                549.88,
+                -1,
+                "020000 JABATAN PERPADUAN NEGARA DAN INTEGRASI",
+                "manual/p133-549.88-label.png: label; OCR read 'INTEGRAS|'",
+            ),
+            ManualReading(
+                142,
+                573.71,
+                -1,
+                "050500 Rural Basic Infrastucture",
+                "manual/p142-573.71-label.png: label; OCR read 'Aural'; 'Infrastucture' is as printed",
+            ),
+            ManualReading(
+                160,
+                664.89,
+                -1,
+                "031700 Penyelenggaraan STOLports",
+                "manual/p160-664.89-label.png: label; OCR read 'S7OLports'",
+            ),
+            ManualReading(
+                177,
+                266.41,
+                -1,
+                "010200 Institut Latihan Perumahan dan Kerajaan Tempatan",
+                "manual/p177-266.41-label.png: label; OCR read 'Latinan'",
+            ),
+        ),
+        slug_pages=True,
+        development_crop=_DEVELOPMENT_CROP,
+        development_raw_right_pages=frozenset({239}),
+        covid_pages=(250, 251),
+        covid_columns=(
+            ("ceiling", "allocation", "supplementary"),
+            ("withdrawal", "virement", "revised", "actual", "variance", "spent_to_date", "percent"),
+        ),
+        covid_drawn=True,
+        # 18 totals; each re-added from the OCR'd lines and checked on the rendered page.
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=B.27 programme=060000 object=20000",
+                diffs_sen=(0, 0, 0, 0, -20),
+                evidence=(
+                    "PDF p157: programme 060000's 'Perkhidmatan dan Bekalan' line prints Amaun 369,802 with no sen; "
+                    "its leaf (060100) prints 369,802.20"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.27 programme=060000 object=30000",
+                diffs_sen=(0, 0, 0, 0, -23),
+                evidence=(
+                    "PDF p157: programme 060000's 'Aset' line prints Amaun 5,031,934 with no sen; its leaves "
+                    "(060200, 060300) print 3,294,559.43 and 1,737,374.80"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.32 programme=030000 object=40000",
+                diffs_sen=(2100000, 0, 0, 1800000, 1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="vote total vote=B.32 object=40000",
+                diffs_sen=(2100000, 0, 0, 1800000, 1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="vote total vote=B.32 object=50000",
+                diffs_sen=(-2100000, 0, 0, -1800000, -1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="activity total vote=B.42 programme=070000 activity=070300",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.42 programme=070000 object=20000",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.42 programme=070000",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="vote total vote=B.42 object=20000",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="vote total vote=B.42",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="section total section=supply object=20000",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="section total section=supply object=40000",
+                diffs_sen=(2100000, 0, 0, 1800000, 1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="section total section=supply object=50000",
+                diffs_sen=(-2100000, 0, 0, -1800000, -1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="section total section=supply",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="statement total object=20000",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
+            KnownMisprint(
+                key="statement total object=40000",
+                diffs_sen=(2100000, 0, 0, 1800000, 1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="statement total object=50000",
+                diffs_sen=(-2100000, 0, 0, -1800000, -1713000),
+                evidence=(
+                    "PDF p167-168: leaf B.32 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is "
+                    "counted by programme 030000's per-object lines, and every object total above them, under "
+                    "Pemberian dan Kenaan Bayaran Tetap (checked on the rendered pages)"
+                ),
+            ),
+            KnownMisprint(
+                key="statement total",
+                diffs_sen=(0, 0, 0, 0, -32),
+                evidence=(
+                    "PDF p176: leaf B.42 070300 20000 prints Amaun 11,630,289 with no sen; 'Jumlah 070300' and every "
+                    "total above it print 11,630,288.68 (checked on the rendered page)"
+                ),
+            ),
         ),
     ),
     2019: SourceDocument(

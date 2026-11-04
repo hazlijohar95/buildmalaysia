@@ -146,9 +146,10 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
                 # "Kerajaan Lain ..."; the repeated word is dropped.
                 above, above_no = name_above
                 repeated = rows[-1].parts[-1] if rows and len(rows[-1].parts) > 1 else None
-                if repeated is None or not label.startswith(repeated + " "):
+                if repeated is None or not (label == repeated or label.startswith(repeated + " ")):
                     raise ParseError(page.pdf_page, above_no, above, "text line that does not continue the row above")
-                label = f"{above} {label.removeprefix(repeated + ' ')}"
+                # FY2020 p78 is the same overlap with the whole name above: "Terimaan Lain" / "Kerajaan".
+                label = above if label == repeated else f"{above} {label.removeprefix(repeated + ' ')}"
                 text = f"{above}\n{text}"
                 doubled.append(repeated)
                 name_above = None

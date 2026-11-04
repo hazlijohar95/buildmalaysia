@@ -19,7 +19,7 @@ uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildm
 The command:
 
 1. Uses `data/raw/janm/2025.pdf`, or downloads it from the URL in `src/pipeline/sources.py` if it is absent. It stops if the file's SHA-256 differs from the pinned hash. A download goes to a `.part` file and is renamed only after the hash matches.
-2. Extracts the Lampiran 1, Lampiran 2, Lampiran 3 and Note 5(a) page ranges registered in `src/pipeline/sources.py` (FY2016-FY2019 and FY2021-FY2025), all in Bahasa Malaysia, with `pdftotext`.
+2. Extracts the Lampiran 1, Lampiran 2, Lampiran 3 and Note 5(a) page ranges registered in `src/pipeline/sources.py` (FY2016-FY2025), all in Bahasa Malaysia, with `pdftotext` (FY2020's Lampiran 1 by OCR; see "FY2020").
 3. Parses them into the typed model in `src/pipeline/model.py`. Any line it cannot place stops the run with the PDF page and line number.
 4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads the reconciliation views. It commits only when every row matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
 
@@ -51,7 +51,7 @@ The 2025 PDF has a clean text layer. `-layout` keeps each table row on one text 
 
 ## Note 5(a) (revenue by type)
 
-`src/pipeline/revenue.py` holds `parse_revenue(pages, fiscal_year)`. Note 5, *Akaun Hasil Disatukan*, prints *Hasil mengikut penjenisan* over two pages (`SourceDocument.revenue_pages`: FY2016 PDF pp. 63-64, FY2017 pp. 61-62, FY2018 pp. 64-65, FY2019 pp. 60-61, FY2021 pp. 73-74, FY2022 81-82, FY2023 79-80, FY2024 83-84, FY2025 89-90). The table starts after the line `Hasil mengikut penjenisan bagi tahun berakhir 31 Disember YYYY adalah seperti berikut:`, breaks at `(disambung)`, resumes after `(sambungan)` and ends at `(b) Perbelanjaan Mengurus`. Each of those markers must occur exactly once on its page.
+`src/pipeline/revenue.py` holds `parse_revenue(pages, fiscal_year)`. Note 5, *Akaun Hasil Disatukan*, prints *Hasil mengikut penjenisan* over two pages (`SourceDocument.revenue_pages`: FY2016 PDF pp. 63-64, FY2017 pp. 61-62, FY2018 pp. 64-65, FY2019 pp. 60-61, FY2020 pp. 77-78, FY2021 pp. 73-74, FY2022 81-82, FY2023 79-80, FY2024 83-84, FY2025 89-90). The table starts after the line `Hasil mengikut penjenisan bagi tahun berakhir 31 Disember YYYY adalah seperti berikut:`, breaks at `(disambung)`, resumes after `(sambungan)` and ends at `(b) Perbelanjaan Mengurus`. Each of those markers must occur exactly once on its page.
 
 - Each row ends in six columns: Anggaran Asal, Anggaran Disemak, Sebenar and % Anggaran for the year, Sebenar and % Anggaran for the year before. The four amounts must be whole ringgit (stored as sen) and the two percentages must carry two decimals; `-` is zero. % Anggaran is not stored or checked, because the note divides by Anggaran Asal where Anggaran Disemak is zero in some rows (FY2021 Terimaan Pelarasan) and prints `-` in others (FY2023 Sumbangan dan Bayaran Ganti).
 - A line without amounts continues the name of the row above it, only if it is indented past that row's name (`Duti Eksais Terhadap Barangan` / `Tempatan`). Any other text line is a ParseError, so a name printed above its amounts cannot be glued to the wrong row.
@@ -70,6 +70,7 @@ FY2016 prints the note the other way up: category headings without amounts (HASI
 | 2017 | 26 | 220,406,001,884 | 220,406,001,883.63 | +37 sen |
 | 2018 | 26 | 232,882,562,288 | 232,882,562,287.80 | +20 sen |
 | 2019 | 27 | 264,414,755,876 | 264,414,755,876.41 | -41 sen |
+| 2020 | 27 | 225,074,947,242 | 225,074,947,242.31 | -31 sen |
 | 2021 | 27 | 233,752,055,029 | 233,752,055,029.13 | -13 sen |
 | 2022 | 25 | 294,356,760,615 | 294,356,760,614.97 | +3 sen |
 | 2023 | 25 | 314,959,481,731 | 314,959,481,731.21 | -21 sen |
@@ -80,7 +81,14 @@ FY2021 also lists the two GST items (`Cukai Barangan dan Perkhidmatan Import` an
 
 ## Lampiran 3 (COVID-19 Fund, FY2020-2023)
 
-`src/pipeline/covid.py` holds `parse_covid(pages, fiscal_year, columns)`. One two-page spread lists the fund's programmes and a grand total (`Jumlah Keseluruhan`). The columns differ by year, so each source names its left- and right-page columns in `covid_columns`. Each row must satisfy allocation + supplementary + virement = revised, revised − actual = variance, and spent before the year + actual = spent to date, which proves the column naming. The `covid_fund_reconciliation` view checks the grand total in all eight stored columns. % Prestasi is not stored; FY2021 prints one row's percentage on the line below it, and that line is skipped.
+`src/pipeline/covid.py` holds `parse_covid(pages, fiscal_year, columns)`. One two-page spread lists the fund's programmes and a grand total (`Jumlah Keseluruhan`). The columns differ by year, so each source names its left- and right-page columns in `covid_columns`. Each row must satisfy allocation + supplementary + withdrawal + virement = revised, revised − actual = variance, and spent before the year + actual = spent to date, which proves the column naming. The `covid_fund_reconciliation` view checks the grand total in all nine stored columns. % Prestasi is not stored; FY2021 prints one row's percentage on the line below it, and that line is skipped.
+
+FY2020 (PDF pp. 250-251, book pp. 234-235) is the fund's first year. It prints Siling Keseluruhan, Peruntukan and Tambahan on the left page and Tarik, Virement Tambah/(Kurang), Peruntukan Dipinda, Perbelanjaan Sebenar, Lebihan(Kurangan) Belanja, Perbelanjaan Terkumpul and % on the right. *Tarik* (withdrawal, printed negative) is stored in `withdrawal_sen` (migration `20261104180000_fy2020_ocr_and_covid_withdrawal.sql`; zero in other years). There is no spending before 2020, so spent to date equals the year's actual on every row. The pages' text layer also holds a second copy of the table, shifted 98.87 pt across the spread and not drawn, so `-layout` interleaves the two. FY2020 is read by `parse_covid_drawn` from `ocr.drawn_page`: the text layer's words whose glyphs the page paints (each painted glyph named by the characters of words that overlap no other word, and a word kept only if the glyphs across its span spell it). Rows are the bands between the table's horizontal rules, which run level across both pages; cells are the words between its vertical rules. 31 programmes; the total reconciles in every column (actual RM38,019,238,631.25, withdrawals RM1,143,885,045.08).
+
+| Rule (Lampiran 3, FY2020) | What it does | Occurrences (PDF page) |
+|---|---|---|
+| `BLANK_CELL_READ_AS_ZERO` | A cell with no word, between rules, reads as zero (the row identities still hold). | p251: Virement in 00400, 00600, 00900, 01100, 01400; Tarik and Virement in 00500 |
+| `STRAY_MARK_IGNORED` | A comma drawn above-left of an amount, apart from it, is dropped. | p251, 00300 Perbelanjaan Sebenar and Terkumpul |
 
 ## MOF budget books (Budget 2025, 2026, 2027)
 
@@ -106,6 +114,7 @@ Budget 2026 rounds each summary figure on its own, so in the two actual columns 
 
 A printed total that disagrees with its own rows in the published PDF is registered in `sources.py` as a `KnownMisprint` with its evidence. The load accepts exactly that mismatch (same total, same difference in sen), fails if it no longer occurs, and leaves it visible in the reconciliation view. Each was found by re-adding the printed lines and checked on the rendered page.
 
+- FY2020 (18 totals): see "FY2020" below (B.42 070300, B.27 060000, B.32 030000).
 - FY2021: programme B.24 060000 prints Sebenar 6,293,310.19; its only activity and its per-object lines sum to 7,293,310.19, and the vote total agrees with the rows (PDF p142).
 - FY2019 (6 totals):
   - B.03 'Jumlah 010000' (PENGURUSAN KORPORAT) and B.10 'Jumlah 040000' differ from their own activities and per-object lines (PDF p87, p101).
@@ -227,6 +236,42 @@ The FY2019 PDF lacks one page of Lampiran 1. PDF p89 (book p.77) ends inside B.0
 | `UNDRAWN_TEXT_IGNORED` | Single amounts under the statement total's right-page row that the page does not draw (a working figure and a 0.10 difference). | 2019 p211 |
 | `MARK_WITHOUT_NOTE` | A project marked "*" for which the page prints no note; no footnote is stored. | 2017 p225 (P.21 23000), p249 (P.63 01100) |
 | `DOUBLED_TEXT_LAYER` (Note 5(a)) | A wrapped word held twice in the text layer a few points apart; the page draws the second, indented copy. The first is dropped. Where the hidden copy overlaps the next row's name, -layout splits that name in two ("Terimaan" / "Kerajaan Lain"); the repeated word is dropped and the halves joined. | 2018 p65 ("Kerajaan", "Wilayah", "Persekutuan"); 2019 p61 ("Terimaan Lain") |
+
+## FY2020
+
+The FY2020 statement is laid out like FY2016-2019 (four-column Lampiran 1, printer-slug book pages), and all four parts are loaded. Lampiran 1 (PDF pp. 95-206, book 79-190) has no text layer: every glyph is a filled outline. It is read by `src/pipeline/ocr.py` and cached, one JSON file per page, in `data/ocr/janm/2020/`; a load reads the cache and needs neither tesseract nor the vocabulary below. `source_document.operating_ocr_engine` records the engine (`tesseract 5.5.3; glyph boxes from pdftocairo version 26.10.0 -svg`); it is null for every other year. `source_text` holds the line as read.
+
+**How Lampiran 1 is read.** `pdftocairo -svg` gives each glyph's outline, so line, column and character positions come from geometry, not OCR: columns are the table's vertical rules, lines are glyphs grouped by height, and each amount cell has a *shape* from its glyph boxes (digit, the narrow digit 1, comma, period, dash, parenthesis, asterisk; e.g. `1,DDD,DDD.DD`). A cell whose only glyph is a dash is read from its shape (1,085 cells). Every other amount cell (16,959) is read by tesseract at 15 settings (300-800 dpi x three thresholds, psm 7, digits whitelist); readings that do not fit the shape are discarded and the cell takes the reading at least 8 agree on, with no rival at half as many. 16,091 cells were unanimous and 866 split but reached the quorum; the cache keeps the vote for every split cell. Two did not reach it (manual readings below). 6,439 labels: 6,381 kept at the first setting, 58 re-read for an unknown word. Labels are read whole at 600 dpi; a code that starts or ends a label must fit its glyph shapes, and a label with a word that FY2019's and FY2021's Lampiran 1 never print is re-read at six other settings, keeping the first reading of only known words. A light area painted over glyphs hides them (p109 covers a heading with a white box). Notes under the table are read the same way and passed to the parser as its `-raw` text.
+
+**What proves it.** The parser's checks (codes, closing totals, `(SAMB.)` headings, % = Amaun / Dipinda) and the reconciliation views: 2,272 of 2,290 printed totals reconcile, and the other 18 are registered misprints, each checked on the rendered page. Eight rows print a % Prestasi that disagrees with their own amounts (logged as `PRINTED_PERCENT_DIFFERS`; each checked on the page, and the amounts reconcile).
+
+**Manual readings** (`sources.ManualReading`, crops in `data/ocr/janm/2020/manual/`): two amount cells where the panel split, and five labels with words tesseract misread. Each is checked against the cell's glyph shape.
+
+| PDF page | Line top (pt) | Cell | Reading | Panel / OCR |
+|---|---|---|---|---|
+| 158 | 477.82 | B.28 010500 10000, Dipinda | 2,520,190 | 9 / 5 / 1 for 2,520,190 / 2,020,190 / 2,920,190 |
+| 183 | 358.63 | B.46 Jumlah 040100, Amaun | 7,582,228.65 | 8 / 7 for 7,582,228.65 / 7,982,228.65 |
+| 100 | 362.83 | label | 021000 Yuran Tambahan Saham Islamic Corporation for | '/slamic' |
+| 133 | 549.88 | label | 020000 JABATAN PERPADUAN NEGARA DAN INTEGRASI | 'INTEGRAS\|' |
+| 142 | 573.71 | label | 050500 Rural Basic Infrastucture (as printed) | 'Aural' |
+| 160 | 664.89 | label | 031700 Penyelenggaraan STOLports | 'S7OLports' |
+| 177 | 266.41 | label | 010200 Institut Latihan Perumahan dan Kerajaan Tempatan | 'Latinan' |
+
+46 other labels (of 51 left with an unknown word) hold a word not in the FY2019/FY2021 vocabulary (new names, English names, acronyms: `Govco Holdings Berhad`, `AssetcGlobal Network Sdn Bhd`, `(Berkala Pavemen)`, `Perolehan Aset -KAS` as printed); they are kept as read and listed in the cache under `label_unknown_words`.
+
+**Misprints** (18 totals, `KnownMisprint`):
+
+- B.42 leaf 070300 20000 prints Amaun 11,630,289 with no sen; `Jumlah 070300` and the eight totals above it print 11,630,288.68 (PDF p176): -32 sen in each.
+- B.27 programme 060000's per-object lines print Perkhidmatan dan Bekalan 369,802 and Aset 5,031,934 with no sen; their leaves print 369,802.20 and 3,294,559.43 + 1,737,374.80 (PDF p157).
+- B.32 leaf 030300 50000 Perbelanjaan-perbelanjaan Lain (21,000; 18,000; 17,130.00) is counted under Pemberian dan Kenaan Bayaran Tetap by programme 030000's per-object lines and every object total above them (PDF p167-168): seven totals.
+
+**Other parts.** Lampiran 2 (PDF pp. 208-247) and Note 5(a) (pp. 77-78) have text layers; p239's holds a second, undrawn page (rule `HIDDEN_PAGE_IN_TEXT_LAYER`: its rows are read from `-raw` between the two units lines), and on p78 a name above overlaps the next row whole (`Terimaan Lain` / `Kerajaan`, rule `DOUBLED_TEXT_LAYER`). Lampiran 3: see "Lampiran 3" above.
+
+| Rule (Lampiran 1, FY2020) | What it does | Occurrences (PDF page) |
+|---|---|---|
+| `SPLIT_ROW_JOINED` (four columns) | As in FY2019: an activity total whose % sits lower, on its own line. | p97, p153 (x9), p154 |
+| `PRINTED_PERCENT_DIFFERS` | Logged; amounts reconcile. | p107, p142, p146, p160, p172 (x2), p175, p195 |
+| `OCR_LABEL_NORMALISED` | On OCR pages, "Jumlah" variants and object-group names within a small edit distance read as the closed vocabulary. | none in the current cache |
 
 ## Footnotes
 

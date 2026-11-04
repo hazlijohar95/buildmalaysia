@@ -8,14 +8,13 @@ from datetime import datetime
 import psycopg
 import pytest
 
-from pipeline.covid import parse_covid
 from pipeline.development import parse_development
-from pipeline.gap import fill_gap, parse_english_vote_totals
 from pipeline.load import ReconciliationError, YearLoad, load_year
 from pipeline.model import DevelopmentStatement, RevenueCategory, RevenueStatement, Statement
 from pipeline.parse import ParseError, parse_statement
 from pipeline.revenue import parse_revenue
 from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, ensure_pdf, extract_pages, page_count, retrieved_at
+from pipeline.year import parse_year
 
 DATABASE_URL = os.environ.get("PIPELINE_DATABASE_URL", "postgresql:///buildmalaysia_pipeline")
 SOURCE = SOURCES[2025]
@@ -237,6 +236,18 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
             3_771_101_636_510,
             23_375_205_502_900,
         ),
+        # FY2020: Lampiran 1 has no text layer and is read by OCR (cached in data/ocr/janm/2020); 18 of
+        # its totals disagree with their rows (sources.KnownMisprint). Lampiran 3 adds a withdrawal column.
+        (
+            2020,
+            (53, 231, 1091, 2221, 2290),
+            (31, 61, 968, 93),
+            27,
+            22_507_494_724_231,
+            5_135_985_576_346,
+            3_801_923_863_125,
+            22_507_494_724_200,
+        ),
         # FY2018 prints four columns in Lampiran 1 (no Tambahan or Viremen) and 18 totals that
         # disagree with their rows (sources.KnownMisprint): 17 in Lampiran 1, one in Lampiran 2.
         # FY2019: a page of Lampiran 1 is missing (sources.KnownGap); B.05's vote totals come from
@@ -296,26 +307,13 @@ def test_earlier_years_load_and_reconcile(
     revenue_actual: int,
 ) -> None:
     source = SOURCES[year]
-    pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
-    operating = parse_statement(
-        extract_pages(pdf, source.operating_pages, source.operating_crop),
-        year,
-        source.operating_columns,
-        tuple(g.after_pdf_page for g in source.known_gaps),
-    )
-    if source.known_gaps:
-        assert source.english_operating_pages is not None
-        english = parse_english_vote_totals(extract_pages(pdf, source.english_operating_pages, source.operating_crop))
-        operating, _ = fill_gap(operating, english, {s.vote_code for g in source.known_gaps for s in g.scopes})
-    development = parse_development(
-        extract_pages(pdf, source.development_pages, source.development_crop), year, source.slug_pages
-    )
-    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year, source.slug_pages)
-    covid = (
-        parse_covid(extract_pages(pdf, source.covid_pages), year, source.covid_columns) if source.covid_pages else None
-    )
+    parsed = parse_year(source, DEFAULT_RAW_DIR)
+    covid = parsed.covid
     with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
-        result = load_year(conn, source, operating, development, revenue, page_count(pdf), retrieved_at(pdf), covid)
+        result = load_year(
+            conn, source, parsed.operating, parsed.development, parsed.revenue, parsed.pages,
+            retrieved_at(parsed.pdf), covid, parsed.operating_ocr_engine,
+        )  # fmt: skip
         o, d = result.operating, result.development
         assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
@@ -338,6 +336,8 @@ def test_earlier_years_load_and_reconcile(
         if covid is not None:
             sql = "select matches, line_count from covid_fund_reconciliation where fiscal_year = %s"
             assert conn.execute(sql, (year,)).fetchone() == (True, 31)
+        sql = "select operating_ocr_engine is not null from source_document where id = %s"
+        assert conn.execute(sql, (source.id,)).fetchone() == (source.operating_ocr,)
 
 
 def test_revenue_totals_reconcile_and_balance_operating_spending(ingest: Ingest) -> None:

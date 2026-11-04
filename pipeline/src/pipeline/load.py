@@ -103,6 +103,7 @@ def load_year(
     page_count: int,
     retrieved_at: datetime,
     covid: CovidFundStatement | None = None,
+    operating_ocr_engine: str | None = None,
 ) -> YearLoad:
     """Replace this document's rows in one transaction; commit only if every printed total reconciles.
 
@@ -117,14 +118,25 @@ def load_year(
     with conn.transaction(), conn.cursor() as cur:
         cur.execute(
             """
-            insert into source_document (id, publisher, title, fiscal_year, url, sha256, page_count, retrieved_at)
-            values (%s, %s, %s, %s, %s, %s, %s, %s)
+            insert into source_document
+              (id, publisher, title, fiscal_year, url, sha256, page_count, retrieved_at, operating_ocr_engine)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             on conflict (id) do update set
               publisher = excluded.publisher, title = excluded.title, fiscal_year = excluded.fiscal_year,
               url = excluded.url, sha256 = excluded.sha256, page_count = excluded.page_count,
-              retrieved_at = excluded.retrieved_at
+              retrieved_at = excluded.retrieved_at, operating_ocr_engine = excluded.operating_ocr_engine
             """,
-            (doc, source.publisher, source.title, year, source.url, source.sha256, page_count, retrieved_at),
+            (
+                doc,
+                source.publisher,
+                source.title,
+                year,
+                source.url,
+                source.sha256,
+                page_count,
+                retrieved_at,
+                operating_ocr_engine,
+            ),  # fmt: skip
         )
         # The hierarchies are keyed by fiscal year. This document is the year's only source,
         # so its hierarchy is replaced too; a row another document still uses fails the FK.
@@ -356,7 +368,8 @@ def _insert_development(cur: psycopg.Cursor, doc: str, statement: DevelopmentSta
 
 
 COVID_COLUMNS = (
-    "ceiling", "spent_prior", "allocation", "supplementary", "virement", "revised", "actual", "spent_to_date",
+    "ceiling", "spent_prior", "allocation", "supplementary", "withdrawal", "virement", "revised", "actual",
+    "spent_to_date",
 )  # fmt: skip
 
 

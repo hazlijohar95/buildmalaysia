@@ -201,6 +201,7 @@ class CovidAmounts:
     spent_prior: int  # spent to the end of the prior year
     allocation: int  # Peruntukan
     supplementary: int  # Tambahan; zero where the statement has no such column
+    withdrawal: int  # Tarik (FY2020), negative as printed; zero where the statement has no such column
     virement: int  # Viremen
     revised: int  # Peruntukan Dipinda
     actual: int  # Perbelanjaan Sebenar
