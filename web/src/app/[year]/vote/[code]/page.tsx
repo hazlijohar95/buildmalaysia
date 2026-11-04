@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import GapNote from "@/components/GapNote";
+import { getOperatingGaps } from "@/lib/queries/gaps";
 import { notFound } from "next/navigation";
 import {
   getVoteHeader,
@@ -78,11 +80,12 @@ export default async function VoteDetailPage({ params }: Props) {
     );
   }
 
-  const [header, programmes, activities, lines] = await Promise.all([
+  const [header, programmes, activities, lines, gaps] = await Promise.all([
     getVoteHeader(year, voteCode),
     getProgrammeTotals(year, voteCode),
     getActivityTotals(year, voteCode),
     getLeafLines(year, voteCode),
+    getOperatingGaps(year).then((g) => g.filter((x) => x.vote_code === voteCode)),
   ]);
   if (!header) notFound();
 
@@ -140,6 +143,7 @@ export default async function VoteDetailPage({ params }: Props) {
           )}
         </p>
       </PageHeader>
+      <GapNote gaps={gaps} />
 
       <StatRow
         stats={[
@@ -408,7 +412,9 @@ function Lines({ year, lines }: { year: number; lines: LeafLine[] }) {
                   </span>
                 </td>
                 <td className="num">{formatSen(l.original_sen)}</td>
-                <td className={`num ${EXTRA}`}>{l.supplementary_sen === null ? "–" : formatSen(l.supplementary_sen)}</td>
+                <td className={`num ${EXTRA}`}>
+                  {l.supplementary_sen === null ? "–" : formatSen(l.supplementary_sen)}
+                </td>
                 <td className={`num ${EXTRA}`}>{l.virement_sen === null ? "–" : formatSen(l.virement_sen)}</td>
                 <td className="num">{formatSen(l.revised_sen)}</td>
                 <td className={`num ${over ? "over-budget" : ""}`}>{formatSen(l.actual_sen)}</td>

@@ -1,0 +1,32 @@
+import sql from "@/lib/db";
+
+/** A programme that a page missing from the published statement cuts into (operating_gap view). */
+export interface OperatingGap {
+  fiscal_year: number;
+  vote_code: string;
+  programme_code: string;
+  last_activity_before_gap: string | null;
+  first_activity_after_gap: string | null;
+  after_pdf_page: number;
+  before_pdf_page: number;
+  evidence: string;
+}
+
+export async function getOperatingGaps(year?: number): Promise<OperatingGap[]> {
+  return sql<OperatingGap[]>`
+    select fiscal_year, vote_code, programme_code, last_activity_before_gap, first_activity_after_gap,
+           after_pdf_page, before_pdf_page, evidence
+    from operating_gap
+    ${year === undefined ? sql`` : sql`where fiscal_year = ${year}`}
+    order by fiscal_year, vote_code, programme_code
+  `;
+}
+
+/** "activities after 030100" / "activities before 010600": which part of the programme the page held. */
+export function gapExtent(g: OperatingGap): string {
+  if (g.last_activity_before_gap && g.first_activity_after_gap)
+    return `activities between ${g.last_activity_before_gap} and ${g.first_activity_after_gap}`;
+  if (g.last_activity_before_gap) return `activities after ${g.last_activity_before_gap}, and its total`;
+  if (g.first_activity_after_gap) return `activities before ${g.first_activity_after_gap}`;
+  return "part of its detail";
+}

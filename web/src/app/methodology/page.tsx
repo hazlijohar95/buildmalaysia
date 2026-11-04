@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { gapExtent, getOperatingGaps } from "@/lib/queries/gaps";
 import { getMethodologyChecks } from "@/lib/queries/reconciliation";
 import { formatSen, parseSen } from "@/lib/money";
 import { GLOSSARY } from "@/lib/glossary";
 import { Band, H2, PageHeader } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
-
 
 // Figures come from the database, which changes only when the pipeline loads; refresh hourly rather than
 // freezing them at build time.
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MethodologyPage() {
-  const { sources, misprints, budgets } = await getMethodologyChecks();
+  const [{ sources, misprints, budgets }, gaps] = await Promise.all([getMethodologyChecks(), getOperatingGaps()]);
 
   return (
     <>
@@ -206,6 +206,31 @@ export default async function MethodologyPage() {
         </Band>
       ))}
 
+      {gaps.length > 0 && (
+        <Band wide id="gaps">
+          <H2>Pages missing from a published statement</H2>
+          <p className="mt-3 max-w-3xl text-charcoal-800">
+            The FY2019 PDF skips one page of Lampiran 1, and no complete copy is published anywhere we could find. Every
+            row that is printed is loaded. A total whose rows were on the missing page cannot be recomputed, so it is
+            checked against the totals printed above and below it instead, and the vote totals come from the same
+            statement&apos;s English Attachment 1. No figure is estimated or filled in.
+          </p>
+          <ul className="mt-6 max-w-4xl space-y-4">
+            {[...new Set(gaps.map((g) => g.evidence))].map((evidence) => (
+              <li key={evidence}>
+                <span className="font-semibold">
+                  {gaps
+                    .filter((g) => g.evidence === evidence)
+                    .map((g) => `${g.fiscal_year} ${g.vote_code} programme ${g.programme_code} (${gapExtent(g)})`)
+                    .join("; ")}
+                </span>
+                <span className="mt-1 block text-sm text-charcoal-700">{evidence}</span>
+              </li>
+            ))}
+          </ul>
+        </Band>
+      )}
+
       {misprints.length > 0 && (
         <Band wide>
           <H2>Totals the statements misprint</H2>
@@ -244,7 +269,12 @@ export default async function MethodologyPage() {
                       ))}
                     </td>
                     <td>
-                      <CitationLink year={m.fiscal_year} docUrl={m.doc_url} pdfPage={m.pdf_page} bookPage={m.book_page} />
+                      <CitationLink
+                        year={m.fiscal_year}
+                        docUrl={m.doc_url}
+                        pdfPage={m.pdf_page}
+                        bookPage={m.book_page}
+                      />
                     </td>
                   </tr>
                 ))}

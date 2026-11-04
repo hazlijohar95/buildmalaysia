@@ -1,6 +1,7 @@
 import sql from "@/lib/db";
 import type { SankeyNode } from "@/components/Sankey/SankeyChartD3";
 import { getMinistrySlugs } from "@/lib/queries/ministry";
+import { getOperatingGaps } from "@/lib/queries/gaps";
 
 /** Ringgit (not sen) for the chart: amounts it sizes and prints with amountScalingFactor = 1. */
 const rm = (sen: string | number) => Number(sen) / 100;
@@ -52,17 +53,47 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
     sql<{ code: string; name_ms: string; actual_sen: string }[]>`
       select code, name_ms, actual_sen from covid_fund_line where fiscal_year = ${year}
     `,
-    sql<{ number: string; name_ms: string; operating_vote_code: string | null; development_vote_code: string | null }[]>`
+    sql<
+      { number: string; name_ms: string; operating_vote_code: string | null; development_vote_code: string | null }[]
+    >`
       select number, name_ms, operating_vote_code, development_vote_code from ministry_spending where fiscal_year = ${year}
     `,
   ]);
 
-  const slugs = await getMinistrySlugs();
+  const [slugs, gaps, voteTotals] = await Promise.all([
+    getMinistrySlugs(),
+    getOperatingGaps(year),
+    sql<{ vote_code: string; actual_sen: string }[]>`
+      select vote_code, actual_sen from printed_total
+      where fiscal_year = ${year} and scope = 'vote' and object_code is null
+    `,
+  ]);
+  // Where a page is missing from the published statement, a programme's printed total can be missing
+  // too: show what the vote total leaves unaccounted for as its own, labelled block rather than drop it.
+  const gapLeaves = (code: string | null): SankeyNode[] => {
+    const gap = gaps.find(
+      (g) =>
+        g.vote_code === code && !programmes.some((p) => p.vote_code === code && p.programme_code === g.programme_code),
+    );
+    const voteTotal = voteTotals.find((v) => v.vote_code === code);
+    if (!gap || !voteTotal) return [];
+    const printed = programmes.filter((p) => p.vote_code === code).reduce((t, p) => t + Number(p.actual_sen), 0);
+    const missing = Number(voteTotal.actual_sen) - printed;
+    return missing > 0
+      ? [leaf(`gap-${code}`, `Programme ${gap.programme_code}: on a page missing from the PDF`, String(missing))]
+      : [];
+  };
   const leaf = (id: string, name: string, sen: string): SankeyNode => ({ id, displayName: name, amount: rm(sen) });
   const programmeLeaves = (code: string | null) =>
     programmes
       .filter((p) => p.vote_code === code)
-      .map((p) => leaf(`op-${p.vote_code}-${p.programme_code}`, titleCase(p.programme_name ?? `Programme ${p.programme_code}`), p.actual_sen));
+      .map((p) =>
+        leaf(
+          `op-${p.vote_code}-${p.programme_code}`,
+          titleCase(p.programme_name ?? `Programme ${p.programme_code}`),
+          p.actual_sen,
+        ),
+      );
   const developmentLeaves = (code: string | null) =>
     development
       .filter((d) => d.vote_code === code)
@@ -80,19 +111,25 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
     displayName: shortName(m.name_ms),
     searchName: titleCase(m.name_ms),
     link: `/ministries/${slugs.get(m.number)}`,
-    children: [...programmeLeaves(m.operating_vote_code), ...developmentLeaves(m.development_vote_code)],
+    children: [
+      ...programmeLeaves(m.operating_vote_code),
+      ...gapLeaves(m.operating_vote_code),
+      ...developmentLeaves(m.development_vote_code),
+    ],
   }));
 
-  const charged = [...new Set(programmes.filter((p) => p.section === "charged").map((p) => p.vote_code))].map((code) => {
-    const rows = programmes.filter((p) => p.vote_code === code);
-    return {
-      id: `op-${code}`,
-      displayName: CHARGED_NAMES[code] ?? titleCase(rows[0].vote_name),
-      searchName: titleCase(rows[0].vote_name),
-      link: `/${year}/vote/${code.replace(".", "")}`,
-      children: programmeLeaves(code),
-    };
-  });
+  const charged = [...new Set(programmes.filter((p) => p.section === "charged").map((p) => p.vote_code))].map(
+    (code) => {
+      const rows = programmes.filter((p) => p.vote_code === code);
+      return {
+        id: `op-${code}`,
+        displayName: CHARGED_NAMES[code] ?? titleCase(rows[0].vote_name),
+        searchName: titleCase(rows[0].vote_name),
+        link: `/${year}/vote/${code.replace(".", "")}`,
+        children: programmeLeaves(code),
+      };
+    },
+  );
 
   // Ministries under MINISTRY_SHARE of spending share one block, so the large ones can be read at a glance.
   const spent = ministryNodes.reduce((t, m) => t + total(m), 0) + charged.reduce((t, c) => t + total(c), 0);
