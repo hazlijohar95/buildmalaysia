@@ -127,8 +127,16 @@ main a:not([class]):hover {
 
 @keyframes nav-panel-in {
   from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes nav-fade-in {
+  from {
     opacity: 0;
-    transform: translateY(-6px);
   }
 }
 

@@ -5,8 +5,10 @@ import "./globals.css";
 import Header, { type NavItem } from "@/components/MainLayout/Header";
 import Footer from "@/components/MainLayout/Footer";
 import { getLoadedYears } from "@/lib/years";
-import { getBudgetYears } from "@/lib/queries/budget";
 import { getCovidYears } from "@/lib/queries/covid";
+import { getBudgetTotals, getBudgetYears } from "@/lib/queries/budget";
+import { getFederalSpending } from "@/lib/queries/spending";
+import { formatSenCompact } from "@/lib/money";
 
 const body = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 // Cal Sans (calcom/font) and Paper Mono (paper-design/paper-mono), both SIL OFL 1.1.
@@ -32,6 +34,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [years, budgets, [covidYear]] = await Promise.all([getLoadedYears(), getBudgetYears(), getCovidYears()]);
   const [latest] = years;
+  const [spending, budgetTotals] = await Promise.all([
+    latest ? getFederalSpending(latest) : null,
+    Promise.all(budgets.map((b) => getBudgetTotals(b))),
+  ]);
+  // Each book's grand total for the year it budgets, as tabled.
+  const tabled = new Map(budgets.map((b, i) => [b, budgetTotals[i].find((t) => t.fiscal_year === b)]));
   const items: NavItem[] = [
     {
       kind: "menu",
@@ -41,6 +49,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           href: "/spending",
           label: "Where the money went",
           note: "Every ringgit, from the total to each ministry",
+          ...(spending &&
+            latest && {
+              figure: { value: formatSenCompact(spending.total_actual_sen), label: `Spent in ${latest}` },
+            }),
           match: ["/spending"],
         },
         {
@@ -82,6 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           links: years.map((y) => ({ href: `/${y}`, label: String(y), match: [`/${y}`] })),
         },
       }),
+      source: `Jabatan Akauntan Negara · audited federal statements${latest ? `, ${years.at(-1)}–${latest}` : ""}`,
     },
     { kind: "link", href: "/revenue", label: "Revenue", match: ["/revenue"] },
     ...(budgets.length > 0
@@ -89,12 +102,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {
             kind: "menu" as const,
             label: "Budget",
-            links: budgets.map((b) => ({
-              href: `/budget/${b}`,
-              label: `Budget ${b}`,
-              note: `What the government plans to spend in ${b}`,
-              match: [`/budget/${b}`],
-            })),
+            links: budgets.map((b) => {
+              const book = tabled.get(b);
+              return {
+                href: `/budget/${b}`,
+                label: `Budget ${b}`,
+                note: `What the government plans to spend in ${b}`,
+                ...(book && { figure: { value: formatSenCompact(book.grand_total_sen), label: "Planned, as tabled" } }),
+                match: [`/budget/${b}`],
+              };
+            }),
+            source: "Kementerian Kewangan · Anggaran Perbelanjaan Persekutuan, as tabled in Parliament",
           },
         ]
       : []),
