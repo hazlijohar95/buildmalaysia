@@ -1,4 +1,38 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
+
+/**
+ * The reconciliation views recompute every printed total from its rows, which takes seconds. Their result only
+ * changes when the pipeline writes to the database, so it is cached against the database's write counters: any
+ * load changes them and the next request recomputes.
+ */
+async function dataVersion(): Promise<string> {
+  const [row] = await sql<{ version: string }[]>`
+    select coalesce(sum(n_tup_ins + n_tup_upd + n_tup_del), 0)::text as version from pg_stat_user_tables
+  `;
+  return row?.version ?? "0";
+}
+
+const cachedChecks = unstable_cache(
+  async (version: string) => {
+    const [sources, misprints, budgets] = await Promise.all([
+      getSourceChecks(),
+      getPrintedMismatches(),
+      getBudgetChecks(),
+    ]);
+    return { version, sources, misprints, budgets };
+  },
+  ["methodology-checks"],
+);
+
+/** Every check the methodology page reports, recomputed only after the data changes. */
+export async function getMethodologyChecks(): Promise<{
+  sources: SourceCheck[];
+  misprints: PrintedMismatch[];
+  budgets: BudgetCheck[];
+}> {
+  return cachedChecks(await dataVersion());
+}
 
 export interface SourceCheck {
   fiscal_year: number;
