@@ -223,6 +223,10 @@ def test_budget_2025_word_layout_loads_and_restates_2024_by_ministry() -> None:
     summary = parse_budget_summary_word(extract_pages(pdf, source.summary_pages), 2025, source.known_misprints)
     assert (len(summary.votes), summary.checks) == (85, 155)  # includes B.32 / P.32, dissolved in 2023
     assert summary.summary.lines["grand_total"].amounts[3] == 42_300_000_000_000  # Budget 2025: RM423 bn
+    names = {v.code: v.heading for v in summary.votes}
+    # Book p.28: B. 33's name wraps onto a second line, and P. 33 takes it; P. 70 names itself.
+    assert names["P.33"] == names["B.33"] == "KEMENTERIAN PERALIHAN TENAGA DAN TRANSFORMASI AIR"
+    assert names["P.70"] == "Simpanan Luar Jangka"
     book = extract_pages(pdf, (source.summary_pages[1] + 1, source.page_count))
     development = parse_development_estimates(book, 2025, source.known_misprints)
     dropped = parse_dropped_projects(book)

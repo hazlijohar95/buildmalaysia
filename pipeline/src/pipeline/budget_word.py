@@ -140,7 +140,10 @@ class _Parser:
             self.vote_line(m, figure)
             return
         if self.naming is not None and figure is None:
-            self.naming.heading += " " + label.removesuffix(" -").strip()
+            part = label.removesuffix(" -").strip()
+            if self.heading == self.naming.heading:
+                self.heading += " " + part  # the B vote line is the ministry heading; its P twin reads it (B/P.33)
+            self.naming.heading += " " + part
             if label.endswith("-"):
                 self.naming = None
             return
@@ -191,7 +194,9 @@ class _Parser:
         if m["letter"] == "P":
             if figure is None:
                 raise self.fail(f"{code} printed without amounts")
-            name = self.heading or rest
+            # "P. 33 Pembangunan" takes its ministry's heading; P.70 names itself and sits
+            # under no ministry ("P. 70 Simpanan Luar Jangka").
+            name = rest.removesuffix(" -").strip() if code == "P.70" else self.heading or rest
             vote = BudgetVote(code, name, figure)
             if code == "P.70":
                 self.summary["contingency"] = figure
