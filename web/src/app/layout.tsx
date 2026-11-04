@@ -6,6 +6,7 @@ import Header, { type NavItem } from "@/components/MainLayout/Header";
 import Footer from "@/components/MainLayout/Footer";
 import { getLoadedYears } from "@/lib/years";
 import { getBudgetYears } from "@/lib/queries/budget";
+import { getCovidYears } from "@/lib/queries/covid";
 
 const body = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 // Cal Sans (calcom/font) and Paper Mono (paper-design/paper-mono), both SIL OFL 1.1.
@@ -29,15 +30,75 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [years, [budget]] = await Promise.all([getLoadedYears(), getBudgetYears()]);
-  const latest = years[0];
+  const [years, budgets, [covidYear]] = await Promise.all([getLoadedYears(), getBudgetYears(), getCovidYears()]);
+  const [latest] = years;
   const items: NavItem[] = [
-    { href: "/spending", label: "Spending", match: ["/spending"] },
-    { href: "/revenue", label: "Revenue", match: ["/revenue"] },
-    { href: "/ministries", label: "Ministries", match: ["/ministries"] },
-    ...(budget ? [{ href: `/budget/${budget}`, label: "Budget", match: ["/budget"] }] : []),
-    ...(latest ? [{ href: `/${latest}`, label: "By year", match: years.map((y) => `/${y}`) }] : []),
-    { href: "/methodology", label: "Methodology", match: ["/methodology"] },
+    {
+      kind: "menu",
+      label: "Spending",
+      links: [
+        {
+          href: "/spending",
+          label: "Where the money went",
+          note: "Every ringgit, from the total to each ministry",
+          match: ["/spending"],
+        },
+        {
+          href: "/ministries",
+          label: "Ministries",
+          note: "What each ministry spent, year by year",
+          match: ["/ministries"],
+        },
+        ...(latest
+          ? [
+              {
+                href: `/${latest}/operating`,
+                label: "Operating votes",
+                note: "Running costs, vote by vote",
+                match: [],
+              },
+              {
+                href: `/${latest}/development`,
+                label: "Development projects",
+                note: "Every project, with its budget and spending",
+                match: [],
+              },
+            ]
+          : []),
+        ...(covidYear
+          ? [
+              {
+                href: `/${covidYear}/covid`,
+                label: "COVID-19 Fund",
+                note: "Pandemic relief, programme by programme",
+                match: [],
+              },
+            ]
+          : []),
+      ],
+      ...(latest && {
+        years: {
+          title: "Federal spending by year",
+          links: years.map((y) => ({ href: `/${y}`, label: String(y), match: [`/${y}`] })),
+        },
+      }),
+    },
+    { kind: "link", href: "/revenue", label: "Revenue", match: ["/revenue"] },
+    ...(budgets.length > 0
+      ? [
+          {
+            kind: "menu" as const,
+            label: "Budget",
+            links: budgets.map((b) => ({
+              href: `/budget/${b}`,
+              label: `Budget ${b}`,
+              note: `What the government plans to spend in ${b}`,
+              match: [`/budget/${b}`],
+            })),
+          },
+        ]
+      : []),
+    { kind: "link", href: "/methodology", label: "Methodology", match: ["/methodology"] },
   ];
   return (
     <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`}>
@@ -53,7 +114,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main id="main" className="flex-1">
             {children}
           </main>
-          <Footer spendingYear={latest} budgetYear={budget} />
+          <Footer spendingYear={latest} budgetYear={budgets[0]} />
         </div>
       </body>
     </html>

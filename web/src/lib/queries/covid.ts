@@ -57,3 +57,9 @@ export async function getCovidFund(year: number): Promise<{ lines: CovidFundRow[
   ]);
   return { lines: lines.map(row), total: totals[0] ? row(totals[0]) : null };
 }
+
+/** Fiscal years with a COVID-19 Fund statement, newest first. */
+export async function getCovidYears(): Promise<number[]> {
+  const rows = await sql<{ fiscal_year: number }[]>`select fiscal_year from covid_fund_total order by fiscal_year desc`;
+  return rows.map((r) => r.fiscal_year);
+}
