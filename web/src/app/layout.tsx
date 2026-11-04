@@ -102,8 +102,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   ];
   return (
     <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen p-2 md:p-4">
-        <div className="min-h-[calc(100vh-1rem)] md:min-h-[calc(100vh-2rem)] border-2 border-foreground flex flex-col">
+      <body className="min-h-screen p-[10px]">
+        <div className="min-h-[calc(100vh-20px)] border-x-2 border-b-2 border-foreground flex flex-col">
+          <div aria-hidden className="fixed inset-x-0 top-0 z-40 h-[10px] bg-background" />
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-foreground focus:px-4 focus:py-3 focus:text-background"

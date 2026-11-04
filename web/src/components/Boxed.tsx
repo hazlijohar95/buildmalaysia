@@ -69,11 +69,12 @@ export function StatRow({ stats }: { stats: Stat[] }) {
       {stats.map((s, i) => (
         <div
           key={i}
-          className="min-w-0 bg-background px-5 py-8 sm:px-8 md:py-10 [&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1"
+          className="@container min-w-0 bg-background px-5 py-8 sm:px-8 md:py-10 [&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1"
         >
           <div className={cn(kicker, "text-charcoal-700")}>{s.label}</div>
           <div
-            className="mt-3 font-display text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight tabular-nums"
+            // Sized to the cell (14% of its width, capped at 3rem) so a long figure like RM 52,623.62 never spills out.
+            className="mt-3 font-display text-[min(3rem,14cqi)] leading-tight font-semibold tracking-tight tabular-nums whitespace-nowrap"
             title={s.title}
           >
             {s.value}

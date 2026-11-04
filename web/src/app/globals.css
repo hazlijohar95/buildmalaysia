@@ -131,3 +131,8 @@ main a:not([class]):hover {
     transform: translateY(-6px);
   }
 }
+
+/* Anchored sections land below the sticky header (10px frame + 60px bar + borders). */
+html {
+  scroll-padding-top: 88px;
+}

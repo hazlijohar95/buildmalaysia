@@ -25,8 +25,10 @@ export type NavItem =
       years?: { title: string; links: NavLink[] }; // a compact grid of year links beside the main links
     };
 
+// Sizes from buildcanada.com's nav: a 60px bar, 12px labels at 0.14em, 20px cell padding, 1px dividers,
+// and hover that inverts the cell.
 const cell =
-  "flex items-center whitespace-nowrap px-3.5 xl:px-5 2xl:px-8 font-mono text-[13px] uppercase tracking-[0.14em] xl:tracking-[0.22em] no-underline transition-colors";
+  "flex items-center whitespace-nowrap px-5 font-mono text-[12px] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors";
 const kicker = "font-mono text-[12px] uppercase tracking-[0.22em]";
 
 const COLUMNS = ["", "grid-cols-1", "grid-cols-2", "grid-cols-3"]; // literal, so Tailwind generates them
@@ -95,25 +97,25 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
   }, [openMenu]);
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-foreground bg-background">
-      <div className="flex min-h-[72px] lg:min-h-[84px] items-stretch">
+    <header className="sticky top-[10px] z-50 border-y-2 border-foreground bg-background">
+      <div className="flex min-h-[60px] items-stretch">
         <Link
           href="/"
-          className="flex items-center bg-auburn-800 px-5 text-linen-50 no-underline hover:bg-auburn-900"
+          className="flex items-center bg-auburn-800 px-4 py-3 text-linen-50 no-underline hover:bg-auburn-900"
           aria-label="Build Malaysia home"
         >
-          <Wordmark className="text-[26px] lg:text-[30px]" />
+          <Wordmark className="text-[20px]" />
         </Link>
-        <nav className="hidden lg:flex items-stretch" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-stretch border-r border-foreground" aria-label="Main navigation">
           {items.map((item) => {
-            const base = cn(cell, "border-r-2 border-foreground first:border-l-2 text-foreground");
+            const base = cn(cell, "border-l border-foreground text-foreground");
             if (item.kind === "link") {
               return (
                 <Link
                   key={item.label}
                   href={item.href}
                   aria-current={isActive(item) ? "page" : undefined}
-                  className={cn(base, isActive(item) ? "bg-linen-200" : "hover:bg-linen-200")}
+                  className={cn(base, isActive(item) ? "bg-linen-200" : "hover:bg-foreground hover:text-background")}
                 >
                   {item.label}
                 </Link>
@@ -124,7 +126,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             return (
               <div
                 key={item.label}
-                className="flex border-r-2 border-foreground first:border-l-2"
+                className="flex border-l border-foreground"
                 onPointerEnter={(e) => e.pointerType === "mouse" && hoverOpen(item.label)}
                 onPointerLeave={(e) => e.pointerType === "mouse" && hoverClose()}
                 onBlur={(e) => {
@@ -150,13 +152,17 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                   className={cn(
                     cell,
                     "gap-2 text-foreground cursor-pointer",
-                    open || itemActive(item) ? "bg-linen-200" : "hover:bg-linen-200",
+                    open
+                      ? "bg-foreground text-background"
+                      : itemActive(item)
+                        ? "bg-linen-200 hover:bg-foreground hover:text-background"
+                        : "hover:bg-foreground hover:text-background",
                   )}
                 >
                   {item.label}
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn("h-3.5 w-3.5 transition-transform duration-150", open && "rotate-180")}
+                    className={cn("h-3 w-3 transition-transform duration-150", open && "rotate-180")}
                   />
                 </button>
                 {open && <MenuPanel id={panelId} item={item} isActive={isActive} entering={entering} />}
@@ -167,13 +173,16 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
         <div className="flex-1" />
         <Link
           href={cta.href}
-          className={cn(cell, "hidden lg:flex bg-foreground text-background hover:bg-charcoal-800")}
+          className={cn(
+            cell,
+            "hidden lg:flex border-l border-foreground bg-foreground text-background hover:bg-auburn-800",
+          )}
         >
           {cta.label}
         </Link>
         <button
           type="button"
-          className="lg:hidden flex items-center border-l-2 border-foreground px-5 text-foreground"
+          className="lg:hidden flex items-center border-l border-foreground px-5 text-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
