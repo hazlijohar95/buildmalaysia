@@ -152,16 +152,16 @@ export default function DevelopmentVote({
               <thead>
                 <tr>
                   <th>Group</th>
-                  <th className="!text-right">
+                  <th className="text-right">
                     <BiLabel en={`Estimate ${year}`} ms="Anggaran" />
                   </th>
-                  <th className="!text-right">
+                  <th className="text-right">
                     <BiLabel en={`Spent ${year}`} ms="Sebenar" />
                   </th>
                   <th>
                     <BiLabel en="% used" ms="Prestasi" />
                   </th>
-                  <th className="!text-right">
+                  <th className="text-right">
                     <BiLabel en={`${plan} to date`} ms={`Sebenar ${plan}`} />
                   </th>
                   <th>
@@ -289,19 +289,19 @@ function Projects({ year, plan, projects }: { year: number; plan: string; projec
             <th>
               <BiLabel en="Project" ms="Maksud Perbelanjaan" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en="Total cost" ms="Kos Keseluruhan" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en={`Estimate ${year}`} ms="Anggaran" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en={`Spent ${year}`} ms="Sebenar" />
             </th>
             <th>
               <BiLabel en="% used" ms="Prestasi" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en={`${plan} to date`} ms={`Sebenar ${plan}`} />
             </th>
             <th>

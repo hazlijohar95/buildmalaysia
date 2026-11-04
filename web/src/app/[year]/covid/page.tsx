@@ -74,11 +74,11 @@ export default async function CovidFundPage({ params }: Props) {
               <tr>
                 <th>Code</th>
                 <th>Programme</th>
-                <th className="!text-right">Ceiling</th>
-                <th className="!text-right">Allocation {year}</th>
-                <th className="!text-right">Spent {year}</th>
+                <th className="text-right">Ceiling</th>
+                <th className="text-right">Allocation {year}</th>
+                <th className="text-right">Spent {year}</th>
                 <th>% used</th>
-                <th className="!text-right">Spent since 2020</th>
+                <th className="text-right">Spent since 2020</th>
                 <th>Source</th>
               </tr>
             </thead>

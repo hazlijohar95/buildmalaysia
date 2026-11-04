@@ -160,19 +160,19 @@ export default async function OperatingPage({ params, searchParams }: Props) {
                 <th>
                   <BiLabel en="Vote" ms="Maksud Perbelanjaan" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Original budget" ms="Asal" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Revised budget" ms="Jumlah" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Spent" ms="Sebenar" />
                 </th>
                 <th>
                   <BiLabel en="% used" ms="Prestasi" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Unspent" ms="Varian" />
                 </th>
                 <th>

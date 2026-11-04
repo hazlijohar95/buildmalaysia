@@ -152,14 +152,14 @@ function HeadingHead({ year, prior, label }: { year: number; prior: number; labe
           <BiLabel en="Code" ms="Kod" />
         </th>
         <th>{label}</th>
-        <th className="!text-right">
+        <th className="text-right">
           <BiLabel en={`Budget ${prior}`} ms="Anggaran" />
         </th>
-        <th className="!text-right">
+        <th className="text-right">
           <BiLabel en={`Budget ${year}`} ms="Anggaran" />
         </th>
-        <th className="!text-right">Change</th>
-        <th className="!text-right">
+        <th className="text-right">Change</th>
+        <th className="text-right">
           <BiLabel en={`Posts ${year}`} ms="Bil. Jawatan" />
         </th>
         <th>
@@ -286,13 +286,13 @@ function Projects({
               <th>
                 <BiLabel en="Project" ms="Tajuk" />
               </th>
-              <th className="!text-right">
+              <th className="text-right">
                 <BiLabel en="Total cost" ms="Jumlah Anggaran Harga Projek" />
               </th>
-              <th className="!text-right">
+              <th className="text-right">
                 <BiLabel en={`Revised budget ${prior}`} ms="Anggaran Dipinda" />
               </th>
-              <th className="!text-right">
+              <th className="text-right">
                 <BiLabel en={`Budget ${year}`} ms="Anggaran" />
               </th>
               <th>

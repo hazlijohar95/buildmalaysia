@@ -161,7 +161,7 @@ function prune(node: SankeyNode): SankeyNode {
   return { ...node, children };
 }
 
-const SMALL = new Set(["dan", "di", "ke", "bagi", "untuk", "serta", "atau", "kepada", "dalam", "yang"]);
+const SMALL = new Set(["dan", "di", "ke", "bagi", "untuk", "serta", "atau", "kepada", "yang"]);
 
 /** "KEMENTERIAN PENDIDIKAN TINGGI" -> "Kementerian Pendidikan Tinggi"; mixed case is kept. */
 export function titleCase(name: string): string {
@@ -171,6 +171,7 @@ export function titleCase(name: string): string {
     .split(" ")
     .map((w, i) => {
       if (i > 0 && SMALL.has(w)) return w;
+      if (/^([a-z]\.)+$/.test(w)) return w.toUpperCase(); // initials such as S.P.B.
       if (/^\(?[a-z]{2,5}\)?$/.test(w) && /^\(/.test(w)) return w.toUpperCase(); // acronyms in brackets
       return w.charAt(0).toUpperCase() + w.slice(1);
     })

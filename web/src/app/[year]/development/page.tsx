@@ -148,16 +148,16 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
                 <th>
                   <BiLabel en="Vote" ms="Maksud Perbelanjaan" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en={`Estimate ${year}`} ms="Anggaran" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en={`Spent ${year}`} ms="Sebenar" />
                 </th>
                 <th>
                   <BiLabel en="% used" ms="Prestasi" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en={`${planCode} to date`} ms={`Sebenar ${planCode}`} />
                 </th>
                 <th>

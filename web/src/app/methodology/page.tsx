@@ -216,8 +216,8 @@ export default async function MethodologyPage() {
                 <tr>
                   <th>Year</th>
                   <th>Total</th>
-                  <th className="!text-right">Printed actual</th>
-                  <th className="!text-right">Sum of its rows</th>
+                  <th className="text-right">Printed actual</th>
+                  <th className="text-right">Sum of its rows</th>
                   <th>Source</th>
                 </tr>
               </thead>

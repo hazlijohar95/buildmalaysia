@@ -187,19 +187,19 @@ export default async function VoteDetailPage({ params }: Props) {
                 <th>
                   <BiLabel en="Programme" ms="Program" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Original budget" ms="Asal" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Revised budget" ms="Jumlah" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Spent" ms="Sebenar" />
                 </th>
                 <th>
                   <BiLabel en="% used" ms="Prestasi" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Unspent" ms="Varian" />
                 </th>
                 <th>
@@ -360,25 +360,25 @@ function Lines({ year, lines }: { year: number; lines: LeafLine[] }) {
             <th>
               <BiLabel en="Spending category" ms="Maksud Perbelanjaan" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en="Original budget" ms="Asal" />
             </th>
-            <th className={`!text-right ${EXTRA}`}>
+            <th className={`text-right ${EXTRA}`}>
               <BiLabel en="Supplementary" ms="Tambahan/(Kurangan)" />
             </th>
-            <th className={`!text-right ${EXTRA}`}>
+            <th className={`text-right ${EXTRA}`}>
               <BiLabel en="Virement" ms="Viremen" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en="Revised budget" ms="Jumlah" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en="Spent" ms="Sebenar" />
             </th>
             <th>
               <BiLabel en="% used" ms="Prestasi" />
             </th>
-            <th className="!text-right">
+            <th className="text-right">
               <BiLabel en="Unspent" ms="Varian" />
             </th>
             <th>

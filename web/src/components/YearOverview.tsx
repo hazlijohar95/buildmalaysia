@@ -138,13 +138,13 @@ export default async function YearOverview({ year }: { year: number }) {
             <thead>
               <tr>
                 <th>Ministry or department</th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Operating" ms="Mengurus" />
                 </th>
-                <th className="!text-right">
+                <th className="text-right">
                   <BiLabel en="Development" ms="Pembangunan" />
                 </th>
-                <th className="!text-right">Total</th>
+                <th className="text-right">Total</th>
                 <th className="relative min-w-[120px]">
                   <span className="sr-only">Share of the largest</span>
                 </th>
@@ -205,20 +205,20 @@ function YearTable({ years, current }: { years: YearSpending[]; current: number 
           <thead>
             <tr>
               <th>Year</th>
-              <th className="!text-right">
+              <th className="text-right">
                 <BiLabel en="Operating" ms="Mengurus" />
               </th>
-              <th className="!text-right">
+              <th className="text-right">
                 <BiLabel en="Development" ms="Pembangunan" />
               </th>
-              {hasCovid && <th className="!text-right">COVID-19 Fund</th>}
-              <th className="!text-right">Total</th>
-              <th className="!text-right">Change</th>
+              {hasCovid && <th className="text-right">COVID-19 Fund</th>}
+              <th className="text-right">Total</th>
+              <th className="text-right">Change</th>
             </tr>
           </thead>
           <tbody>
             {years.map((y, i) => {
-              const prior = years[i - 1];
+              const prior = years[i - 1]?.fiscal_year === y.fiscal_year - 1 ? years[i - 1] : undefined; // no change across a gap in loaded years
               return (
                 <tr key={y.fiscal_year} className={y.fiscal_year === current ? "font-semibold" : ""}>
                   <td>

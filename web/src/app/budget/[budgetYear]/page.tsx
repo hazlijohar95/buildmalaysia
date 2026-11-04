@@ -148,11 +148,11 @@ export default async function BudgetPage({ params }: Props) {
                       <BiLabel en="Ministry or department" ms="Maksud Perbelanjaan" />
                     </th>
                     {totals.map((t) => (
-                      <th key={t.fiscal_year} className="!text-right">
+                      <th key={t.fiscal_year} className="text-right">
                         <BiLabel en={columnLabel(t.fiscal_year, t.basis)} ms={columnLabelMs(t.basis)} />
                       </th>
                     ))}
-                    <th className="!text-right">Change</th>
+                    <th className="text-right">Change</th>
                     <th>
                       <BiLabel en="Source" ms="Sumber" />
                     </th>
@@ -221,8 +221,8 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
                   <BiLabel en="Code" ms="Kod" />
                 </th>
                 <th>Project</th>
-                <th className="!text-right">Total cost</th>
-                <th className="!text-right">Allocation {year - 1}</th>
+                <th className="text-right">Total cost</th>
+                <th className="text-right">Allocation {year - 1}</th>
                 <th>
                   <BiLabel en="Source" ms="Sumber" />
                 </th>
