@@ -14,3 +14,10 @@ export function columnLabel(fiscalYear: number, basis: string): string {
   if (basis === "original_estimate") return `Budget ${fiscalYear}`;
   return `Budget ${fiscalYear} as tabled`;
 }
+
+/** The same column as the book heads it in Bahasa Malaysia. */
+export function columnLabelMs(basis: string): string {
+  if (basis === "actual") return "Perbelanjaan Sebenar";
+  if (basis === "original_estimate") return "Anggaran Asal";
+  return "Anggaran";
+}

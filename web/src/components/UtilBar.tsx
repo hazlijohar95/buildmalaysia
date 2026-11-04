@@ -1,3 +1,4 @@
+import { cn } from "@/lib/cn";
 import { utilisation, type Sen } from "@/lib/money";
 
 interface Props {
@@ -5,29 +6,19 @@ interface Props {
   actual: Sen;
 }
 
+/** Share of the budget spent: a square bar and the percentage, in the over-budget colour past 100%. */
 export default function UtilBar({ revised, actual }: Props) {
   const pct = utilisation(revised, actual);
-  const clamped = Math.min(pct, 100);
   const over = actual > revised;
-
   return (
-    <div className="flex items-center gap-2 min-w-[80px]">
-      <div
-        className="flex-1 h-1.5 rounded-full overflow-hidden"
-        style={{ background: "var(--border)", minWidth: 48 }}
-      >
+    <div className="flex items-center gap-2 min-w-[96px]">
+      <div className="flex-1 min-w-12 h-2 bg-linen-200">
         <div
-          className="h-full rounded-full"
-          style={{
-            width: `${clamped}%`,
-            background: over ? "var(--over)" : "var(--accent)",
-          }}
+          className={cn("h-full", over ? "bg-auburn-700" : "bg-foreground")}
+          style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
-      <span
-        className="tabnum text-xs"
-        style={{ color: over ? "var(--over)" : "var(--muted)", minWidth: 40, textAlign: "right" }}
-      >
+      <span className={cn("tabular-nums text-xs w-12 text-right", over ? "over-budget" : "text-charcoal-700")}>
         {pct.toFixed(1)}%
       </span>
     </div>
