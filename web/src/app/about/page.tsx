@@ -46,6 +46,7 @@ const PRINCIPLES = [
 interface Member {
   name: string;
   role: string;
+  aside?: string; // set smaller after the role, on the same line
   portrait: React.ReactNode; // fills the card's square: a photo, or a mark when there is none yet
   x?: string;
   linkedin?: string;
@@ -66,7 +67,8 @@ const TEAM: Member[] = [
   { name: "Hazli Johar", role: "Chief Designer & Maintainer", portrait: photo("/team/hazli-johar.jpg", "Hazli Johar") },
   {
     name: "Claude Code Ultra",
-    role: "Principal Engineer ($200, 10x usage)",
+    role: "Principal Engineer",
+    aside: "($200, 10x usage)",
     portrait: (
       <span className="flex h-full w-full items-center justify-center bg-linen-50">
         <SiClaude aria-hidden="true" className="h-14 w-14 text-[#D97757]" />
@@ -162,7 +164,7 @@ export default async function AboutPage() {
   return (
     <>
       <section className="border-b-2 border-foreground px-5 py-14 sm:px-8 md:px-16 md:py-20">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:gap-0">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:gap-0">
           <h1 className="m-0 self-center font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl lg:pr-12">
             Every ringgit should be easy to follow.
           </h1>
@@ -183,7 +185,7 @@ export default async function AboutPage() {
       </section>
 
       <nav aria-label="On this page" className="border-b-2 border-foreground px-5 sm:px-8 md:px-16">
-        <ul className="mx-auto m-0 flex max-w-6xl list-none flex-wrap gap-x-8 p-0">
+        <ul className="mx-auto m-0 flex max-w-7xl list-none flex-wrap gap-x-8 p-0">
           {sections.map((s) => (
             <li key={s.id}>
               <a
@@ -200,15 +202,19 @@ export default async function AboutPage() {
         </ul>
       </nav>
 
-      <Band id="team">
+      <Band id="team" wide>
         <H2>Core team</H2>
-        <ul className="m-0 mt-10 grid list-none gap-6 p-0 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="m-0 mt-10 grid list-none gap-6 p-0 lg:grid-cols-2 xl:grid-cols-3">
           {TEAM.map((m) => (
             <li key={m.name} className="group flex border border-foreground/40">
               <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">{m.portrait}</div>
-              <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
+              <div className="@container flex min-w-0 flex-1 flex-col px-5 py-4">
                 <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
-                <span className="mt-1 text-charcoal-700">{m.role}</span>
+                {/* Scales to the card (16px down to 12px) so the role and its aside stay on one line. */}
+                <span className="mt-1 whitespace-nowrap text-[clamp(0.75rem,6.6cqi,1rem)] text-charcoal-700">
+                  {m.role}
+                  {m.aside && <span className="ml-1.5 text-[0.75em] text-charcoal-600">{m.aside}</span>}
+                </span>
                 {(m.x || m.linkedin) && (
                   <span className="mt-auto flex justify-end gap-3 text-charcoal-600">
                     {m.x && (
@@ -229,7 +235,7 @@ export default async function AboutPage() {
         </ul>
       </Band>
 
-      <Band id="board">
+      <Band id="board" wide>
         <H2>Board</H2>
         <div className="mt-10 flex flex-col border border-foreground/40 sm:flex-row">
           <div className="flex h-28 shrink-0 items-center justify-center bg-foreground text-linen-50 sm:h-auto sm:w-56">
@@ -247,7 +253,7 @@ export default async function AboutPage() {
         </div>
       </Band>
 
-      <Band id="principles">
+      <Band id="principles" wide>
         <H2>Principles</H2>
         <ol className="m-0 mt-10 grid list-none gap-x-12 p-0 md:grid-cols-2">
           {PRINCIPLES.map((p, i) => (
@@ -264,7 +270,7 @@ export default async function AboutPage() {
         </ol>
       </Band>
 
-      <Band id="coverage" className="pb-10 md:pb-12">
+      <Band id="coverage" wide className="pb-10 md:pb-12">
         <H2>What we&apos;ve read</H2>
         <p className="m-0 mt-4 max-w-3xl text-lg text-charcoal-800">
           Everything loaded so far, counted live. Each check is listed on the{" "}
@@ -288,7 +294,7 @@ export default async function AboutPage() {
         ]}
       />
 
-      <Band id="faqs">
+      <Band id="faqs" wide>
         <H2>FAQs</H2>
         <div className="mt-10 grid gap-x-12 md:grid-cols-2">
           {[faqs.slice(0, half), faqs.slice(half)].map((column, i) => (
