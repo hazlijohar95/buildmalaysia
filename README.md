@@ -6,7 +6,7 @@ Research behind the design: [`specs/`](specs/). Build Canada's repos, cloned for
 
 ## First source
 
-JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. FY2025: <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
+JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Loaded: FY2023, FY2024, FY2025 (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`), e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
 
 - Lampiran 1, *Penyata Perbelanjaan Mengurus* (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
 - Lampiran 2, *Penyata Perbelanjaan Pembangunan* (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
@@ -36,7 +36,7 @@ createdb buildmalaysia
 for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia -f "$f"; done
 
 cd pipeline && uv sync
-uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildmalaysia
+for y in 2023 2024 2025; do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
 uv run pytest                       # uses the buildmalaysia_pipeline db
 
 cd ../web && pnpm install

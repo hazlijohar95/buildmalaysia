@@ -30,3 +30,16 @@ Same dataset and fetch as above (`federal_finance_year`, 2025, RM million).
 data.gov.my also publishes `spending_de_net` (80,582), which Lampiran 2 does not print. The site reports the gross figure.
 
 Observed, not yet explained by a source: data.gov.my `revenue` for 2025 (336,069) equals Lampiran 1's operating total including the transfer to the Development Fund (RM336,069,262,968.50) to the million.
+
+## FY2023 and FY2024: JANM vs data.gov.my
+
+`federal_finance_year`, fetched 2026-11-04, RM million. "Operating" is Lampiran 1's total less the transfer to the Development Fund.
+
+| Year | Item | JANM | data.gov.my | Result |
+|---|---|---|---|---|
+| 2024 | Operating, actual | 324,617,649,248.33 − 3,108,700,856.86 = RM321,508,948,391.47 | 321,509 (`spending_oe`) | Match after rounding |
+| 2024 | Development, actual | RM84,011,595,463.78 | 84,012 (`spending_de_gross`) | Match after rounding |
+| 2023 | Operating, actual | 314,959,481,731.21 − 3,692,563,903.74 = RM311,266,917,827.47 | 311,267 (`spending_oe`) | Match after rounding |
+| 2023 | Development, actual | RM96,089,737,122.54 | 96,091 (`spending_de_gross`) | **Differs by about RM1.26m.** Not explained by any source read so far. |
+
+As in 2025, data.gov.my `revenue` equals Lampiran 1's operating total including the transfer, to the million, in both years (314,959; 324,618).

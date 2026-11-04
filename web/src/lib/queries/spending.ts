@@ -97,3 +97,27 @@ export async function getPairedVote(year: number, code: string): Promise<string 
   `;
   return row?.paired ?? null;
 }
+
+export interface YearSpending {
+  fiscal_year: number;
+  operating_net_actual_sen: Sen;
+  development_actual_sen: Sen;
+  total_actual_sen: Sen;
+}
+
+/** Total spending for every loaded year, oldest first. */
+export async function getSpendingByYear(): Promise<YearSpending[]> {
+  const rows = await sql<
+    { fiscal_year: number; operating_net_actual_sen: string; development_actual_sen: string; total_actual_sen: string }[]
+  >`
+    select fiscal_year, operating_net_actual_sen, development_actual_sen, total_actual_sen
+    from federal_spending
+    order by fiscal_year
+  `;
+  return rows.map((r) => ({
+    fiscal_year: r.fiscal_year,
+    operating_net_actual_sen: parseSen(r.operating_net_actual_sen),
+    development_actual_sen: parseSen(r.development_actual_sen),
+    total_actual_sen: parseSen(r.total_actual_sen),
+  }));
+}

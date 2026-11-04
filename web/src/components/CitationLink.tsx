@@ -1,6 +1,8 @@
 import { citationHref, citationLabel } from "@/lib/citations";
 
 interface Props {
+  /** Fiscal year of the statement the page belongs to. */
+  year: number;
   docUrl: string;
   pdfPage: number;
   bookPage: number;
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export default function CitationLink({
+  year,
   docUrl,
   pdfPage,
   bookPage,
@@ -24,7 +27,7 @@ export default function CitationLink({
       className={className}
       style={{ color: "var(--muted)", fontSize: "0.7rem", whiteSpace: "nowrap" }}
     >
-      {citationLabel(bookPage, spread)}
+      {citationLabel(year, bookPage, spread)}
     </a>
   );
 }

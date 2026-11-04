@@ -34,13 +34,13 @@ The app reads `DATABASE_URL` from `.env.local` (default: `postgresql:///buildmal
 
 | Route | Description |
 |---|---|
-| `/` | FY2025 federal spending: total, operating and development, and spending by ministry (B.nn beside P.nn) |
-| `/2025/operating` | Operating expenditure (Lampiran 1): headline stats and votes, sortable by code, revised or actual |
-| `/2025/development` | Development expenditure (Lampiran 2): headline stats and votes, sortable by code, estimate or actual |
-| `/2025/vote/[code]` | A T or B vote: programmes → activities → object groups. A P vote: agency groups → projects |
+| `/`, `/[year]` | Federal spending for the latest or a given year: total, operating and development, year-by-year change, and spending by ministry (B.nn beside P.nn) |
+| `/[year]/operating` | Operating expenditure (Lampiran 1): headline stats and votes, sortable by code, revised or actual |
+| `/[year]/development` | Development expenditure (Lampiran 2): headline stats and votes, sortable by code, estimate or actual |
+| `/[year]/vote/[code]` | A T or B vote: programmes → activities → object groups. A P vote: agency groups → projects |
 | `/methodology` | Sources and the live reconciliation result for both statements |
 
-Vote codes use a dot-free URL slug: `T.03` → `/2025/vote/T03`.
+Vote codes use a dot-free URL slug: `T.03` → `/2025/vote/T03`. A year that is not loaded returns 404.
 
 ## Data model
 

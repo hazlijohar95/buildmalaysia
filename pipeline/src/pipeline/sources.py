@@ -41,6 +41,30 @@ SOURCES: dict[int, SourceDocument] = {
         operating_pages=(103, 212),
         development_pages=(214, 249),
     ),
+    2024: SourceDocument(
+        id="janm-penyata-kewangan-2024",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2024",
+        fiscal_year=2024,
+        url="https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2024_Penyata_Kewangan_Kerajaan_Persekutuan.pdf",
+        sha256="779d4d313583dbeef14fbd3adfab9475305d7128165af7ae6ad8702124700d87",
+        page_count=447,
+        raw_path="janm/2024.pdf",
+        operating_pages=(99, 203),
+        development_pages=(206, 241),
+    ),
+    2023: SourceDocument(
+        id="janm-penyata-kewangan-2023",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2023",
+        fiscal_year=2023,
+        url="https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2023_Penyata_Kewangan_Kerajaan_Persekutuan.pdf",
+        sha256="5181b69847f4a76446453d543832a2434b9553d6e7bb543484330874e37abf77",
+        page_count=444,
+        raw_path="janm/2023.pdf",
+        operating_pages=(95, 194),
+        development_pages=(196, 231),
+    ),
 }
 
 

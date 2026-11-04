@@ -9,8 +9,9 @@ amounts pairs with the n-th right row. Each spread must pair exactly.
 
 Groups: a heading in capitals opens a group, and "Jumlah <name>" closes it. Two
 patterns have no heading line of their own, and each is a named rule:
-  VOTE_NAMED_GROUP: "Jumlah <vote name>" totals the projects printed under the vote
-    header before the first heading (the ministry's own projects).
+  VOTE_NAMED_GROUP / HEADING_MISSING: "Jumlah <name>" with no group open totals the run
+    of projects just above it that have no heading: under the vote header (the ministry's
+    own projects), or after another group's total.
   PARENT_GROUP_BY_NAME: "Jumlah <stem> <A>, <B> dan <C>" with no group open totals
     the run of groups just closed whose names contain the stem and one of A, B, C.
 Every group, vote and statement total is then recomputed from the projects by the
@@ -33,7 +34,7 @@ from pipeline.model import (
     DevelopmentVote,
     SpreadCitation,
 )
-from pipeline.parse import PageText, ParseError, Value, parse_value
+from pipeline.parse import PRINTER_SLUG, PageText, ParseError, Value, parse_value
 
 _RUNNING_HEAD = re.compile(
     r"(?:(?P<left>\d+)\s+)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s+(?P<right>\d+))?"
@@ -45,7 +46,16 @@ _HEAD_WORDS = {
     "Maksud", "Kos", "Keseluruhan", "Sebenar", "RMKe-12", "Hingga", "Anggaran", "Tahun",
     "Cara", "Langsung", "Pinjaman", "Jumlah", "(", "sambungan)", "(sambungan)",
 }  # fmt: skip
-_FOOTER = re.compile(r"\d{1,3}|LAMPIRAN 2 - PERBELANJAAN PEMBANGUNAN")
+_FOOTER = re.compile(rf"\d{{1,3}}|LAMPIRAN 2 - (?:PENYATA )?PERBELANJAAN PEMBANGUNAN|{PRINTER_SLUG}")
+_RIGHT_COLUMNS = (
+    "Anggaran Cara Langsung",
+    "Anggaran Pinjaman",
+    "Anggaran Jumlah",
+    "Sebenar Cara Langsung",
+    "Sebenar Pinjaman",
+    "Sebenar Jumlah",
+    "Sebenar RMKe-12 hingga akhir tahun",
+)
 _SAMB = re.compile(r"\s*\(SAMB\.\)$")
 
 _VOTE = re.compile(r"P\.(?P<num>\d{2})\s+(?P<name>.+)")
@@ -54,7 +64,7 @@ _STATEMENT_TOTAL = re.compile(r"JUMLAH PERBELANJAAN PEMBANGUNAN")
 _VOTE_TOTAL = re.compile(r"JUMLAH (?P<name>.+)")
 _GROUP_TOTAL = re.compile(r"Jumlah (?P<name>.+)")
 _NOTE = re.compile(r"Nota:\s*(?P<text>.*)")
-_PROJECT_NOTE = re.compile(r"\*(?P<vote>P\.\d{2})\s*[–-]\s*Butiran\s+(?P<codes>[\d\s,dan]+?)\s*-\s*(?P<text>.+)")
+_PROJECT_NOTE = re.compile(r"\*(?P<vote>P\.\d{2})\s*[–-]\s*Butiran\s+(?P<codes>[\dA-Z\s,dan]+?)\s*-\s*(?P<text>.+)")
 _STATEMENT_NOTE = re.compile(r"\*\s+(?P<text>.+)")
 _PARENT_NAME = re.compile(r"(?P<stem>.+?) (?P<first>\S+), (?P<middle>.+?) dan (?P<last>.+)")
 
@@ -63,19 +73,63 @@ def _norm(name: str) -> str:
     return " ".join(_SAMB.sub("", name).split()).casefold()
 
 
-def _trailing_values(line: str, limit: int) -> tuple[str, list[Value]]:
-    """Split a layout line into its label and up to `limit` trailing amounts."""
+def _trailing_values(line: str, limit: int) -> tuple[str, list[Value], list[int]]:
+    """Split a layout line into its label, up to `limit` trailing amounts, and where each amount ends."""
     line = re.sub(r"\s+\)", ")", line)  # "(846,800,930.00 )" prints a space before the bracket
     tokens = list(re.finditer(r"\S+", line))
     values: list[Value] = []
+    ends: list[int] = []
     label_end = len(line)
     for token in reversed(tokens):
-        value = parse_value(token.group())
+        # FY2023 prints some zero cells as "-" rather than "–". A label ending in a lone
+        # hyphen would leave one amount on the line, which is an error either way.
+        value = parse_value("–" if token.group() == "-" else token.group())
         if value is None or len(values) == limit:
             break
         values.insert(0, value)
+        ends.insert(0, token.end())
         label_end = token.start()
-    return line[:label_end].strip(), values
+    return line[:label_end].strip(), values, ends
+
+
+def _fill_blank_cell(values: list[Value], ends: list[int], reference: list[int]) -> tuple[list[Value], int] | None:
+    """Named rule BLANK_CELL_READ_AS_ZERO: a right-page row printed with one of seven cells empty.
+
+    Each printed amount is placed in the column whose right edge, in the nearest complete
+    row of the same page, is closest. The placement must be strictly left to right and
+    leave exactly one column empty; that column reads as zero.
+    """
+    columns = [min(range(7), key=lambda c: abs(end - reference[c])) for end in ends]
+    if len(set(columns)) != 6 or columns != sorted(columns):
+        return None
+    missing = next(c for c in range(7) if c not in columns)
+    return values[:missing] + [Value(0, "", True, False)] + values[missing:], missing
+
+
+def _doubled(label: str) -> str | None:
+    """Named rule DOUBLED_TEXT_LAYER: a label whose text layer holds the name twice, once in
+    capitals that the page does not draw ("DANA PEMBANGUNAN & PEMBIAYAAN PKS Dana
+    Pembangunan & Pembiayaan PKS", FY2023 00601). Returns the copy not in capitals."""
+    words = label.split()
+    half = len(words) // 2
+    if not words or len(words) % 2 or [w.casefold() for w in words[:half]] != [w.casefold() for w in words[half:]]:
+        return None
+    first, second = " ".join(words[:half]), " ".join(words[half:])
+    if first.isupper() == second.isupper():
+        return None
+    return second if first.isupper() else first
+
+
+def _raw_labels(raw: str) -> dict[str, list[str]]:
+    """Project code -> its labels in page order, from `pdftotext -raw`, which keeps a row's
+    text in reading order. A code can repeat on a page under different votes."""
+    labels: dict[str, list[str]] = {}
+    for line in raw.split("\n"):
+        m = _PROJECT.fullmatch(line.strip())
+        if m is not None and m["name"]:
+            label, _, _ = _trailing_values(m["name"], 2)
+            labels.setdefault(m["code"], []).append(label)
+    return labels
 
 
 def _collapse_repeats(name: str) -> str:
@@ -113,6 +167,7 @@ class _Project:
     left_citation: Citation | None = None
     right: tuple[int, ...] | None = None
     right_citation: Citation | None = None
+    raw_label: str | None = None  # the label as `pdftotext -raw` reads it, for doubled text layers
 
 
 @dataclass
@@ -186,6 +241,7 @@ class _Parser:
 
         waiting: list[_Project | _Total] = []  # left rows with amounts, in print order
         in_notes = False
+        first_new = len(self.projects)
         for line_no, line in left_lines:
             text = line.strip()
             self.where = Citation(left.pdf_page, left_book, line_no, text)
@@ -198,30 +254,38 @@ class _Parser:
                 in_notes = True
                 continue
             if in_notes:
-                self.extend_note(text)
+                if text.startswith("*"):
+                    self.add_note(text)  # the next note under the same "Nota:"
+                else:
+                    self.extend_note(text)
                 continue
             row = self.feed_left(text)
             if row is not None:
                 waiting.append(row)
 
-        rows: list[tuple[Citation, list[Value]]] = []
+        candidates: list[tuple[Citation, list[Value], list[int]]] = []
         trailing_text: list[Citation] = []
         for line_no, line in right_lines:
             text = line.strip()
             at = Citation(right.pdf_page, right_book, line_no, text)
             if not text or _FOOTER.fullmatch(text):
                 continue
-            label, values = _trailing_values(text, 7)
-            if label == "" and len(values) == 7:
+            label, values, ends = _trailing_values(line, 7)
+            if label == "" and len(values) in (6, 7):
                 if trailing_text:
                     raise self.fail("text between amount rows on the right page", trailing_text[0])
                 if any(v.marks for v in values):
                     raise self.fail("footnote mark on a right-page amount", at)
-                rows.append((at, values))
+                candidates.append((at, values, ends))
             elif values:
                 raise self.fail(f"right-page row with {len(values)} amounts, expected 7", at)
             else:
                 trailing_text.append(at)  # the tail of a left-page note running across the gutter
+        rows = [self.complete_row(row, candidates) for row in candidates]
+        raw_labels = _raw_labels(left.raw)
+        for project in self.projects[first_new:]:
+            same_code = raw_labels.get(project.code)
+            project.raw_label = same_code.pop(0) if same_code else None
 
         if len(rows) != len(waiting):
             raise ParseError(left.pdf_page, 1, "", f"spread pairs {len(waiting)} left rows with {len(rows)} right rows")
@@ -230,10 +294,27 @@ class _Parser:
             record.right_citation = at
             self.check_row(record)
 
+    def complete_row(
+        self, row: tuple[Citation, list[Value], list[int]], page: list[tuple[Citation, list[Value], list[int]]]
+    ) -> tuple[Citation, list[Value]]:
+        at, values, ends = row
+        if len(values) == 7:
+            return at, values
+        complete = [r for r in page if len(r[1]) == 7]
+        if not complete:
+            raise self.fail("six amounts and no complete row on the page to place them by", at)
+        nearest = min(complete, key=lambda r: abs(r[0].line_no - at.line_no))
+        filled = _fill_blank_cell(values, ends, nearest[2])
+        if filled is None:
+            raise self.fail("six amounts, and no single empty column can be located", at)
+        column = _RIGHT_COLUMNS[filled[1]]
+        self.corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {column} cell read as zero", at))
+        return at, filled[0]
+
     # left page
 
     def feed_left(self, text: str) -> _Project | _Total | None:
-        label, values = _trailing_values(text, 2)
+        label, values, _ = _trailing_values(text, 2)
         if len(values) == 1:
             raise self.fail("left-page row with one amount, expected 2")
         if values:
@@ -310,10 +391,18 @@ class _Parser:
         if open_group is not None:
             if _norm(text) == _norm(open_group.name):
                 return  # repeated at the top of a continuation page
+            if self.last_project is None:
+                # Capitals straight after a heading wrap the heading. FY2023 prints
+                # "JALAN RAYA DAN JAMBATAN SEMENANJUNG" then "SEMENANJUNG" again.
+                joined = f"{open_group.name} {text}"
+                open_group.name = _collapse_repeats(joined)
+                if open_group.name != joined:
+                    self.corrections.append(
+                        Correction("DUPLICATED_WORD_COLLAPSED", f"{joined!r} read as {open_group.name!r}", self.where)
+                    )
+                return
             # No heading opens inside an open group, so capitals here wrap a project
             # name (e.g. "MASMA" under 15200).
-            if self.last_project is None:
-                raise self.fail(f"heading while group {open_group.name!r} is open")
             self.last_project.parts.append(text)
             self.last_project.lines.append(text)
             return
@@ -350,21 +439,37 @@ class _Parser:
                 )
             open_group.closed = True
             return open_group
-        if _norm(name) == _norm(vote.name):
-            return self.vote_named_group(vote)
+        run = self.unheaded_run(vote)
+        if run:
+            return self.headless_group(vote, name, run)
         return self.parent_group(vote, name)
 
-    def vote_named_group(self, vote: _Vote) -> _Group:
-        members = [p for p in self.projects if p.vote_code == vote.code and p.group is None]
-        if not members or vote.groups:
-            raise self.fail("vote-named total without a run of projects directly under the vote header")
-        group = _Group(vote.code, len(vote.groups) + 1, vote.name, vote.citation, closed=True)
+    def unheaded_run(self, vote: _Vote) -> list[_Project]:
+        """The projects printed most recently in this vote with no heading over them."""
+        run: list[_Project] = []
+        for project in reversed(self.projects):
+            if project.vote_code != vote.code or project.group is not None:
+                break
+            run.insert(0, project)
+        return run
+
+    def headless_group(self, vote: _Vote, name: str, run: list[_Project]) -> _Group:
+        """Projects with no heading, closed by "Jumlah <name>": position decides membership.
+
+        Named rules: VOTE_NAMED_GROUP when the run sits directly under the vote header (the
+        ministry's own projects; the label is the vote's name, or an abbreviation such as
+        "MITI" in FY2023), and HEADING_MISSING when it follows another group's total (FY2023
+        prints "Jumlah Projek Pengangkutan Jalan" with no heading above its projects).
+        """
+        first_group = not vote.groups
+        label = vote.name if first_group and _norm(name) == _norm(vote.name) else name
+        group = _Group(vote.code, len(vote.groups) + 1, label, run[0].first, closed=True)
         vote.groups.append(group)
-        for project in members:
+        for project in run:
             project.group = group.ordinal
-        self.corrections.append(
-            Correction("VOTE_NAMED_GROUP", f"{len(members)} projects under the vote header form a group", self.where)
-        )
+        rule = "VOTE_NAMED_GROUP" if first_group else "HEADING_MISSING"
+        detail = f"'Jumlah {name}' totals the {len(run)} projects above it with no heading"
+        self.corrections.append(Correction(rule, detail, self.where))
         return group
 
     def parent_group(self, vote: _Vote, name: str) -> _Group:
@@ -412,8 +517,14 @@ class _Parser:
     def add_note(self, text: str) -> None:
         if (m := _PROJECT_NOTE.fullmatch(text)) is not None:
             codes = re.findall(r"\d{5}", m["codes"])
-            if not codes:
-                raise self.fail("note names no butiran")
+            if not codes or re.sub(r"\d{5}|\s|,|dan", "", m["codes"]) not in ("", "P"):
+                raise self.fail("note names no butiran, or names one in an unknown form")
+            if "P" in m["codes"]:
+                self.corrections.append(
+                    Correction(
+                        "NOTE_CODE_SUFFIX_IGNORED", f"'Butiran {m['codes'].strip()}' read as {codes}", self.where
+                    )
+                )
             for code in codes:
                 self.notes[(m["vote"], code)] = text
             self.note_keys = [(m["vote"], code) for code in codes]
@@ -468,9 +579,16 @@ class _Parser:
                     raise self.fail(f"project {p.code} carries a mark with no note", p.first)
                 used.add(key)
             raw = " ".join(" ".join(p.parts).split())
-            name = _collapse_repeats(raw)
-            if name != raw:
-                self.corrections.append(Correction("DUPLICATED_WORD_COLLAPSED", f"{raw!r} read as {name!r}", p.first))
+            doubled = _doubled(p.raw_label) if p.raw_label else None
+            if doubled is not None:
+                name = doubled
+                self.corrections.append(Correction("DOUBLED_TEXT_LAYER", f"{p.raw_label!r} read as {name!r}", p.first))
+            else:
+                name = _collapse_repeats(raw)
+                if name != raw:
+                    self.corrections.append(
+                        Correction("DUPLICATED_WORD_COLLAPSED", f"{raw!r} read as {name!r}", p.first)
+                    )
             left_text = "\n".join(p.lines)
             projects.append(
                 DevelopmentProject(

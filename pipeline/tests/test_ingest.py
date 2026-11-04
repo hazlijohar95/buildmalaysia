@@ -169,3 +169,35 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
         "select total_cost_sen from development_project where document_id = %s and (vote_code, code) = ('P.06', '00100')",
     )
     assert stored == first.amounts.total_cost
+
+
+@pytest.mark.parametrize(
+    ("year", "operating_counts", "development_counts", "operating_actual", "development_actual"),
+    [
+        # (votes, programmes, activities, leaf lines, printed totals); (votes, groups, projects, printed totals)
+        (2024, (53, 237, 1068, 2206, 2280), (31, 57, 923, 89), 32_461_764_924_833, 8_401_159_546_378),
+        (2023, (51, 231, 1037, 2094, 2201), (30, 58, 856, 89), 31_495_948_173_121, 9_608_973_712_254),
+    ],
+)
+def test_earlier_years_load_and_reconcile(
+    year: int,
+    operating_counts: tuple[int, ...],
+    development_counts: tuple[int, ...],
+    operating_actual: int,
+    development_actual: int,
+) -> None:
+    source = SOURCES[year]
+    pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
+    operating = parse_statement(extract_pages(pdf, source.operating_pages), year)
+    development = parse_development(extract_pages(pdf, source.development_pages), year)
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        result = load_year(conn, source, operating, development, page_count(pdf), retrieved_at(pdf))
+        o, d = result.operating, result.development
+        assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
+        assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
+        assert o.reconciled == o.printed_totals and d.reconciled == d.printed_totals
+        row = conn.execute(
+            "select operating_actual_sen, development_actual_sen from federal_spending where fiscal_year = %s",
+            (year,),
+        ).fetchone()
+        assert row == (operating_actual, development_actual)

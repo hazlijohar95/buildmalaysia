@@ -52,7 +52,7 @@ export default function DevelopmentVote({
   return (
     <>
       <div className="mb-6 text-sm" style={{ color: "var(--muted)" }}>
-        <Link href="/2025/development">← All development votes</Link>
+        <Link href={`/${year}/development`}>← All development votes</Link>
       </div>
 
       <div className="mb-8">
@@ -61,7 +61,7 @@ export default function DevelopmentVote({
           {operatingVoteCode && (
             <>
               {" · "}
-              <Link href={`/2025/vote/${voteCodeToSlug(operatingVoteCode)}`}>
+              <Link href={`/${year}/vote/${voteCodeToSlug(operatingVoteCode)}`}>
                 operating vote {operatingVoteCode}
               </Link>
             </>
@@ -85,15 +85,15 @@ export default function DevelopmentVote({
               Loan-funded: {formatSen(vote.actual_loan_sen)}
             </span>
           )}
-          <Cite source={vote} />
+          <Cite year={year} source={vote} />
         </div>
       </div>
 
       {sections(detail).map((s, i) =>
         s.kind === "parent" ? (
-          <ParentTotal key={i} group={s.group} members={s.members} />
+          <ParentTotal key={i} year={year} group={s.group} members={s.members} />
         ) : (
-          <GroupSection key={i} group={s.group} projects={s.projects} labelUngrouped={detail.groups.length > 0} />
+          <GroupSection key={i} year={year} group={s.group} projects={s.projects} labelUngrouped={detail.groups.length > 0} />
         ),
       )}
     </>
@@ -101,10 +101,12 @@ export default function DevelopmentVote({
 }
 
 function GroupSection({
+  year,
   group,
   projects,
   labelUngrouped,
 }: {
+  year: number;
   group: DevelopmentGroupTotal | null;
   projects: DevelopmentProjectRow[];
   labelUngrouped: boolean;
@@ -123,7 +125,7 @@ function GroupSection({
         >
           <span className="font-semibold flex-1">{group.name_ms}</span>
           <TotalFigures amounts={group} />
-          <Cite source={group} />
+          <Cite year={year} source={group} />
         </div>
       )}
       <div className="table-scroll">
@@ -160,7 +162,7 @@ function GroupSection({
                   <td>{p.estimate_sen > 0 || p.actual_sen > 0 ? <UtilBar revised={p.estimate_sen} actual={p.actual_sen} /> : null}</td>
                   <td className="num">{formatSen(p.plan_actual_to_date_sen)}</td>
                   <td>
-                    <Cite source={p} />
+                    <Cite year={year} source={p} />
                   </td>
                 </tr>
               );
@@ -172,7 +174,15 @@ function GroupSection({
   );
 }
 
-function ParentTotal({ group, members }: { group: DevelopmentGroupTotal; members: DevelopmentGroupTotal[] }) {
+function ParentTotal({
+  year,
+  group,
+  members,
+}: {
+  year: number;
+  group: DevelopmentGroupTotal;
+  members: DevelopmentGroupTotal[];
+}) {
   return (
     <div
       className="flex flex-wrap items-baseline gap-4 py-2 px-3 mb-8 rounded border"
@@ -185,7 +195,7 @@ function ParentTotal({ group, members }: { group: DevelopmentGroupTotal; members
         </span>
       </span>
       <TotalFigures amounts={group} />
-      <Cite source={group} />
+      <Cite year={year} source={group} />
     </div>
   );
 }
@@ -205,8 +215,8 @@ function TotalFigures({ amounts }: { amounts: DevelopmentAmounts }) {
   );
 }
 
-function Cite({ source }: { source: SpreadSource }) {
-  return <CitationLink docUrl={source.doc_url} pdfPage={source.pdf_page} bookPage={source.book_page} spread />;
+function Cite({ year, source }: { year: number; source: SpreadSource }) {
+  return <CitationLink year={year} docUrl={source.doc_url} pdfPage={source.pdf_page} bookPage={source.book_page} spread />;
 }
 
 function HeadStat({ label, value, over = false }: { label: string; value: string; over?: boolean }) {

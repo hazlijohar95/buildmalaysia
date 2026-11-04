@@ -131,11 +131,14 @@ def test_row_arithmetic_error_fails_with_page_and_line() -> None:
     assert (error.value.pdf_page, error.value.line_no) == (105, line_no)
 
 
-def test_percent_never_rounds_up_to_100_when_not_fully_spent() -> None:
+def test_printed_percent_that_disagrees_with_its_row_is_logged() -> None:
+    # % Prestasi is never stored; FY2023-2024 print values that contradict their own row.
     p105, line_no = edit_line(P105, T01_EMOLUMEN, "99.99", "100.00")  # 7,601,986.15 / 7,602,000 = 99.9998%
-    with pytest.raises(ParseError, match="% Prestasi prints 100.00; the rule gives 99.99") as error:
-        parse(p105=p105)
-    assert error.value.line_no == line_no
+    corrections = [c for c in parse(p105=p105).corrections if c.rule == "PRINTED_PERCENT_DIFFERS"]
+    assert [(c.citation.line_no, c.detail) for c in corrections] == [
+        (line_no, "% Prestasi prints 100.00; the rule gives 99.99")
+    ]
+    assert not [c for c in parse().corrections if c.rule == "PRINTED_PERCENT_DIFFERS"]
 
 
 def test_duplicate_leaf_fails() -> None:

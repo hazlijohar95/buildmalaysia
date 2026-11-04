@@ -29,8 +29,10 @@ join operating_line_detail t
   on t.document_id = o.document_id and t.vote_code = 'B.12' and t.activity_name_ms = 'Kumpulan Wang Pembangunan'
 where o.scope = 'statement' and o.object_code is null;
 
--- A ministry's supply vote B.nn and development vote P.nn share the number and the
--- printed name (all 29 pairs in FY2025). Votes pair only when both match.
+-- A ministry's supply vote B.nn and development vote P.nn share the number. The printed
+-- names agree for every pair in FY2023-2025 except a misspelling (FY2024 P.33
+-- "TRANFORMASI") and a rename (FY2023 P.64 "PENGAJIAN TINGGI", B.64 "PENDIDIKAN
+-- TINGGI"), so votes pair by number and take the supply vote's name.
 create view ministry_spending as
 with operating as (
   select v.fiscal_year, v.code, substr(v.code, 3) as number, v.name_ms, t.revised_sen, t.actual_sen
@@ -56,4 +58,4 @@ select coalesce(o.fiscal_year, d.fiscal_year) as fiscal_year,
        coalesce(o.actual_sen, 0) + coalesce(d.actual_sen, 0) as actual_sen
 from operating o
 full join development d
-  on d.fiscal_year = o.fiscal_year and d.number = o.number and d.name_ms = o.name_ms;
+  on d.fiscal_year = o.fiscal_year and d.number = o.number;

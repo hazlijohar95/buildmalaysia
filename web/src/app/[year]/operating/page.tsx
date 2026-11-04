@@ -4,15 +4,17 @@ import { getVoteSummaries, getFiscalTotals, type SortKey } from "@/lib/queries/o
 import { formatSen, formatSenCompact, utilisation } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
 import CitationLink from "@/components/CitationLink";
+import { getFederalSpending } from "@/lib/queries/spending";
+import { getLoadedYears, requireYear } from "@/lib/years";
+import YearNav from "@/components/YearNav";
 import UtilBar from "@/components/UtilBar";
 
-export const metadata: Metadata = {
-  title: "Operating expenditure 2025",
-};
-
-const YEAR = 2025;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  return { title: `Operating expenditure ${(await params).year}` };
+}
 
 interface Props {
+  params: Promise<{ year: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
@@ -23,10 +25,12 @@ function sortParam(raw: string | string[] | undefined): SortKey {
 }
 
 function SortLink({
+  year,
   col,
   current,
   label,
 }: {
+  year: number;
   col: SortKey;
   current: SortKey;
   label: string;
@@ -34,7 +38,7 @@ function SortLink({
   const active = col === current;
   return (
     <Link
-      href={`/2025/operating?sort=${col}`}
+      href={`/${year}/operating?sort=${col}`}
       style={{
         color: active ? "var(--fg)" : "var(--muted)",
         fontWeight: active ? 600 : 400,
@@ -47,16 +51,18 @@ function SortLink({
   );
 }
 
-export default async function OperatingPage({ searchParams }: Props) {
-  const params = await searchParams;
-  const sort = sortParam(params.sort);
-  const [votes, totals] = await Promise.all([
-    getVoteSummaries(YEAR, sort),
-    getFiscalTotals(YEAR),
+export default async function OperatingPage({ params, searchParams }: Props) {
+  const year = await requireYear((await params).year);
+  const sort = sortParam((await searchParams).sort);
+  const [votes, totals, spending, years] = await Promise.all([
+    getVoteSummaries(year, sort),
+    getFiscalTotals(year),
+    getFederalSpending(year),
+    getLoadedYears(),
   ]);
 
-  if (!totals) {
-    return <p>No statement has been loaded for {YEAR} yet.</p>;
+  if (!totals || !spending) {
+    return <p>No statement has been loaded for {year} yet.</p>;
   }
 
   const pct = utilisation(totals.total_revised_sen, totals.total_actual_sen);
@@ -64,8 +70,9 @@ export default async function OperatingPage({ searchParams }: Props) {
   return (
     <>
       <div className="mb-8">
+        <YearNav year={year} years={years} suffix="/operating" />
         <h1 className="text-2xl font-semibold mb-1">
-          Operating expenditure {YEAR}
+          Operating expenditure {year}
         </h1>
         <p style={{ color: "var(--muted)" }} className="text-sm">
           Perbelanjaan Mengurus (Lampiran 1): budget vs actual for every vote.{" "}
@@ -88,9 +95,16 @@ export default async function OperatingPage({ searchParams }: Props) {
       </div>
       <p className="text-xs -mt-6 mb-8" style={{ color: "var(--muted)" }}>
         Totals as printed in the statement (JUMLAH KESELURUHAN MENGURUS),{" "}
-        <CitationLink docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
-        Actual spending includes the RM5,293,447,361.93 transfer to the Development Fund
-        (Kumpulan Wang Pembangunan). data.gov.my reports operating expenditure without it.
+        <CitationLink year={year} docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
+        Actual spending includes the {formatSen(spending.development_fund_transfer_sen)} transfer to the
+        Development Fund (Kumpulan Wang Pembangunan,{" "}
+        <CitationLink
+          year={year}
+          docUrl={spending.doc_url}
+          pdfPage={spending.transfer_pdf_page}
+          bookPage={spending.transfer_book_page}
+        />
+        ). data.gov.my reports operating expenditure without it.
       </p>
 
       {/* Charged vs Supply split */}
@@ -115,9 +129,9 @@ export default async function OperatingPage({ searchParams }: Props) {
       {/* Vote table */}
       <div className="mb-3 flex flex-wrap gap-4 text-xs" style={{ color: "var(--muted)" }}>
         <span>Sort by:</span>
-        <SortLink col="code" current={sort} label="Vote code" />
-        <SortLink col="revised_sen" current={sort} label="Revised" />
-        <SortLink col="actual_sen" current={sort} label="Actual" />
+        <SortLink year={year} col="code" current={sort} label="Vote code" />
+        <SortLink year={year} col="revised_sen" current={sort} label="Revised" />
+        <SortLink year={year} col="actual_sen" current={sort} label="Actual" />
       </div>
 
       <div className="table-scroll">
@@ -141,12 +155,12 @@ export default async function OperatingPage({ searchParams }: Props) {
               return (
                 <tr key={v.code}>
                   <td className="font-mono text-xs whitespace-nowrap">
-                    <Link href={`/2025/vote/${voteCodeToSlug(v.code)}`}>
+                    <Link href={`/${year}/vote/${voteCodeToSlug(v.code)}`}>
                       {v.code}
                     </Link>
                   </td>
                   <td className="max-w-xs">
-                    <Link href={`/2025/vote/${voteCodeToSlug(v.code)}`}>
+                    <Link href={`/${year}/vote/${voteCodeToSlug(v.code)}`}>
                       {v.name_ms}
                     </Link>
                   </td>
@@ -163,6 +177,7 @@ export default async function OperatingPage({ searchParams }: Props) {
                   </td>
                   <td>
                     <CitationLink
+                      year={year}
                       docUrl={v.doc_url}
                       pdfPage={v.pdf_page}
                       bookPage={v.book_page}

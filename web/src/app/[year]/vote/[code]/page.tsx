@@ -17,41 +17,42 @@ import UtilBar from "@/components/UtilBar";
 import { getDevelopmentVote } from "@/lib/queries/development";
 import { getPairedVote } from "@/lib/queries/spending";
 import DevelopmentVote from "./DevelopmentVote";
-
-const YEAR = 2025;
+import { requireYear } from "@/lib/years";
 
 interface Props {
-  params: Promise<{ code: string }>;
+  params: Promise<{ year: string; code: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { code: slug } = await params;
+  const { year: yearSegment, code: slug } = await params;
+  const year = await requireYear(yearSegment);
   const voteCode = slugToVoteCode(slug);
   if (voteCode.startsWith("P.")) {
-    const detail = await getDevelopmentVote(YEAR, voteCode);
+    const detail = await getDevelopmentVote(year, voteCode);
     return { title: detail ? `${voteCode} ${detail.vote.name_ms}` : "Vote not found" };
   }
-  const header = await getVoteHeader(YEAR, voteCode);
+  const header = await getVoteHeader(year, voteCode);
   if (!header) return { title: "Vote not found" };
-  return { title: `${header.code} ${header.name_ms}` };
+  return { title: `${header.code} ${header.name_ms} (${year})` };
 }
 
 export default async function VoteDetailPage({ params }: Props) {
-  const { code: slug } = await params;
+  const { year: yearSegment, code: slug } = await params;
+  const year = await requireYear(yearSegment);
   const voteCode = slugToVoteCode(slug);
 
   if (voteCode.startsWith("P.")) {
-    const [detail, paired] = await Promise.all([getDevelopmentVote(YEAR, voteCode), getPairedVote(YEAR, voteCode)]);
+    const [detail, paired] = await Promise.all([getDevelopmentVote(year, voteCode), getPairedVote(year, voteCode)]);
     if (!detail) notFound();
-    return <DevelopmentVote detail={detail} year={YEAR} operatingVoteCode={paired} />;
+    return <DevelopmentVote detail={detail} year={year} operatingVoteCode={paired} />;
   }
 
   const [header, programmes, activities, lines, paired] = await Promise.all([
-    getVoteHeader(YEAR, voteCode),
-    getProgrammeTotals(YEAR, voteCode),
-    getActivityTotals(YEAR, voteCode),
-    getLeafLines(YEAR, voteCode),
-    getPairedVote(YEAR, voteCode),
+    getVoteHeader(year, voteCode),
+    getProgrammeTotals(year, voteCode),
+    getActivityTotals(year, voteCode),
+    getLeafLines(year, voteCode),
+    getPairedVote(year, voteCode),
   ]);
 
   if (!header) notFound();
@@ -67,7 +68,7 @@ export default async function VoteDetailPage({ params }: Props) {
     <>
       {/* Back + breadcrumb */}
       <div className="mb-6 text-sm" style={{ color: "var(--muted)" }}>
-        <Link href="/2025/operating">← All operating votes</Link>
+        <Link href={`/${year}/operating`}>← All operating votes</Link>
       </div>
 
       {/* Vote header */}
@@ -77,7 +78,7 @@ export default async function VoteDetailPage({ params }: Props) {
           {paired && (
             <>
               {" · "}
-              <Link href={`/2025/vote/${voteCodeToSlug(paired)}`}>development vote {paired}</Link>
+              <Link href={`/${year}/vote/${voteCodeToSlug(paired)}`}>development vote {paired}</Link>
             </>
           )}
         </div>
@@ -103,6 +104,7 @@ export default async function VoteDetailPage({ params }: Props) {
             Varian: {formatSen(varian)}
           </span>
           <CitationLink
+            year={year}
             docUrl={header.doc_url}
             pdfPage={header.pdf_page}
             bookPage={header.book_page}
@@ -115,11 +117,12 @@ export default async function VoteDetailPage({ params }: Props) {
         const progActivities = actsByProg[prog.programme_code] ?? [];
         return (
           <section key={prog.programme_code} className="mb-10">
-            <ProgrammeHeader prog={prog} />
+            <ProgrammeHeader year={year} prog={prog} />
             {progActivities.map((act) => {
               const actLines = linesByActivity[act.activity_code] ?? [];
               return (
                 <ActivitySection
+                  year={year}
                   key={act.activity_code}
                   act={act}
                   lines={actLines}
@@ -133,7 +136,7 @@ export default async function VoteDetailPage({ params }: Props) {
   );
 }
 
-function ProgrammeHeader({ prog }: { prog: ProgrammeTotal }) {
+function ProgrammeHeader({ year, prog }: { year: number; prog: ProgrammeTotal }) {
   const over = prog.actual_sen > prog.revised_sen;
   return (
     <div
@@ -151,6 +154,7 @@ function ProgrammeHeader({ prog }: { prog: ProgrammeTotal }) {
         Sebenar: {formatSen(prog.actual_sen)}
       </span>
       <CitationLink
+        year={year}
         docUrl={prog.doc_url}
         pdfPage={prog.pdf_page}
         bookPage={prog.book_page}
@@ -160,9 +164,11 @@ function ProgrammeHeader({ prog }: { prog: ProgrammeTotal }) {
 }
 
 function ActivitySection({
+  year,
   act,
   lines,
 }: {
+  year: number;
   act: ActivityTotal;
   lines: LeafLine[];
 }) {
@@ -182,6 +188,7 @@ function ActivitySection({
           <span className={over ? "over-budget" : ""}>{formatSen(act.actual_sen)}</span>
         </span>
         <CitationLink
+          year={year}
           docUrl={act.doc_url}
           pdfPage={act.pdf_page}
           bookPage={act.book_page}
@@ -233,6 +240,7 @@ function ActivitySection({
                   </td>
                   <td>
                     <CitationLink
+                      year={year}
                       docUrl={l.doc_url}
                       pdfPage={l.pdf_page}
                       bookPage={l.book_page}

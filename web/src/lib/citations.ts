@@ -4,8 +4,8 @@ export function citationHref(url: string, pdfPage: number): string {
 }
 
 /** Human-readable citation label using the book page number; a spread names both pages. */
-export function citationLabel(bookPage: number, spread = false): string {
-  return spread ? `JANM 2025, pp. ${bookPage}–${bookPage + 1}` : `JANM 2025, p. ${bookPage}`;
+export function citationLabel(year: number, bookPage: number, spread = false): string {
+  return spread ? `JANM ${year}, pp.\u00a0${bookPage}–${bookPage + 1}` : `JANM ${year}, p.\u00a0${bookPage}`;
 }
 
 /** Convert a vote code like "T.03" to its URL slug "T03". */

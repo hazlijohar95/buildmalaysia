@@ -19,7 +19,7 @@ uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildm
 The command:
 
 1. Uses `data/raw/janm/2025.pdf`, or downloads it from the URL in `src/pipeline/sources.py` if it is absent. It stops if the file's SHA-256 differs from the pinned hash. A download goes to a `.part` file and is renamed only after the hash matches.
-2. Extracts PDF pages 103–212 (Lampiran 1) and 214–249 (Lampiran 2), both in Bahasa Malaysia, with `pdftotext`.
+2. Extracts the Lampiran 1 and Lampiran 2 page ranges registered in `src/pipeline/sources.py` (FY2023, FY2024, FY2025), both in Bahasa Malaysia, with `pdftotext`.
 3. Parses them into the typed model in `src/pipeline/model.py`. Any line it cannot place stops the run with the PDF page and line number.
 4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads both reconciliation views. It commits only when every row of both matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
 
@@ -59,10 +59,14 @@ Projects sit under agency headings in capitals (`MAJLIS AMANAH RAKYAT (MARA)`), 
 
 | Rule | What it does | FY2025 occurrences (PDF page / book page) |
 |---|---|---|
-| `VOTE_NAMED_GROUP` | `Jumlah <vote name>` with no group open totals the projects printed under the vote header before the first heading. They become a group named after the vote. | p226/212 (P.24, 10 projects), p228/214 (P.26, 8 projects) |
+| `VOTE_NAMED_GROUP` | `Jumlah <name>` with no group open totals the projects printed under the vote header before the first heading. The name is the vote's, or an abbreviation (`Jumlah MITI`, `Jumlah MED` in FY2023). | p226/212 (P.24, 10 projects), p228/214 (P.26, 8 projects) |
 | `PARENT_GROUP_BY_NAME` | `Jumlah <stem> <A>, <B> dan <C>` with no group open totals the run of groups just closed whose names contain the stem and one of A, B, C. Those groups get it as their parent. | p224/210 (P.23 three forestry departments), p230/216 (P.27 JKR roads in Semenanjung, Sabah, Sarawak) |
-| `GROUP_TOTAL_NAME_DIFFERS` | A group total whose name differs from its heading still closes the open group, and the difference is logged. | p230/216 (`Suruhunjaya` for `SURUHANJAYA KOPERASI MALAYSIA (SKM)`) |
+| `GROUP_TOTAL_NAME_DIFFERS` | A group total whose name differs from its heading still closes the open group, and the difference is logged. | FY2025 p230/216 (`Suruhunjaya` for `SURUHANJAYA KOPERASI MALAYSIA (SKM)`); FY2023 uses abbreviations (`Jumlah MARA`, `Jumlah KEMAS`, `Jumlah MIDA`, …) |
 | `DUPLICATED_WORD_COLLAPSED` | A project name with a word repeated straight after itself, from overlapping text in the PDF, keeps one copy. | p242/228 (P.47 31000, `Projek Jalur Lebar Berkelajuan Tinggi`) |
+| `HEADING_MISSING` | Like `VOTE_NAMED_GROUP`, but the run of unheaded projects follows another group's total. | FY2023 p214/202 (P.28 `Jumlah Projek Pengangkutan Jalan`, 5 projects) |
+| `DOUBLED_TEXT_LAYER` | A label whose `pdftotext -raw` text holds the name twice, once in capitals the page does not draw. The copy not in capitals is kept. Checked against the rendered page. | FY2023 p210, FY2024 p220 (P.24 00601 `Dana Pembangunan & Pembiayaan PKS`) |
+| `BLANK_CELL_READ_AS_ZERO` (right page) | A right-page row with six of seven cells; placed by column right edges against the nearest complete row, the empty column reads as zero. | FY2024 p219 (P.23 16900) |
+| `NOTE_CODE_SUFFIX_IGNORED` | A note naming `Butiran 81000P`; the trailing `P` is ignored. | FY2023 p212 (P.27) |
 
 The reconciliation view checks every group, parent group, vote and statement total in all nine columns, so a grouping rule that took the wrong projects fails the load.
 
@@ -80,6 +84,11 @@ Each rule reads the source other than literally in one narrow case. Each applica
 | `ACTIVITY_CODE_LEADING_ZERO_DROPPED` | An activity header printed with five digits (`20600 Standard Malaysia`). Read as `020600`; the activity total that closes it must print the 6-digit code. | p156/142 (B.24 020600), p158/144 (B.24 050200) |
 | `OBJECT_CODE_EXTRA_LEADING_ZERO` | A leaf printed as `010000 Emolumen`. Read as object `10000`; the label must be that object group's name. | p130/116 (B.09 050100) |
 | `STRAY_BACKTICK_IGNORED` | A `` ` `` at the start of a line in the text layer that the rendered page does not show. Dropped. | p151/137, three leaves of B.22 |
+| `PRINTER_SLUG` (page furniture) | An InDesign file name and print time (`WJD25-0381 Teks 5 Lampiran BM.indd 87 19/09/2025 11:32 AM`) outside the drawn page. Ignored. | FY2024 pages |
+| `SPLIT_ROW_JOINED`, `STRAY_DASH_DROPPED` | A row whose text layer breaks after a few amounts and continues on the next line with no label. The amounts are joined; if that gives eight tokens with exactly one `–`, the dash (not drawn on the page) is dropped, and only if the seven left pass every row check. | FY2024 p106/92 (T.12 030000 Pemberian dan Kenaan Bayaran Tetap) |
+| `PRINTED_PERCENT_DIFFERS` | A printed % Prestasi that disagrees with its own row (`–` for 100.00; 99.99 for 99.33). Logged; the site computes the percentage. | FY2024 p129, p177 (×2); FY2023 p132, p152 |
+| `ACTIVITY_TOTAL_CODE_MISPRINTED` | An activity total whose code differs from the open activity (`Jumlah 050700` closing 050600, `Jumlah 048000` closing 040800, `Jumlah 0060700`). It closes the open activity. A missed header cannot hide here: its leaves would follow a closed activity, which the parser rejects. | FY2023 p142, p173, p184, p190 |
+| Activity notes | A `*` on an activity header (`*010100 Pengurusan`) with a note `*B04 - Program/Aktiviti - 010100 - …` (FY2023) or `Nota : (*) B04 - …` (FY2024). The note is stored on that activity's printed total. | FY2023, FY2024 (B.04) |
 
 Each occurrence was checked against the rendered page with `pdftoppm`.
 

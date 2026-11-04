@@ -114,6 +114,28 @@ def _fill_blank_cell(row: _Split, reference: _Split) -> tuple[_Split, int] | Non
     return _Split(row.label, values, []), missing
 
 
+def _join_split_row(first: _Split, second: _Split) -> tuple[_Split, bool] | None:
+    """Named rules SPLIT_ROW_JOINED and STRAY_DASH_DROPPED: one printed row whose text layer
+    breaks after a few amounts, continuing on the next line with no label.
+
+    The two lines' amounts are joined. If that gives eight tokens and exactly one is a
+    dash, the dash is a text-layer artefact not drawn on the page; it is dropped only if
+    the remaining seven pass every row check.
+    """
+    if not first.label or not first.values or second.label or not second.values:
+        return None
+    values = first.values + second.values
+    if len(values) == 7:
+        return _Split(first.label, values, []), False
+    dashes = [i for i, v in enumerate(values) if v.is_dash]
+    if len(values) != 8 or len(dashes) != 1:
+        return None
+    kept = values[: dashes[0]] + values[dashes[0] + 1 :]
+    if _check_row(kept)[1] is not None:
+        return None
+    return _Split(first.label, kept, []), True
+
+
 def expected_percent(actual: int, revised: int) -> int | None:
     """% Prestasi in hundredths as this statement prints it, or None where no rule is known.
 
@@ -129,25 +151,32 @@ def expected_percent(actual: int, revised: int) -> int | None:
     return rounded
 
 
-def _check_row(values: list[Value]) -> tuple[Amounts, str | None]:
+def _check_row(values: list[Value]) -> tuple[Amounts, str | None, str | None]:
+    """Check a row's arithmetic: (amounts, error, percent difference worth logging).
+
+    % Prestasi is derived and never stored, and FY2023-2024 print values that disagree with
+    their own row (a dash for 100.00, 99.99 for 99.33). A differing value is logged under the
+    named rule PRINTED_PERCENT_DIFFERS. Column placement is already proven by the two
+    identities above, which use every amount column.
+    """
     original, supplementary, virement, revised, actual, percent, variance = values
     amounts = Amounts(
         original.hundredths, supplementary.hundredths, virement.hundredths, revised.hundredths, actual.hundredths
     )
     if not percent.is_dash and not percent.has_decimals:
-        return amounts, "% Prestasi column is not a 2-decimal percentage"
+        return amounts, "% Prestasi column is not a 2-decimal percentage", None
     total = amounts.original + amounts.supplementary + amounts.virement
     if total != amounts.revised:
-        return amounts, f"Asal + Tambahan + Viremen = {total} sen but Jumlah prints {amounts.revised} sen"
+        return amounts, f"Asal + Tambahan + Viremen = {total} sen but Jumlah prints {amounts.revised} sen", None
     if amounts.revised - amounts.actual != variance.hundredths:
-        return amounts, (
-            f"Jumlah - Sebenar = {amounts.revised - amounts.actual} sen but Varian prints {variance.hundredths} sen"
-        )
+        error = f"Jumlah - Sebenar = {amounts.revised - amounts.actual} sen but Varian prints {variance.hundredths} sen"
+        return amounts, error, None
     expected = expected_percent(amounts.actual, amounts.revised)
-    if expected != percent.hundredths:
-        rule = "no known rule" if expected is None else f"the rule gives {expected / 100:.2f}"
-        return amounts, f"% Prestasi prints {percent.hundredths / 100:.2f}; {rule}"
-    return amounts, None
+    if expected == percent.hundredths:
+        return amounts, None, None
+    rule = "no known rule" if expected is None else f"the rule gives {expected / 100:.2f}"
+    message = f"% Prestasi prints {percent.hundredths / 100:.2f}; {rule}"
+    return amounts, None, message
 
 
 # --- line classification -----------------------------------------------------------
@@ -158,7 +187,9 @@ class Kind(Enum):
     DISAMBUNG = auto()  # "(disambung...)", continued-on-next-page marker
     APPENDIX_PAGE = auto()  # appendix page number in the footer
     LAMPIRAN_FOOTER = auto()
+    PRINTER_SLUG = auto()  # InDesign file name and print time, outside the rendered page area
     NOTES = auto()
+    ACTIVITY_NOTE = auto()  # "[Nota :] *B04 - Program/Aktiviti - 010100 - <text>" or "(*) B04 - ...": a marked activity
     SECTION_HEADER = auto()
     VOTE_HEADER = auto()
     PROGRAMME_HEADER = auto()
@@ -180,8 +211,12 @@ class Kind(Enum):
 
 _OBJECT_LABELS: dict[str, str] = {name: code for code, name in OBJECT_GROUPS.items()} | {
     "Pemberian & Kenaan Bayaran Tetap": "40000",
+    "Perbelanjaan - perbelanjaan Lain": "50000",
 }
 _OBJECT_ALTERNATIVES = "|".join(re.escape(label) for label in _OBJECT_LABELS)
+
+
+PRINTER_SLUG = r"\S.*\.indd \d+\s+\d{2}/\d{2}/\d{4} \d{1,2}:\d{2} [AP]M"
 
 
 def _table(rows: list[tuple[Kind, str]]) -> tuple[tuple[Kind, re.Pattern[str]], ...]:
@@ -191,15 +226,21 @@ def _table(rows: list[tuple[Kind, str]]) -> tuple[tuple[Kind, re.Pattern[str]], 
 TEXT_KINDS = _table(
     [
         (Kind.BLANK, r""),
-        (Kind.DISAMBUNG, r"\(disambung\.\.\.\)"),
+        (Kind.DISAMBUNG, r"\(dis ?ambung\.\.\.\)"),
         (Kind.APPENDIX_PAGE, r"\d{1,3}"),
-        (Kind.LAMPIRAN_FOOTER, r"LAMPIRAN 1 - PERBELANJAAN MENGURUS"),
+        (Kind.LAMPIRAN_FOOTER, r"LAMPIRAN 1 - (?:PENYATA )?PERBELANJAAN MENGURUS"),
+        (Kind.PRINTER_SLUG, PRINTER_SLUG),
+        (
+            Kind.ACTIVITY_NOTE,
+            r"(?:Nota\s*:\s*)?\(?\*\)?\s*(?P<vote>[TB])\.?(?P<num>\d{2})\s*[-–]\s*Program/Aktiviti"
+            r"\s*[-–]\s*(?P<code>\d{6})\s*[-–]\s*.+",
+        ),
         (Kind.NOTES, r"Nota:.*"),
         (Kind.SECTION_HEADER, r"PERBELANJAAN (?P<code>TANGGUNGAN|BEKALAN)"),
         (Kind.VOTE_HEADER, r"(?P<code>[TB]\.\d{2}) (?P<name>.+)"),
         (Kind.PROGRAMME_HEADER, r"(?P<code>\d{2}0000) (?P<name>.+)"),
-        (Kind.ACTIVITY_HEADER, r"(?P<code>\d{4}00) (?P<name>.+)"),
-        (Kind.ACTIVITY_HEADER_NO_LEADING_ZERO, r"(?P<code>[1-9](?!00)\d{2}00) (?P<name>.+)"),
+        (Kind.ACTIVITY_HEADER, r"(?P<mark>\*?)(?P<code>\d{4}00) (?P<name>.+)"),
+        (Kind.ACTIVITY_HEADER_NO_LEADING_ZERO, r"(?P<mark>\*?)(?P<code>[1-9](?!00)\d{2}00) (?P<name>.+)"),
         (Kind.JUMLAH_PREFIX, r"JUMLAH (?P<name>.+)"),
         (Kind.CONTINUATION, r".+"),
     ]
@@ -210,7 +251,7 @@ ROW_KINDS = _table(
         (Kind.LEAF, r"(?P<code>[1-5]0000) (?P<name>.+)"),
         (Kind.LEAF_EXTRA_LEADING_ZERO, r"0(?P<code>[1-5]0000) (?P<name>.+)"),
         (Kind.PROGRAMME_TOTAL, r"Jumlah (?P<code>\d{2}0000)"),
-        (Kind.ACTIVITY_TOTAL, r"Jumlah (?P<code>\d{4}00)"),
+        (Kind.ACTIVITY_TOTAL, r"Jumlah (?P<code>0?\d{4}00)"),  # FY2023 prints one as 0060700
         (Kind.OBJECT_TOTAL, rf"(?P<jumlah>Jumlah )?(?P<name>{_OBJECT_ALTERNATIVES})"),
         (Kind.SECTION_TOTAL, r"JUMLAH PERBELANJAAN (?P<code>TANGGUNGAN|BEKALAN)"),
         (Kind.STATEMENT_TOTAL, r"JUMLAH KESELURUHAN MENGURUS"),
@@ -227,10 +268,10 @@ _HEADER_KINDS = {
     Kind.ACTIVITY_HEADER,
     Kind.ACTIVITY_HEADER_NO_LEADING_ZERO,
 }
-_IGNORED_KINDS = {Kind.BLANK, Kind.DISAMBUNG, Kind.APPENDIX_PAGE, Kind.LAMPIRAN_FOOTER}
+_IGNORED_KINDS = {Kind.BLANK, Kind.DISAMBUNG, Kind.APPENDIX_PAGE, Kind.LAMPIRAN_FOOTER, Kind.PRINTER_SLUG}
 _SECTIONS = {"TANGGUNGAN": Section.CHARGED, "BEKALAN": Section.SUPPLY}
-_DISAMBUNG_SUFFIX = re.compile(r"(?<=\S)\s+\(disambung\.\.\.\)$")
-_SAMB = re.compile(r"(?P<rest>.*?)\s*[-–] \(SAMB\.\)")
+_DISAMBUNG_SUFFIX = re.compile(r"(?<=\S)\s+\(dis ?ambung\.\.\.\)$")
+_SAMB = re.compile(r"(?P<rest>.*?)\s*(?:[-–]\s*)?\(SAMB\.\)")
 
 
 def _classify(table: tuple[tuple[Kind, re.Pattern[str]], ...], text: str) -> tuple[Kind, re.Match[str]]:
@@ -351,7 +392,8 @@ class _Pending:
 
     @property
     def name(self) -> str:
-        return " ".join(" ".join(self.parts).split())
+        # "SUMBER ASLI , ALAM" and "SUMBER ASLI, ALAM" name the same vote in FY2023.
+        return re.sub(r"\s+([,.)])", r"\1", " ".join(" ".join(self.parts).split()))
 
     @property
     def citation(self) -> Citation:
@@ -375,6 +417,8 @@ class _Parser:
         self.leaf_keys: set[tuple[str, str, str]] = set()
         self.corrections: list[Correction] = []
         self.notes: dict[str, str] = {}
+        self.activity_notes: dict[tuple[str, str], str] = {}  # (vote, activity) -> note
+        self.marked_activities: set[tuple[str, str]] = set()
         self.notes_page: int | None = None
         self.book_page_offset: int | None = None
         self.where = Citation(0, 0, 0, "")
@@ -410,6 +454,20 @@ class _Parser:
                 self.corrections.append(Correction("STRAY_BACKTICK_IGNORED", "dropped a leading ` not rendered", at))
                 lines[i] = lines[i].replace("`", " ", 1)
         splits = [_split(line) for line in lines]
+        for i in range(units + 1, len(lines) - 1):
+            if 0 < len(splits[i].values) < 6:
+                joined = _join_split_row(splits[i], splits[i + 1])
+                if joined is not None:
+                    at = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
+                    self.corrections.append(
+                        Correction("SPLIT_ROW_JOINED", "amounts continued on the next text line", at)
+                    )
+                    if joined[1]:
+                        self.corrections.append(
+                            Correction("STRAY_DASH_DROPPED", "dropped a '–' the page does not draw", at)
+                        )
+                    splits[i], splits[i + 1] = joined[0], _Split("", [], [])
+                    lines[i], lines[i + 1] = lines[i].rstrip() + "\n" + lines[i + 1].strip(), ""
         for i in range(units + 1, len(lines)):
             self.where = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
             if self.phase is Phase.NOTES and self.notes_page == page.pdf_page:
@@ -444,7 +502,7 @@ class _Parser:
                     raise ParseError(page.pdf_page, i + 1, line, "running head without one book page number")
                 book_pages.append(int(running["left"] or running["right"]))
             elif not (
-                text in ("", "Penyata Perbelanjaan Mengurus")
+                text in ("", "Penyata Perbelanjaan Mengurus", "(sambungan)", "( sambungan)")
                 or re.fullmatch(rf"bagi tahun berakhir 31 Disember {self.fiscal_year}( \(sambungan\))?", text)
                 or set(text.split()) <= _COLUMN_HEAD_WORDS
             ):
@@ -485,6 +543,12 @@ class _Parser:
             raise self.fail("(SAMB.) marker on a line that is not a header")
         if kind in _IGNORED_KINDS:
             return
+        if kind is Kind.ACTIVITY_NOTE:
+            key = (f"{match['vote']}.{match['num']}", match["code"])
+            if key in self.activity_notes:
+                raise self.fail(f"second note for activity {key}")
+            self.activity_notes[key] = text
+            return
         if kind is not Kind.NOTES and _NUMBER_IN_TEXT.search(text):
             raise self.fail("line holds an amount but not the seven numeric columns of a row")
         if kind is Kind.CONTINUATION:
@@ -510,14 +574,17 @@ class _Parser:
             pdf_page=self.where.pdf_page,
             book_page=self.where.book_page,
             line_no=self.where.line_no,
+            marks=groups.get("mark") or "",
         )
 
     def feed_row(self, label: str, values: list[Value]) -> None:
         marks = "".join(v.marks for v in values) + label[: len(label) - len(label.lstrip("*"))]
         label = label.lstrip("*").strip()
-        amounts, error = _check_row(values)
+        amounts, error, percent_off = _check_row(values)
         if error is not None:
             raise self.fail(error)
+        if percent_off is not None:
+            self.corrections.append(Correction("PRINTED_PERCENT_DIFFERS", percent_off, self.where))
 
         if self.pending is not None and self.pending.kind is Kind.JUMLAH_PREFIX:
             pending = self.pending
@@ -548,7 +615,16 @@ class _Parser:
                 self.transition(Event.ACTIVITY_TOTAL)
                 assert self.activity is not None and self.programme is not None and self.vote is not None
                 if match["code"] != self.activity.code:
-                    raise self.fail(f"total for activity {match['code']} inside activity {self.activity.code}")
+                    # Named rule ACTIVITY_TOTAL_CODE_MISPRINTED: an activity total always
+                    # closes the open activity. A missed header cannot hide here: its
+                    # leaves would follow a closed activity, which the machine rejects.
+                    self.corrections.append(
+                        Correction(
+                            "ACTIVITY_TOTAL_CODE_MISPRINTED",
+                            f"'Jumlah {match['code']}' closes activity {self.activity.code}",
+                            cite,
+                        )
+                    )
                 self.add_total(
                     Scope.ACTIVITY,
                     amounts,
@@ -598,7 +674,7 @@ class _Parser:
     def leaf(self, object_code: str, name: str, amounts: Amounts, marks: str) -> None:
         self.transition(Event.LEAF)
         assert self.activity is not None and self.vote is not None
-        if name != OBJECT_GROUPS[object_code]:
+        if _OBJECT_LABELS.get(name) != object_code:
             raise self.fail(f"object {object_code} is named {OBJECT_GROUPS[object_code]!r}, not {name!r}")
         if marks:
             raise self.fail("footnote marker on a leaf line; operating_line has no column for it")
@@ -609,7 +685,9 @@ class _Parser:
         self.lines.append(OperatingLine(self.vote.code, self.activity.code, object_code, amounts, self.where))
 
     def object_total(self, object_code: str, jumlah: bool, amounts: Amounts, marks: str) -> None:
-        if not jumlah:
+        # After an activity total, an object line totals the programme. FY2025 prints it
+        # without "Jumlah"; FY2023 prints it with.
+        if not jumlah or self.phase in (Phase.ACTIVITY_DONE, Phase.PROGRAMME_OBJECTS):
             self.transition(Event.PROGRAMME_OBJECT)
             assert self.vote is not None and self.programme is not None
             self.add_total(
@@ -744,6 +822,8 @@ class _Parser:
             raise self.fail(f"duplicate activity {code} in vote {self.vote.code}", at)
         self.activity = Activity(self.vote.code, self.programme.code, code, pending.name, at)
         self.activities.append(self.activity)
+        if pending.marks:
+            self.marked_activities.add((self.vote.code, code))
 
     # end
 
@@ -759,7 +839,15 @@ class _Parser:
                     raise self.fail(f"footnote marker {marks!r} has no note", total.citation)
                 used.add(marks)
                 total = replace(total, footnote=self.notes[marks])
+            elif total.scope is Scope.ACTIVITY and (total.vote_code, total.activity_code) in self.marked_activities:
+                # A "*" on an activity header: its note is stored on the activity's total.
+                key = (total.vote_code or "", total.activity_code or "")
+                if key not in self.activity_notes:
+                    raise self.fail(f"activity {key} is marked but has no note", total.citation)
+                total = replace(total, footnote=self.activity_notes.pop(key))
             totals.append(total)
+        if self.activity_notes:
+            raise self.fail(f"notes for activities {sorted(self.activity_notes)} match no marked activity")
         return Statement(
             fiscal_year=self.fiscal_year,
             votes=tuple(self.votes),
