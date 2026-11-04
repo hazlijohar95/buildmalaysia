@@ -1,21 +1,21 @@
 "use client";
 
 // Boxed navigation in the style of buildcanada.com: a solid wordmark cell, bordered link cells and a
-// dark call-to-action cell, collapsing to a menu below the xl breakpoint.
+// dark call-to-action cell, collapsing to a menu below the lg breakpoint.
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 
 export interface NavItem {
   href: string;
   label: string;
-  match: string; // path prefix that marks the link active
+  match: string[]; // path prefixes that mark the link active
 }
 
 const cell =
-  "flex items-center whitespace-nowrap px-5 2xl:px-8 font-mono text-[13px] uppercase tracking-[0.22em] no-underline transition-colors";
+  "flex items-center whitespace-nowrap px-3.5 xl:px-5 2xl:px-8 font-mono text-[13px] uppercase tracking-[0.14em] xl:tracking-[0.22em] no-underline transition-colors";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -30,8 +30,15 @@ export function Wordmark({ className = "" }: { className?: string }) {
 export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const isActive = (item: NavItem) =>
-    item.match === "/" ? pathname === "/" : pathname === item.match || pathname.startsWith(`${item.match}/`);
+  const isActive = (item: NavItem) => item.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [open]);
+  useEffect(() => setOpen(false), [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b-2 border-foreground bg-background">
@@ -43,7 +50,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem 
         >
           <Wordmark className="text-[26px] lg:text-[30px]" />
         </Link>
-        <nav className="hidden xl:flex items-stretch" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-stretch" aria-label="Main navigation">
           {items.map((item) => (
             <Link
               key={item.href}
@@ -62,22 +69,23 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem 
         <div className="flex-1" />
         <Link
           href={cta.href}
-          className={cn(cell, "hidden xl:flex bg-foreground text-background hover:bg-charcoal-800")}
+          className={cn(cell, "hidden lg:flex bg-foreground text-background hover:bg-charcoal-800")}
         >
           {cta.label}
         </Link>
         <button
           type="button"
-          className="xl:hidden flex items-center border-l-2 border-foreground px-5 text-foreground"
+          className="lg:hidden flex items-center border-l-2 border-foreground px-5 text-foreground"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
+          aria-controls="mobile-menu"
         >
           <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
           {open ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
         </button>
       </div>
       {open && (
-        <nav className="xl:hidden border-t-2 border-foreground" aria-label="Mobile navigation">
+        <nav id="mobile-menu" className="lg:hidden border-t-2 border-foreground" aria-label="Mobile navigation">
           {[...items, cta].map((item) => (
             <Link
               key={item.href}

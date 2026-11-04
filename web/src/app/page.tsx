@@ -4,17 +4,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LuReceipt, LuUsersRound } from "react-icons/lu";
 import { PiBank } from "react-icons/pi";
-import { H3, P } from "@/components/Layout";
+import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
-import { getFederalSpending } from "@/lib/queries/spending";
-import { getRevenueTotal } from "@/lib/queries/revenue";
+import { cn } from "@/lib/cn";
+import { formatSen, formatSenCompact, parseSen } from "@/lib/money";
 import { getBudgetTotals, getBudgetYears } from "@/lib/queries/budget";
+import { getRevenueTotal } from "@/lib/queries/revenue";
+import { getFederalSpending } from "@/lib/queries/spending";
 import { getLoadedYears } from "@/lib/years";
-import { formatSenCompact, parseSen } from "@/lib/money";
 
 export const metadata: Metadata = { title: { absolute: "Build Malaysia: the facts about government spending" } };
-
-const rule = "bg-linen-50/15";
 
 function Arc({ className }: { className: string }) {
   return (
@@ -25,8 +24,7 @@ function Arc({ className }: { className: string }) {
   );
 }
 
-const buttonBase =
-  "inline-flex items-center px-6 py-3.5 font-mono text-[13px] uppercase tracking-[0.22em] no-underline border-2 border-foreground transition-colors";
+const button = cn(kicker, "inline-flex min-h-12 items-center px-6 py-3.5 no-underline border-2 transition-colors");
 
 export default async function HomePage() {
   const [[latest], [budgetYear]] = await Promise.all([getLoadedYears(), getBudgetYears()]);
@@ -36,153 +34,208 @@ export default async function HomePage() {
     budgetYear ? getBudgetTotals(budgetYear) : [],
   ]);
   const tabled = budget.at(-1);
+  // The budget book's own actual for the latest year, counted the same way as its estimate.
+  const bookActual = [...budget].reverse().find((b) => b.basis === "actual");
+  const gap = spending && revenue ? spending.total_actual_sen - revenue.actual_sen : null;
 
   return (
     <>
       <section className="p-2 md:p-4 border-b-2 border-foreground">
-        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 min-h-[460px] md:min-h-[620px] flex items-center">
-          <div aria-hidden className={`absolute inset-y-0 left-[7%] w-px ${rule}`} />
-          <div aria-hidden className={`absolute inset-y-0 right-[7%] w-px ${rule}`} />
-          <Arc className="-left-[120px] top-[10%] h-[240px] w-[240px]" />
-          <Arc className="-right-[120px] bottom-[6%] h-[240px] w-[240px]" />
-          <h1 className="relative w-full m-0 text-center font-display font-medium tracking-tight leading-[1.08] text-[2.75rem] sm:text-[4.5rem] lg:text-[6.5rem]">
-            <span className="block">Building a</span>
-            <span className="block border-y border-linen-50/15">
-              <span className="text-transparent [-webkit-text-stroke:1.5px_var(--color-linen-50)]">Better</span>{" "}
-              Malaysia.
-            </span>
-          </h1>
+        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 px-5 py-14 sm:px-10 md:py-20">
+          <div aria-hidden className="absolute inset-y-0 left-[6%] w-px bg-linen-50/15" />
+          <div aria-hidden className="absolute inset-y-0 right-[6%] w-px bg-linen-50/15" />
+          <Arc className="-left-[120px] top-[6%] h-[240px] w-[240px]" />
+          <Arc className="-right-[120px] bottom-[4%] h-[240px] w-[240px]" />
+          <div className="relative">
+            <h1 className="m-0 text-center font-display font-medium tracking-tight leading-[1.08] text-[2.5rem] sm:text-[4rem] lg:text-[5.5rem]">
+              <span className="block">Building a</span>
+              <span className="block border-y border-linen-50/15">
+                <span className="text-transparent [-webkit-text-stroke:1.5px_var(--color-linen-50)]">Better</span>{" "}
+                Malaysia.
+              </span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-lg text-linen-200">
+              Clear, sourced facts on how the federal government raises and spends public money.
+            </p>
+
+            {spending && latest && (
+              <dl className="mx-auto mt-10 grid max-w-4xl grid-cols-1 sm:grid-cols-3 gap-[2px] bg-linen-50/20 border border-linen-50/20">
+                {[
+                  ...(revenue ? [{ k: `Raised in ${latest}`, v: revenue.actual_sen }] : []),
+                  { k: `Spent in ${latest}`, v: spending.total_actual_sen },
+                  ...(gap !== null && gap > 0 ? [{ k: "Borrowed to cover the gap", v: parseSen(gap) }] : []),
+                ].map((s) => (
+                  <div key={s.k} className="bg-charcoal-1000 px-6 py-5 text-center">
+                    <dt className={cn(kicker, "text-linen-300")}>{s.k}</dt>
+                    <dd
+                      className="m-0 mt-2 font-display text-3xl md:text-4xl font-semibold tabular-nums"
+                      title={formatSen(s.v)}
+                    >
+                      {formatSenCompact(s.v)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/tax"
+                className={cn(button, "border-auburn-500 bg-auburn-700 text-linen-50 hover:bg-auburn-800")}
+              >
+                Where your taxes go
+              </Link>
+              <Link href="/spending" className={cn(button, "border-linen-50/60 text-linen-50 hover:bg-linen-50/10")}>
+                Where the money went
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
       <section className="border-b-2 border-foreground">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,460px)]">
-          <div className="px-6 py-14 md:px-16 lg:px-24 lg:py-20">
-            <h2 className="font-display text-4xl md:text-5xl font-semibold tracking-tight m-0">You deserve the facts.</h2>
+          <div className="px-5 py-14 sm:px-8 md:px-16 lg:px-24 lg:py-20">
+            <H2 className="md:text-5xl">You deserve the facts.</H2>
             <p className="mt-4 text-xl md:text-2xl leading-relaxed">
               Government spending shouldn&apos;t be a black box.
             </p>
-            <p className="mt-6 text-lg leading-relaxed font-semibold">
-              Build Malaysia turns the federal government&apos;s official accounts into clear, accurate facts, so every
-              Malaysian can see where public money comes from and where it goes.
-            </p>
-            <p className="mt-4 text-lg leading-relaxed">
+            <p className="mt-6 text-lg leading-relaxed">
               The figures are public, in the Accountant General&apos;s audited financial statements and the Ministry of
-              Finance&apos;s budget books, but they run to hundreds of pages of tables in Bahasa Malaysia that few people
-              ever read. Every total those documents print is recomputed from its line items before we publish it, and
-              every number links to the page it came from.
+              Finance&apos;s budget books, but they run to hundreds of pages of tables in Bahasa Malaysia that few
+              people ever read. Build Malaysia turns them into clear facts. Every total those documents print is
+              recomputed from its line items before we publish it, and every number links to the page it came from.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <Link href="/spending" className={`${buttonBase} bg-foreground text-background hover:bg-charcoal-800`}>
-                Federal spending
-              </Link>
-              {budgetYear && (
-                <Link href={`/budget/${budgetYear}`} className={`${buttonBase} text-foreground hover:bg-linen-200`}>
-                  Budget {budgetYear}
+              {[
+                { href: "/revenue", label: "Revenue" },
+                { href: "/ministries", label: "Ministries" },
+                ...(budgetYear ? [{ href: `/budget/${budgetYear}`, label: `Budget ${budgetYear}` }] : []),
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={cn(button, "border-foreground text-foreground hover:bg-linen-200")}
+                >
+                  {l.label}
                 </Link>
-              )}
-              <Link href="/ministries" className={`${buttonBase} text-foreground hover:bg-linen-200`}>
-                Ministries
-              </Link>
+              ))}
             </div>
           </div>
 
-          {spending && latest && (
-            <aside className="bg-auburn-800 text-linen-50 px-8 py-14 md:px-12 lg:py-20 flex flex-col justify-center gap-8">
-              <div className="font-mono text-[13px] uppercase tracking-[0.22em] text-linen-200">
-                The federal accounts, {latest}
-              </div>
-              {revenue && (
-                <div>
-                  <div className="font-display text-5xl font-semibold tracking-tight">
-                    {formatSenCompact(revenue.actual_sen)}
-                  </div>
-                  <div className="mt-1 text-lg text-linen-100">raised in revenue</div>
-                </div>
-              )}
+          {tabled && budgetYear && (
+            <aside className="bg-auburn-800 text-linen-50 px-5 py-14 sm:px-8 md:px-12 lg:py-20 flex flex-col justify-center gap-6">
+              <div className={cn(kicker, "text-linen-200")}>Budget {budgetYear}, as tabled</div>
               <div>
-                <div className="font-display text-5xl font-semibold tracking-tight">
-                  {formatSenCompact(spending.total_actual_sen)}
+                <div
+                  className="font-display text-5xl font-semibold tracking-tight"
+                  title={formatSen(tabled.grand_total_sen)}
+                >
+                  {formatSenCompact(tabled.grand_total_sen)}
                 </div>
-                <div className="mt-1 text-lg text-linen-100">spent</div>
+                <div className="mt-1 text-lg text-linen-100">planned federal spending in {tabled.fiscal_year}</div>
               </div>
-              {revenue && spending.total_actual_sen > revenue.actual_sen && (
-                <div>
-                  <div className="font-display text-5xl font-semibold tracking-tight">
-                    {formatSenCompact(parseSen(spending.total_actual_sen - revenue.actual_sen))}
-                  </div>
-                  <div className="mt-1 text-lg text-linen-100">more spent than raised</div>
-                </div>
+              {bookActual && (
+                <p className="m-0 text-linen-100">
+                  The same book puts {bookActual.fiscal_year} spending at {formatSenCompact(bookActual.grand_total_sen)}
+                  , counted the same way, so the plan is{" "}
+                  {(((tabled.grand_total_sen - bookActual.grand_total_sen) / bookActual.grand_total_sen) * 100).toFixed(
+                    1,
+                  )}
+                  % higher. Its totals include the transfer to the Development Fund, which our spending figures count
+                  once.
+                </p>
               )}
               <div className="text-sm text-linen-200">
-                Jabatan Akauntan Negara, <em>Penyata Kewangan Kerajaan Persekutuan {latest}</em>
-                {revenue && (
-                  <>
-                    {" "}
-                    (revenue:{" "}
-                    <CitationLink year={latest} docUrl={revenue.doc_url} pdfPage={revenue.pdf_page} bookPage={revenue.book_page} className="text-linen-50 underline" />
-                    )
-                  </>
-                )}
+                Kementerian Kewangan, <em>Anggaran Perbelanjaan Persekutuan {budgetYear}</em>, book page{" "}
+                {tabled.book_page}.{" "}
+                <Link href={`/budget/${budgetYear}`} className="text-linen-50 underline">
+                  See the budget
+                </Link>
               </div>
             </aside>
           )}
         </div>
       </section>
 
-      <section className="border-b-2 border-foreground">
-        <div className="grid grid-cols-1 md:grid-cols-3">
-          {[
-            {
-              icon: <PiBank />,
-              title: "Facts about spending",
-              body: "We turn the federal government's accounts into clear figures, ministry by ministry and programme by programme.",
-            },
-            {
-              icon: <LuReceipt />,
-              title: "Based on official documents",
-              body: "Every figure comes from Jabatan Akauntan Negara's audited statements or Kementerian Kewangan's budget books, and links to the exact page.",
-            },
-            {
-              icon: <LuUsersRound />,
-              title: "Non-partisan",
-              body: "We don't judge policies or debate spending decisions. Our only goal is that everyone can see how the federal government spends money.",
-            },
-          ].map((p) => (
-            <div
-              key={p.title}
-              className="flex flex-col gap-2 px-8 py-14 border-b-2 md:border-b-0 md:border-r-2 last:border-0 border-foreground"
-            >
-              <div className="text-4xl mb-4">{p.icon}</div>
-              <H3>{p.title}</H3>
-              <P>{p.body}</P>
+      <section className="border-b-2 border-foreground grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground">
+        {[
+          {
+            icon: <PiBank />,
+            title: "Facts about spending",
+            body: "We turn the federal government's accounts into clear figures, ministry by ministry and programme by programme.",
+          },
+          {
+            icon: <LuReceipt />,
+            title: "Based on official documents",
+            body: "Every figure comes from Jabatan Akauntan Negara's audited statements or Kementerian Kewangan's budget books, and links to the exact page.",
+          },
+          {
+            icon: <LuUsersRound />,
+            title: "Non-partisan",
+            body: "We don't judge policies or debate spending decisions. Our only goal is that everyone can see how the federal government spends money.",
+          },
+        ].map((p) => (
+          <div key={p.title} className="bg-background flex flex-col gap-3 px-6 py-12 md:px-8">
+            <div className="text-4xl mb-2" aria-hidden>
+              {p.icon}
             </div>
-          ))}
-        </div>
+            <h3 className="m-0 font-display text-xl font-semibold">{p.title}</h3>
+            <p className="m-0 text-charcoal-800">{p.body}</p>
+          </div>
+        ))}
       </section>
 
       {spending && latest && (
-        <section className="border-b-2 border-foreground">
-          <div className="grid grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: `Spent in ${latest}`, value: formatSenCompact(spending.total_actual_sen), href: "/spending" },
-              { label: "Operating", value: formatSenCompact(spending.operating_net_actual_sen), href: `/${latest}` },
-              { label: "Development", value: formatSenCompact(spending.development_actual_sen), href: `/${latest}` },
-              ...(tabled && budgetYear
-                ? [{ label: `Budget ${budgetYear} as tabled`, value: formatSenCompact(tabled.grand_total_sen), href: `/budget/${budgetYear}` }]
+        <>
+          <StatRow
+            stats={[
+              {
+                label: `Spent in ${latest}`,
+                value: formatSenCompact(spending.total_actual_sen),
+                title: formatSen(spending.total_actual_sen),
+              },
+              {
+                label: "Running costs",
+                value: formatSenCompact(spending.operating_net_actual_sen),
+                title: formatSen(spending.operating_net_actual_sen),
+              },
+              {
+                label: "Development",
+                value: formatSenCompact(spending.development_actual_sen),
+                title: formatSen(spending.development_actual_sen),
+              },
+              ...(revenue
+                ? [
+                    {
+                      label: `Revenue ${latest}`,
+                      value: formatSenCompact(revenue.actual_sen),
+                      title: formatSen(revenue.actual_sen),
+                    },
+                  ]
                 : []),
-            ].map((s) => (
-              <Link
-                key={s.label}
-                href={s.href}
-                className="group px-8 py-10 border-r-2 border-b-2 lg:border-b-0 border-foreground last:border-r-0 no-underline text-foreground hover:bg-linen-200"
-              >
-                <div className="font-mono text-[12px] uppercase tracking-[0.22em] text-charcoal-700">{s.label}</div>
-                <div className="mt-3 font-display text-4xl font-semibold tracking-tight">{s.value}</div>
-              </Link>
-            ))}
-          </div>
-        </section>
+            ]}
+          />
+          <Band className="py-8 md:py-8">
+            <p className="m-0 text-sm text-charcoal-700">
+              Source: Jabatan Akauntan Negara, <em>Penyata Kewangan Kerajaan Persekutuan {latest}</em>
+              {revenue && (
+                <>
+                  {" "}
+                  (revenue:{" "}
+                  <CitationLink
+                    year={latest}
+                    docUrl={revenue.doc_url}
+                    pdfPage={revenue.pdf_page}
+                    bookPage={revenue.book_page}
+                  />
+                  )
+                </>
+              )}
+              . <Link href="/methodology">How we check every number</Link>
+            </p>
+          </Band>
+        </>
       )}
     </>
   );

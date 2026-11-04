@@ -19,33 +19,24 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                 <Wordmark className="text-[26px]" />
               </span>
               <p className="mt-4 text-sm/6 text-linen-200 max-w-xs">
-                How the Malaysian federal government budgets and spends, from the official documents, with every
-                figure linked to its page.
+                How the Malaysian federal government budgets and spends, from the official documents, with every figure
+                linked to its page.
               </p>
             </div>
             <ul role="list" className="space-y-3">
-              {spendingYear && (
-                <li>
-                  <FooterLink href={`/spending`}>Federal spending</FooterLink>
+              {[
+                { href: "/spending", label: "Spending" },
+                { href: "/revenue", label: "Revenue" },
+                { href: "/ministries", label: "Ministries" },
+                { href: "/tax", label: "Your taxes" },
+                ...(budgetYear ? [{ href: `/budget/${budgetYear}`, label: `Budget ${budgetYear}` }] : []),
+                ...(spendingYear ? [{ href: `/${spendingYear}`, label: "By year" }] : []),
+                { href: "/methodology", label: "Methodology" },
+              ].map((l) => (
+                <li key={l.href}>
+                  <FooterLink href={l.href}>{l.label}</FooterLink>
                 </li>
-              )}
-              {budgetYear && (
-                <li>
-                  <FooterLink href={`/budget/${budgetYear}`}>Budget {budgetYear}</FooterLink>
-                </li>
-              )}
-              <li>
-                <FooterLink href="/revenue">Federal revenue</FooterLink>
-              </li>
-              <li>
-                <FooterLink href="/ministries">Ministries</FooterLink>
-              </li>
-              <li>
-                <FooterLink href="/tax">Where your taxes go</FooterLink>
-              </li>
-              <li>
-                <FooterLink href="/methodology">Sources and methodology</FooterLink>
-              </li>
+              ))}
             </ul>
             <div className="text-sm/6 text-linen-200 space-y-2">
               <p>
@@ -62,8 +53,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
             </div>
           </div>
           <div className="mt-16 border-t border-background/20 pt-8 text-sm/6 text-linen-300">
-            Non-partisan. Every number comes from a public government document and links to the page it was read
-            from.
+            Non-partisan. Every number comes from a public government document and links to the page it was read from.
           </div>
         </div>
       </div>
