@@ -1,0 +1,98 @@
+// The boxed page language every page shares: full-width bands ruled off by the frame, a page header
+// with a mono kicker, and a row of square stat boxes.
+import { cn } from "@/lib/cn";
+
+export const kicker = "font-mono text-[12px] uppercase tracking-[0.22em]";
+
+/** A full-width band of the page, ruled off below, with its content centred. */
+export function Band({
+  children,
+  className,
+  wide = false,
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  wide?: boolean; // data tables get the wider measure
+  id?: string;
+}) {
+  return (
+    <section id={id} className={cn("border-b-2 border-foreground px-5 py-12 sm:px-8 md:px-16 md:py-16", className)}>
+      <div className={cn("mx-auto", wide ? "max-w-7xl" : "max-w-6xl")}>{children}</div>
+    </section>
+  );
+}
+
+export function PageHeader({
+  eyebrow,
+  title,
+  intro,
+  children,
+  wide,
+}: {
+  eyebrow: React.ReactNode;
+  title: React.ReactNode;
+  intro?: React.ReactNode;
+  children?: React.ReactNode; // year tabs, breadcrumbs
+  wide?: boolean;
+}) {
+  return (
+    <Band wide={wide}>
+      <div className={cn(kicker, "text-charcoal-700")}>{eyebrow}</div>
+      <h1 className="mt-4 m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight">{title}</h1>
+      {intro && <div className="mt-4 max-w-3xl text-lg text-charcoal-800 [&_p+p]:mt-3">{intro}</div>}
+      {children && <div className="mt-8">{children}</div>}
+    </Band>
+  );
+}
+
+export function H2({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <h2 className={cn("m-0 font-display text-3xl md:text-4xl font-semibold tracking-tight", className)}>{children}</h2>
+  );
+}
+
+export interface Stat {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  title?: string; // exact figure on hover when the value is compact
+}
+
+/** Square stat boxes ruled by a 2px gap: two to a row below lg, all in one row from lg. */
+export function StatRow({ stats }: { stats: Stat[] }) {
+  const cols = { 1: "lg:grid-cols-1", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" }[
+    Math.min(stats.length, 4)
+  ];
+  return (
+    <section className={cn("border-b-2 border-foreground bg-foreground grid grid-cols-2 gap-[2px]", cols)}>
+      {stats.map((s, i) => (
+        <div
+          key={i}
+          className="min-w-0 bg-background px-5 py-8 sm:px-8 md:py-10 [&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1"
+        >
+          <div className={cn(kicker, "text-charcoal-700")}>{s.label}</div>
+          <div
+            className="mt-3 font-display text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight tabular-nums"
+            title={s.title}
+          >
+            {s.value}
+          </div>
+          {s.sub && <div className="mt-1 text-sm text-charcoal-700">{s.sub}</div>}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** An English column or field label with the Bahasa Malaysia term the document prints beneath it. */
+export function BiLabel({ en, ms }: { en: string; ms: string }) {
+  return (
+    <span>
+      {en}
+      <span lang="ms" className="block text-[10px] font-normal normal-case tracking-normal text-charcoal-600">
+        {ms}
+      </span>
+    </span>
+  );
+}

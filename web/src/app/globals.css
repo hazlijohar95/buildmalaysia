@@ -17,7 +17,7 @@
   --muted: var(--color-charcoal-600);
   --border: var(--color-border);
   --table-stripe: rgb(0 0 0 / 0.025);
-  --accent: var(--color-link);
+  --accent: var(--color-auburn-800);
   --over: var(--color-auburn-700);
 }
 
@@ -104,10 +104,18 @@ tr:nth-child(even) {
 /* Plain links in data pages; styled links (buttons, nav, InternalLink) keep their own colours. */
 main a:not([class]) {
   color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
 }
 
 main a:not([class]):hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-auburn-800);
+  outline-offset: 2px;
 }
 
 .over-budget {
