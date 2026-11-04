@@ -78,7 +78,7 @@ export default async function SpendingPage({ searchParams }: Props) {
         ]}
       />
 
-      <section className="hidden md:block border-b-2 border-foreground">
+      <section className="hidden xl:block border-b-2 border-foreground">
         <div className="px-8 py-6 md:px-16">
           <p className="mx-auto max-w-6xl text-charcoal-800">
             Money comes in on the left and goes out on the right. The hatched block is the gap between spending and
