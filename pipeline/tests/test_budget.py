@@ -8,7 +8,7 @@ import pytest
 
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
-from pipeline.budget_development import parse_development_estimates
+from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.development import parse_development
 from pipeline.load import load_budget, load_year
 from pipeline.parse import PageText, ParseError, parse_statement
@@ -190,3 +190,24 @@ def test_budget_2026_restates_the_audited_years_and_the_2025_original_estimate()
             (source.id,),
         ).fetchone()
         assert original == (53, 53)
+
+
+@pytest.mark.parametrize(
+    ("year", "projects", "allocation", "repeated"),
+    [
+        # Book p.574: JUMLAH 2,661,176,542 / 243,403,849 / 264,620,300.
+        (2027, 32, 26_462_030_000, []),
+        # Book p.571 prints P.24 00200 twice and counts it twice in its JUMLAH (987,416,473).
+        (2026, 84, 98_741_647_300, [("P.24", "00200", 2)]),
+    ],
+)
+def test_dropped_projects_total_and_duplicates(
+    year: int, projects: int, allocation: int, repeated: list[tuple[str, str, int]]
+) -> None:
+    source = BUDGET_SOURCES[year]
+    pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
+    dropped = parse_dropped_projects(extract_pages(pdf, (source.summary_pages[1] + 1, source.page_count)))
+    assert dropped is not None
+    assert len(dropped.projects) == projects
+    assert dropped.total[2] == allocation  # the printed JUMLAH, duplicates included
+    assert [(p.vote_code, p.code, p.printed_times) for p in dropped.projects if p.printed_times > 1] == repeated

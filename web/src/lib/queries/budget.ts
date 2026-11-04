@@ -210,3 +210,40 @@ export async function getOriginalDevelopmentBudget(
     ? { ...row, development_sen: parseSen(row.development_sen), contingency_sen: parseSen(row.contingency_sen) }
     : null;
 }
+
+export interface DroppedProjectRow {
+  vote_code: string;
+  code: string;
+  name_ms: string;
+  total_cost_sen: Sen;
+  allocation_sen: Sen;
+  printed_times: number;
+  pdf_page: number;
+  book_page: number;
+}
+
+/** Lampiran F: the current year's projects this budget drops, by vote. */
+export async function getDroppedProjects(budgetYear: number): Promise<DroppedProjectRow[]> {
+  const rows = await sql<
+    {
+      vote_code: string;
+      code: string;
+      name_ms: string;
+      total_cost_sen: string;
+      allocation_sen: string;
+      printed_times: number;
+      pdf_page: number;
+      book_page: number;
+    }[]
+  >`
+    select p.vote_code, p.code, p.name_ms, p.total_cost_sen, p.allocation_sen, p.printed_times, p.pdf_page, p.book_page
+    from budget_dropped_project p join budget_document d on d.document_id = p.document_id
+    where d.budget_year = ${budgetYear}
+    order by p.vote_code, p.pdf_page, p.code
+  `;
+  return rows.map((r) => ({
+    ...r,
+    total_cost_sen: parseSen(r.total_cost_sen),
+    allocation_sen: parseSen(r.allocation_sen),
+  }));
+}

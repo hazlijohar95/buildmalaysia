@@ -11,7 +11,7 @@ from psycopg.rows import dict_row
 from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, Statement
 from pipeline.budget import BudgetStatement
 from pipeline.budget_detail import Estimate, OperatingEstimates
-from pipeline.budget_development import DevelopmentEstimates
+from pipeline.budget_development import DevelopmentEstimates, DroppedProjects
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
@@ -430,6 +430,7 @@ class BudgetLoadResult:
     operating_totals_reconciled: int
     development_projects: int
     development_totals_reconciled: int
+    dropped_projects: int
 
 
 def load_budget(
@@ -440,6 +441,7 @@ def load_budget(
     retrieved_at: datetime,
     operating: OperatingEstimates | None = None,
     development: DevelopmentEstimates | None = None,
+    dropped: DroppedProjects | None = None,
 ) -> BudgetLoadResult:
     """Replace this budget book's rows in one transaction.
 
@@ -471,6 +473,7 @@ def load_budget(
                 retrieved_at,
             ),
         )
+        cur.execute("delete from budget_dropped_project where document_id = %s", (doc,))
         cur.execute("delete from budget_development_total where document_id = %s", (doc,))
         cur.execute("delete from budget_development_project where document_id = %s", (doc,))
         cur.execute("delete from budget_development_group where document_id = %s", (doc,))
@@ -536,6 +539,8 @@ def load_budget(
         )
         lines, reconciled = _insert_operating_estimates(cur, doc, operating) if operating else (0, 0)
         projects, dev_reconciled = _insert_development_estimates(cur, doc, development) if development else (0, 0)
+        if dropped is not None:
+            _insert_dropped_projects(cur, doc, dropped)
         counts = dict(
             cur.execute(
                 "select result, count(*) from budget_actual_check where document_id = %s group by result", (doc,)
@@ -549,7 +554,41 @@ def load_budget(
         reconciled,
         projects,
         dev_reconciled,
+        len(dropped.projects) if dropped else 0,
     )
+
+
+def _insert_dropped_projects(cur: psycopg.Cursor, doc: str, dropped: DroppedProjects) -> None:
+    cur.executemany(
+        """
+        insert into budget_dropped_project (document_id, vote_code, code, name_ms, total_cost_sen, actual_prior_sen,
+          allocation_sen, pdf_page, book_page, source_text, printed_times)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        [
+            (
+                doc,
+                p.vote_code,
+                p.code,
+                p.name,
+                p.total_cost,
+                p.actual_prior,
+                p.allocation,
+                p.citation.pdf_page,
+                p.citation.book_page,
+                p.citation.text,
+                p.printed_times,
+            )
+            for p in dropped.projects
+        ],
+    )
+    still = cur.execute(
+        "select d.vote_code, d.code from budget_dropped_project d join budget_development_project p"
+        " using (document_id, vote_code, code) where d.document_id = %s",
+        (doc,),
+    ).fetchall()
+    if still:
+        raise SourceError(f"projects listed as dropped still appear in the book's tables: {still}; load rolled back")
 
 
 def _insert_development_estimates(cur: psycopg.Cursor, doc: str, estimates: DevelopmentEstimates) -> tuple[int, int]:

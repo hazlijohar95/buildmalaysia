@@ -15,7 +15,7 @@ heading fails the load.
 
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from pipeline.budget_detail import trailing_values
 from pipeline.model import Citation
@@ -270,3 +270,105 @@ def parse_development_estimates(pages: Sequence[PageText], budget_year: int) -> 
     checks = parser.check_appendix()
     contingency = parser.appendix["P.70"][0][3]
     return DevelopmentEstimates(budget_year, tuple(parser.votes.values()), contingency, checks)
+
+
+# --- Lampiran F: projects of the current year dropped from the budget -------------------
+
+
+@dataclass(frozen=True)
+class DroppedProject:
+    vote_code: str
+    code: str
+    name: str
+    total_cost: int
+    actual_prior: int  # as printed; MOF's project-level actuals are not the statement's
+    allocation: int  # the current year's allocation (Peruntukan 2026 in Budget 2027)
+    citation: Citation
+    printed_times: int = 1  # Budget 2026 prints P.24 00200 twice and counts it twice in its JUMLAH
+
+
+@dataclass(frozen=True)
+class DroppedProjects:
+    projects: tuple[DroppedProject, ...]
+    total: tuple[int, int, int]
+    total_citation: Citation
+
+
+_DROPPED_VOTE = re.compile(r"Maksud\s+P\.(?P<num>\d{1,2})\s+.+")
+
+
+def parse_dropped_projects(pages: Sequence[PageText]) -> DroppedProjects | None:
+    """Lampiran F, "Jadual Butiran Tahun ... yang Dimansuhkan": per vote, each project of the
+    current year that the budget drops, or TIADA (none), and a grand JUMLAH that must equal
+    the rows. Returns None when the book has no such appendix."""
+    rows: list[DroppedProject] = []
+    vote: str | None = None
+    parts: list[str] = []
+    pending: tuple[str, list[int], Citation] | None = None
+    total: tuple[tuple[int, int, int], Citation] | None = None
+    found = False
+
+    def flush() -> None:
+        nonlocal pending, parts
+        if pending is not None and vote is not None:
+            code, a, c = pending
+            name = " ".join(" ".join(parts).split())
+            rows.append(DroppedProject(vote, code, name, a[0], a[1], a[2], c))
+        pending, parts = None, []
+
+    for page in pages:
+        texts = [" ".join(line.split()) for line in page.layout.split("\n")]
+        if not any("YANG DIMANSUHKAN" in t for t in texts) or not any(_DROPPED_VOTE.fullmatch(t) for t in texts):
+            if not (found and any(_DROPPED_VOTE.fullmatch(t) for t in texts)):
+                continue
+        found = True
+        book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), 0)
+        for i, text in enumerate(texts):
+            at = Citation(page.pdf_page, book_page, i + 1, text)
+            if (m := _DROPPED_VOTE.fullmatch(text)) is not None:
+                flush()
+                vote = f"P.{int(m['num']):02d}"
+                continue
+            if vote is None or not text or _FOOTER.fullmatch(text) or text == "TIADA":
+                continue
+            label, values, _ = trailing_values(text, 3)
+            if len(values) == 3:
+                a = [v.hundredths for v in values]
+                if label == "JUMLAH":
+                    flush()
+                    total = ((a[0], a[1], a[2]), at)
+                    continue
+                if (m := _PROJECT.fullmatch(label)) is None:
+                    raise ParseError(at.pdf_page, at.line_no, text, "Lampiran F row without a project code")
+                flush()
+                pending, parts = (m["code"], a, at), [m["name"] or ""]
+            elif pending is not None:
+                parts.append(text)
+    flush()
+    if not found:
+        return None
+    if total is None:
+        raise ParseError(pages[-1].pdf_page, 0, "", "Lampiran F has no JUMLAH")
+    summed = (sum(r.total_cost for r in rows), sum(r.actual_prior for r in rows), sum(r.allocation for r in rows))
+    if summed != total[0]:
+        c = total[1]
+        raise ParseError(c.pdf_page, c.line_no, c.text, f"Lampiran F JUMLAH {total[0]}, rows sum to {summed}")
+    # Named rule DUPLICATE_ROW: a project printed more than once with identical figures (and
+    # counted each time in the JUMLAH, as checked above) is kept once with its count.
+    distinct: dict[tuple[str, str], DroppedProject] = {}
+    for row in rows:
+        key = (row.vote_code, row.code)
+        seen = distinct.get(key)
+        if seen is None:
+            distinct[key] = row
+        elif (seen.name, seen.total_cost, seen.actual_prior, seen.allocation) == (
+            row.name,
+            row.total_cost,
+            row.actual_prior,
+            row.allocation,
+        ):
+            distinct[key] = replace(seen, printed_times=seen.printed_times + 1)
+        else:
+            c = row.citation
+            raise ParseError(c.pdf_page, c.line_no, c.text, f"{key} printed twice with different figures")
+    return DroppedProjects(tuple(distinct.values()), total[0], total[1])

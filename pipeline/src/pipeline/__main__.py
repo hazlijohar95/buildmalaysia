@@ -10,7 +10,7 @@ from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
-from pipeline.budget_development import parse_development_estimates
+from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
@@ -92,8 +92,9 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         book = extract_pages(pdf, (source.summary_pages[1] + 1, pages))
         operating = parse_operating_estimates(book, year)
         development = parse_development_estimates(book, year)
+        dropped = parse_dropped_projects(book)
         with psycopg.connect(database_url, autocommit=True) as conn:
-            result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating, development)
+            result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating, development, dropped)
             differs = conn.execute(
                 "select fiscal_year, vote_code, line, mof_sen, janm_sen, diff_sen from budget_actual_check"
                 " where document_id = %s and result not in ('matches', 'rounding') order by 1, 2, 3",
@@ -117,6 +118,8 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         f" printed totals reconciled {result.development_totals_reconciled},"
         f" Lampiran D rows checked {development.appendix_checks}"
     )
+    if dropped is not None:
+        print(f"  dropped projects (Lampiran F): {result.dropped_projects}, total checked, none in the project tables")
     print(f"  actuals against the audited statements: {result.actual_checks}")
     for row in differs:
         print(f"  {row[0]} {row[1]} {row[2]}: MOF {row[3]} sen, JANM {row[4]} sen, difference {row[5]} sen")

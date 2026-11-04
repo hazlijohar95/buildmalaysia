@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import {
   getBudgetYears,
   getBudgetActualCheck,
+  getDroppedProjects,
+  type DroppedProjectRow,
   getBudgetSource,
   getBudgetTotals,
   getBudgetVotes,
@@ -34,12 +36,13 @@ const SECTIONS: { letter: string; title: string; note: string }[] = [
 
 export default async function BudgetPage({ params }: Props) {
   const year = await requireBudgetYear((await params).budgetYear);
-  const [source, totals, votes, check, years] = await Promise.all([
+  const [source, totals, votes, check, years, dropped] = await Promise.all([
     getBudgetSource(year),
     getBudgetTotals(year),
     getBudgetVotes(year),
     getBudgetActualCheck(year),
     getBudgetYears(),
+    getDroppedProjects(year),
   ]);
   const proposed = totals.at(-1);
   const current = totals.at(-2);
@@ -130,7 +133,62 @@ export default async function BudgetPage({ params }: Props) {
           </section>
         );
       })}
+
+      {dropped.length > 0 && <Dropped year={year} url={source.url} rows={dropped} />}
     </>
+  );
+}
+
+function Dropped({ year, url, rows }: { year: number; url: string; rows: DroppedProjectRow[] }) {
+  const allocation = rows.reduce((sum, r) => sum + r.allocation_sen, 0);
+  const repeated = rows.filter((r) => r.printed_times > 1);
+  return (
+    <section className="mb-10">
+      <h2 className="text-lg font-semibold mb-1">Projects dropped from Budget {year}</h2>
+      <p className="text-xs mb-3 max-w-3xl" style={{ color: "var(--muted)" }}>
+        {rows.length} development projects of {year - 1} that this budget does not continue (Lampiran F), holding{" "}
+        {formatSen(parseSen(allocation))} of {year - 1} allocation. None of them appears in the budget&apos;s project
+        tables.
+        {repeated.map((r) => (
+          <span key={r.code}>
+            {" "}
+            The appendix prints {r.vote_code} {r.code} {r.printed_times === 2 ? "twice" : `${r.printed_times} times`}{" "}
+            and counts it in its total each time; it is listed and counted once here.
+          </span>
+        ))}
+      </p>
+      <details>
+        <summary className="text-sm cursor-pointer mb-2">Show the {rows.length} projects</summary>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Vote</th>
+                <th>Code</th>
+                <th>Project</th>
+                <th className="text-right">Total cost (RM)</th>
+                <th className="text-right">Allocation {year - 1} (RM)</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={`${r.vote_code}-${r.code}`}>
+                  <td className="font-mono text-xs">{r.vote_code}</td>
+                  <td className="font-mono text-xs">{r.code}</td>
+                  <td className="max-w-sm">{r.name_ms}</td>
+                  <td className="num">{formatSen(r.total_cost_sen)}</td>
+                  <td className="num">{formatSen(r.allocation_sen)}</td>
+                  <td>
+                    <CitationLink year={year} source="MOF" docUrl={url} pdfPage={r.pdf_page} bookPage={r.book_page} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
   );
 }
 
