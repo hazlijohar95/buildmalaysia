@@ -94,7 +94,7 @@ def _split(line: str) -> _Split:
     return _Split(line[:label_end].strip(), values, ends)
 
 
-_BLANK_CELL_COLUMNS = range(5)  # Asal .. Sebenar; % Prestasi and Varian are never blank
+_BLANK_CELL_COLUMNS = range(6)  # Asal .. % Prestasi; FY2021 leaves one % Prestasi blank. Varian is never blank
 
 
 def _fill_blank_cell(row: _Split, reference: _Split) -> tuple[_Split, int] | None:
@@ -124,7 +124,10 @@ def _join_split_row(first: _Split, second: _Split) -> tuple[_Split, bool] | None
     """
     if not first.label or not first.values or second.label or not second.values:
         return None
-    values = first.values + second.values
+    # Order by where each amount ends on the page: a continued cell can sit left of the
+    # first line's last amount (FY2021 p146 prints % Prestasi below its row).
+    ordered = sorted(zip(first.ends + second.ends, first.values + second.values, strict=True), key=lambda t: t[0])
+    values = [v for _, v in ordered]
     if len(values) == 7:
         return _Split(first.label, values, []), False
     dashes = [i for i, v in enumerate(values) if v.is_dash]
@@ -187,6 +190,7 @@ class Kind(Enum):
     DISAMBUNG = auto()  # "(disambung...)", continued-on-next-page marker
     APPENDIX_PAGE = auto()  # appendix page number in the footer
     LAMPIRAN_FOOTER = auto()
+    NOTES_LABEL = auto()  # a bare "Nota:" above activity notes (FY2022)
     PRINTER_SLUG = auto()  # InDesign file name and print time, outside the rendered page area
     NOTES = auto()
     ACTIVITY_NOTE = auto()  # "[Nota :] *B04 - Program/Aktiviti - 010100 - <text>" or "(*) B04 - ...": a marked activity
@@ -230,6 +234,7 @@ TEXT_KINDS = _table(
         (Kind.APPENDIX_PAGE, r"\d{1,3}"),
         (Kind.LAMPIRAN_FOOTER, r"LAMPIRAN 1 - (?:PENYATA )?PERBELANJAAN MENGURUS"),
         (Kind.PRINTER_SLUG, PRINTER_SLUG),
+        (Kind.NOTES_LABEL, r"Nota\s*:"),
         (
             Kind.ACTIVITY_NOTE,
             r"(?:Nota\s*:\s*)?\(?\*\)?\s*(?P<vote>[TB])\.?(?P<num>\d{2})\s*[-–]\s*Program/Aktiviti"
@@ -268,7 +273,14 @@ _HEADER_KINDS = {
     Kind.ACTIVITY_HEADER,
     Kind.ACTIVITY_HEADER_NO_LEADING_ZERO,
 }
-_IGNORED_KINDS = {Kind.BLANK, Kind.DISAMBUNG, Kind.APPENDIX_PAGE, Kind.LAMPIRAN_FOOTER, Kind.PRINTER_SLUG}
+_IGNORED_KINDS = {
+    Kind.BLANK,
+    Kind.DISAMBUNG,
+    Kind.APPENDIX_PAGE,
+    Kind.LAMPIRAN_FOOTER,
+    Kind.PRINTER_SLUG,
+    Kind.NOTES_LABEL,
+}
 _SECTIONS = {"TANGGUNGAN": Section.CHARGED, "BEKALAN": Section.SUPPLY}
 _DISAMBUNG_SUFFIX = re.compile(r"(?<=\S)\s+\(dis ?ambung\.\.\.\)$")
 _SAMB = re.compile(r"(?P<rest>.*?)\s*(?:[-–]\s*)?\(SAMB\.\)")
@@ -286,7 +298,7 @@ def _classify(table: tuple[tuple[Kind, re.Pattern[str]], ...], text: str) -> tup
 
 _UNITS = re.compile(r"RM\s+RM\s+RM\s+RM\s+RM\s+%\s+RM")
 _RUNNING_HEAD = re.compile(
-    r"(?:(?P<left>\d+)\s+)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s+(?P<right>\d+))?"
+    r"(?:(?P<left>\d+)\s+(?:\|\s*)?)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s*(?:\|\s*)?(?P<right>\d+))?"
 )
 _COLUMN_HEAD_WORDS = {
     "Anggaran",
@@ -453,9 +465,12 @@ class _Parser:
                 at = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
                 self.corrections.append(Correction("STRAY_BACKTICK_IGNORED", "dropped a leading ` not rendered", at))
                 lines[i] = lines[i].replace("`", " ", 1)
+        # "(disambung...)" (continued) can sit in the Varian column and push that amount to
+        # the next line (FY2021 p111); drop it before splitting so the row can be rejoined.
+        lines = [_DISAMBUNG_SUFFIX.sub("", line) for line in lines]
         splits = [_split(line) for line in lines]
         for i in range(units + 1, len(lines) - 1):
-            if 0 < len(splits[i].values) < 6:
+            if 0 < len(splits[i].values) < 7:
                 joined = _join_split_row(splits[i], splits[i + 1])
                 if joined is not None:
                     at = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
@@ -488,7 +503,7 @@ class _Parser:
         if filled is None:
             raise self.fail("six numeric columns, and no single empty amount column can be located")
         _, missing = filled
-        column = ("Asal", "Tambahan/(Kurangan)", "Viremen", "Jumlah", "Sebenar")[missing]
+        column = ("Asal", "Tambahan/(Kurangan)", "Viremen", "Jumlah", "Sebenar", "% Prestasi")[missing]
         self.corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {column} cell read as zero", self.where))
         return filled[0]
 
@@ -752,7 +767,16 @@ class _Parser:
             case Kind.VOTE_TOTAL:
                 assert self.vote is not None and pending.amounts is not None
                 if pending.name != f"JUMLAH {self.vote.name}":
-                    raise self.fail(f"vote total label does not match vote {self.vote.code} {self.vote.name!r}", at)
+                    # Named rule VOTE_TOTAL_NAME_DIFFERS: the total always closes the open
+                    # vote. FY2022 heads B.64 "PENGAJIAN TINGGI" and totals it as
+                    # "PENDIDIKAN TINGGI" after the ministry was renamed.
+                    self.corrections.append(
+                        Correction(
+                            "VOTE_TOTAL_NAME_DIFFERS",
+                            f"{pending.name!r} closes {self.vote.code} {self.vote.name!r}",
+                            at,
+                        )
+                    )
                 self.add_total(Scope.VOTE, pending.amounts, pending.marks, at, vote_code=self.vote.code)
             case _:
                 raise self.fail("JUMLAH label with no amounts", at)
@@ -770,9 +794,17 @@ class _Parser:
         self.section, self.vote, self.programme, self.activity = section, None, None, None
 
     def open_vote(self, pending: _Pending, at: Citation) -> None:
+        repeated = (
+            self.vote is not None
+            and (pending.code, pending.name) == (self.vote.code, self.vote.name)
+            and self.phase is not Phase.VOTE_DONE
+        )
+        if repeated:
+            return  # the open vote's heading repeated at the top of a page; FY2021 omits "(SAMB.)"
         if pending.samb:
-            if self.vote is None or (pending.code, pending.name) != (self.vote.code, self.vote.name):
+            if self.vote is None or pending.code != self.vote.code:
                 raise self.fail(f"continued vote {pending.code} {pending.name!r} is not the open vote", at)
+            self.note_samb_name(pending.name, self.vote.name, at)
             return
         self.transition(Event.NEW_VOTE, at)
         section = Section.CHARGED if pending.code.startswith("T") else Section.SUPPLY
@@ -784,12 +816,40 @@ class _Parser:
         self.votes.append(self.vote)
         self.programme, self.activity = None, None
 
+    def note_samb_name(self, printed: str, opened: str | None, at: Citation) -> None:
+        """Named rule SAMB_NAME_DIFFERS: a "(SAMB.)" heading continues the open item with the
+        same code even when its name is printed shorter (FY2021 B.33 020000)."""
+        if opened is not None and printed != opened:
+            self.corrections.append(Correction("SAMB_NAME_DIFFERS", f"{printed!r} continues {opened!r}", at))
+
     def open_programme(self, pending: _Pending, at: Citation) -> None:
         assert self.vote is not None
         if pending.samb:
             current = self.programme
-            if current is None or (pending.code, pending.name) != (current.code, current.name):
+            if current is not None and current.name is None and current.code == pending.code:
+                # The heading left out under PROGRAMME_HEADING_MISSING is printed on the
+                # continuation page; take the name from there.
+                named = replace(current, name=pending.name)
+                self.programmes[self.programmes.index(current)] = named
+                self.programme = named
+                self.corrections.append(
+                    Correction(
+                        "PROGRAMME_HEADING_MISSING", f"programme {current.code} named from '(SAMB.)' heading", at
+                    )
+                )
+                return
+            closed = [p for p in self.programmes if p.vote_code == self.vote.code and p is not current]
+            if current is not None and any((p.code, p.name) == (pending.code, pending.name) for p in closed):
+                # Named rule STALE_HEADING_IGNORED: the text layer carries a "(SAMB.)" heading
+                # for a programme already closed, which the page does not draw (FY2021 p142,
+                # checked on the rendered page). The open programme continues.
+                self.corrections.append(
+                    Correction("STALE_HEADING_IGNORED", f"undrawn '(SAMB.)' heading for closed {pending.code}", at)
+                )
+                return
+            if current is None or pending.code != current.code:
                 raise self.fail(f"continued programme {pending.code} {pending.name!r} is not the open one", at)
+            self.note_samb_name(pending.name, current.name, at)
             return
         self.transition(Event.NEW_PROGRAMME, at)
         if any(p.vote_code == self.vote.code and p.code == pending.code for p in self.programmes):
@@ -811,9 +871,25 @@ class _Parser:
             )
         if pending.samb:
             current = self.activity
-            if current is None or (code, pending.name) != (current.code, current.name):
+            if current is None or code != current.code:
                 raise self.fail(f"continued activity {code} {pending.name!r} is not the open one", at)
+            self.note_samb_name(pending.name, current.name, at)
             return
+        if self.phase is Phase.PROGRAMME_DONE and self.programme is not None and code[:2] != self.programme.code[:2]:
+            # Named rule PROGRAMME_HEADING_MISSING: an activity straight after a programme
+            # total, under a programme whose heading is not printed (FY2022 B.24 020000,
+            # checked on the rendered page). The programme opens from the activity code
+            # with no name; its own printed total must still close it.
+            assert self.vote is not None
+            programme_code = code[:2] + "0000"
+            if any(p.vote_code == self.vote.code and p.code == programme_code for p in self.programmes):
+                raise self.fail(f"activity {code} reopens programme {programme_code}", at)
+            self.transition(Event.NEW_PROGRAMME, at)
+            self.programme = Programme(self.vote.code, programme_code, None, at)
+            self.programmes.append(self.programme)
+            self.corrections.append(
+                Correction("PROGRAMME_HEADING_MISSING", f"programme {programme_code} opened by activity {code}", at)
+            )
         self.transition(Event.NEW_ACTIVITY, at)
         assert self.programme is not None
         if code[:2] != self.programme.code[:2]:

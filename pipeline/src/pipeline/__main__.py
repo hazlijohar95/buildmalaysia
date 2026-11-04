@@ -42,6 +42,8 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
         f"printed totals {d.printed_totals}, reconciled {d.reconciled}"
     )
     _print_corrections(operating.corrections + development.corrections)
+    for misprint in source.known_misprints:
+        print(f"  known misprint accepted: {misprint.key}: {misprint.evidence}")
     for note in operating.unreferenced_notes:
         print(f"  note defined but carried by no line: {note}")
     return 0

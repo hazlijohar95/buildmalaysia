@@ -37,13 +37,13 @@ from pipeline.model import (
 from pipeline.parse import PRINTER_SLUG, PageText, ParseError, Value, parse_value
 
 _RUNNING_HEAD = re.compile(
-    r"(?:(?P<left>\d+)\s+)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s+(?P<right>\d+))?"
+    r"(?:(?P<left>\d+)\s+(?:\|\s*)?)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s*(?:\|\s*)?(?P<right>\d+))?"
 )
 _LEFT_UNITS = re.compile(r"RM\s+RM")
 _RIGHT_UNITS = re.compile(r"RM(?:\s+RM){6}")
 _HEAD_WORDS = {
     "Penyata", "Perbelanjaan", "Pembangunan", "bagi", "tahun", "berakhir", "31", "Disember",
-    "Maksud", "Kos", "Keseluruhan", "Sebenar", "RMKe-12", "Hingga", "Anggaran", "Tahun",
+    "Maksud", "Kos", "Keseluruhan", "Sebenar", "Hingga", "Anggaran", "Tahun",
     "Cara", "Langsung", "Pinjaman", "Jumlah", "(", "sambungan)", "(sambungan)",
 }  # fmt: skip
 _FOOTER = re.compile(rf"\d{{1,3}}|LAMPIRAN 2 - (?:PENYATA )?PERBELANJAAN PEMBANGUNAN|{PRINTER_SLUG}")
@@ -92,18 +92,21 @@ def _trailing_values(line: str, limit: int) -> tuple[str, list[Value], list[int]
     return line[:label_end].strip(), values, ends
 
 
-def _fill_blank_cell(values: list[Value], ends: list[int], reference: list[int]) -> tuple[list[Value], int] | None:
-    """Named rule BLANK_CELL_READ_AS_ZERO: a right-page row printed with one of seven cells empty.
+def _fill_blank_cells(
+    values: list[Value], ends: list[int], reference: list[int]
+) -> tuple[list[Value], list[int]] | None:
+    """Named rule BLANK_CELL_READ_AS_ZERO: a right-page row printed with one or two of seven cells empty.
 
     Each printed amount is placed in the column whose right edge, in the nearest complete
-    row of the same page, is closest. The placement must be strictly left to right and
-    leave exactly one column empty; that column reads as zero.
+    row of the same page, is closest. The placement must be strictly left to right with
+    one amount per column; the empty columns read as zero. The row checks then apply.
     """
     columns = [min(range(7), key=lambda c: abs(end - reference[c])) for end in ends]
-    if len(set(columns)) != 6 or columns != sorted(columns):
+    if len(set(columns)) != len(values) or columns != sorted(columns):
         return None
-    missing = next(c for c in range(7) if c not in columns)
-    return values[:missing] + [Value(0, "", True, False)] + values[missing:], missing
+    placed = dict(zip(columns, values, strict=True))
+    missing = [c for c in range(7) if c not in placed]
+    return [placed.get(c, Value(0, "", True, False)) for c in range(7)], missing
 
 
 def _doubled(label: str) -> str | None:
@@ -152,6 +155,7 @@ class _Group:
     citation: Citation
     parent: int | None = None
     closed: bool = False
+    total_label: str = ""  # the name its "Jumlah" line prints, which can differ from the heading
 
 
 @dataclass
@@ -200,7 +204,10 @@ class _Parser:
         self.corrections: list[Correction] = []
         self.notes: dict[tuple[str, str], str] = {}  # (vote, project code) -> note
         self.statement_notes: list[str] = []
-        self.note_keys: list[tuple[str, str]] = []  # the projects the note being read applies to
+        self.note_keys: list[tuple[str, str]] = []
+        # Malaysia Plans named in the column heads: the left page's prior-year column and the
+        # right page's to-date column. They differ in a plan's first year (FY2021: RMKe-11, RMKe-12).
+        self.plans: dict[str, set[str]] = {"left": set(), "right": set()}
         self.last_project: _Project | None = None
         self.finished = False
         self.where = Citation(0, 0, 0, "")
@@ -211,7 +218,7 @@ class _Parser:
 
     # pages
 
-    def body(self, page: PageText, units: re.Pattern[str]) -> tuple[int, list[tuple[int, str]]]:
+    def body(self, page: PageText, units: re.Pattern[str], side: str) -> tuple[int, list[tuple[int, str]]]:
         """Return the book page and the numbered lines below the column units line."""
         lines = page.layout.split("\n")
         at = next((i for i, line in enumerate(lines) if units.fullmatch(line.strip())), None)
@@ -223,19 +230,30 @@ class _Parser:
             running = _RUNNING_HEAD.fullmatch(text)
             if running is not None and int(running["year"]) == self.fiscal_year:
                 book_pages.append(int(running["left"] or running["right"]))
-            elif not set(text.split()) <= _HEAD_WORDS | {
-                str(self.fiscal_year),
-                f"31.12.{self.fiscal_year}",
-                f"31.12.{self.fiscal_year - 1}",
-            }:
-                raise ParseError(page.pdf_page, i + 1, line, "unexpected line in the page head")
+            else:
+                words = set(re.sub(r"\(\s*s\s*ambungan\)", "(sambungan)", text).split())  # "(s ambungan)", FY2021
+                plans = {w for w in words if re.fullmatch(r"RMKe-\d+", w)}
+                self.plans[side] |= plans
+                allowed = (
+                    _HEAD_WORDS
+                    | plans
+                    | {
+                        str(self.fiscal_year),
+                        f"31.12.{self.fiscal_year}",
+                        f"31.12.{self.fiscal_year - 1}",
+                    }
+                )
+                if not words <= allowed:
+                    raise ParseError(page.pdf_page, i + 1, line, "unexpected line in the page head")
         if len(book_pages) != 1:
             raise ParseError(page.pdf_page, 1, lines[0], "page head has no single running head")
         return book_pages[0], [(i + 1, lines[i]) for i in range(at + 1, len(lines))]
 
     def feed_spread(self, left: PageText, right: PageText) -> None:
-        left_book, left_lines = self.body(left, _LEFT_UNITS)
-        right_book, right_lines = self.body(right, _RIGHT_UNITS)
+        left_book, left_lines = self.body(left, _LEFT_UNITS, "left")
+        right_book, right_lines = self.body(right, _RIGHT_UNITS, "right")
+        if len(self.plans["left"]) != 1 or len(self.plans["right"]) != 1:
+            raise ParseError(left.pdf_page, 1, "", f"column heads name plans {self.plans}; expected one per page side")
         if (right.pdf_page, right_book) != (left.pdf_page + 1, left_book + 1):
             raise ParseError(right.pdf_page, 1, "", "right page does not follow its left page")
 
@@ -271,7 +289,7 @@ class _Parser:
             if not text or _FOOTER.fullmatch(text):
                 continue
             label, values, ends = _trailing_values(line, 7)
-            if label == "" and len(values) in (6, 7):
+            if label == "" and len(values) in (5, 6, 7):
                 if trailing_text:
                     raise self.fail("text between amount rows on the right page", trailing_text[0])
                 if any(v.marks for v in values):
@@ -302,13 +320,13 @@ class _Parser:
             return at, values
         complete = [r for r in page if len(r[1]) == 7]
         if not complete:
-            raise self.fail("six amounts and no complete row on the page to place them by", at)
+            raise self.fail(f"{len(values)} amounts and no complete row on the page to place them by", at)
         nearest = min(complete, key=lambda r: abs(r[0].line_no - at.line_no))
-        filled = _fill_blank_cell(values, ends, nearest[2])
+        filled = _fill_blank_cells(values, ends, nearest[2])
         if filled is None:
-            raise self.fail("six amounts, and no single empty column can be located", at)
-        column = _RIGHT_COLUMNS[filled[1]]
-        self.corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {column} cell read as zero", at))
+            raise self.fail(f"{len(values)} amounts, and the empty columns cannot be located", at)
+        columns = ", ".join(_RIGHT_COLUMNS[c] for c in filled[1])
+        self.corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {columns} read as zero", at))
         return at, filled[0]
 
     # left page
@@ -334,9 +352,23 @@ class _Parser:
         if marks:
             raise self.fail("footnote mark on an amount outside the statement total")
         vote = self.require_vote()
+        open_group = self.open_group()
+        if (
+            (m := _VOTE_TOTAL.fullmatch(label)) is not None
+            and open_group
+            and _norm(m["name"]) == _norm(open_group.name)
+        ):
+            # A group total in capitals (FY2021 P.63 "JUMLAH PENDIDIKAN"): it names the open group.
+            group = self.close_group(vote, m["name"])
+            self.last_project = None
+            return self.total(DevelopmentScope.GROUP, vote.code, group.ordinal, "", left)
         if (m := _VOTE_TOTAL.fullmatch(label)) is not None:
             if _norm(m["name"]) != _norm(vote.name):
-                raise self.fail(f"vote total for {m['name']!r} inside {vote.code} {vote.name}")
+                # Named rule VOTE_TOTAL_NAME_DIFFERS: the total closes the open vote. FY2022
+                # heads P.24 "... INDUSTRI (MITI)" and totals it without "(MITI)".
+                self.corrections.append(
+                    Correction("VOTE_TOTAL_NAME_DIFFERS", f"{m['name']!r} closes {vote.code} {vote.name!r}", self.where)
+                )
             if (open_group := self.open_group()) is not None:
                 raise self.fail(f"vote total while group {open_group.name!r} is open")
             self.vote = None
@@ -381,6 +413,11 @@ class _Parser:
             self.heading(self.require_vote(), text)
             return
         project = self.last_project
+        open_group = self.open_group()
+        if project is None and open_group is not None:
+            # Wraps the heading just opened: "BANGUNAN-BANGUNAN KERAJAAN" / "(Selain daripada Perumahan)".
+            open_group.name = f"{open_group.name} {text}"
+            return
         if project is None:
             raise self.fail("wrapped text with no project above it")
         project.parts.append(text)
@@ -438,6 +475,7 @@ class _Parser:
                     )
                 )
             open_group.closed = True
+            open_group.total_label = name
             return open_group
         run = self.unheaded_run(vote)
         if run:
@@ -481,11 +519,14 @@ class _Parser:
         parts = [p.casefold() for p in parts]
         members: list[_Group] = []
         for group in reversed(vote.groups):
-            g = group.name.casefold()
+            # Heading and total label both name the group; FY2021 heads one "LABUAN" and
+            # totals it as "Jalan Raya dan Jambatan Labuan".
+            g = f"{group.name} | {group.total_label}".casefold()
             if group.parent is not None or stem not in g or not any(p in g for p in parts):
                 break
             members.insert(0, group)
-        if len(members) < 2 or not all(any(p in g.name.casefold() for g in members) for p in parts):
+        names = [f"{g.name} | {g.total_label}".casefold() for g in members]
+        if len(members) < 2 or not all(any(p in n for n in names) for p in parts):
             raise self.fail(f"total {name!r} matches no run of groups by name")
         parent = _Group(vote.code, len(vote.groups) + 1, name, self.where, closed=True)
         vote.groups.append(parent)
@@ -554,9 +595,15 @@ class _Parser:
             raise self.fail("estimate direct + loan does not equal estimate total", record.right_citation)
         if ad + al != a:
             raise self.fail("actual direct + loan does not equal actual total", record.right_citation)
-        if prior + a != to_date:
+        if self.plans["left"] == self.plans["right"]:
+            if prior + a != to_date:
+                raise self.fail(
+                    "plan spending to date is not prior plan spending plus the year's actual", record.right_citation
+                )
+        elif a != to_date:
+            # First year of a new plan: spending to date under it is this year's actual.
             raise self.fail(
-                "plan spending to date is not prior plan spending plus the year's actual", record.right_citation
+                "first year of a plan, but plan spending to date is not the year's actual", record.right_citation
             )
 
     def finish(self) -> DevelopmentStatement:
@@ -638,6 +685,8 @@ class _Parser:
                 raise self.fail(f"group {g.name!r} has no printed total", g.citation)
         return DevelopmentStatement(
             fiscal_year=self.fiscal_year,
+            prior_plan=next(iter(self.plans["left"])),
+            plan=next(iter(self.plans["right"])),
             votes=tuple(DevelopmentVote(v.code, v.name, v.citation) for v in self.votes),
             groups=tuple(groups),
             projects=tuple(projects),

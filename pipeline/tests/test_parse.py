@@ -149,12 +149,13 @@ def test_duplicate_leaf_fails() -> None:
         parse(p105="\n".join(lines))
 
 
-def test_vote_total_label_must_match_the_vote() -> None:
+def test_vote_total_label_that_differs_from_the_vote_is_logged() -> None:
+    # The total closes the open vote; FY2022 renames B.64 between its heading and its total.
     lines = P105.split("\n")
     index = max(i for i, line in enumerate(lines) if line.strip() == "S.P.B. YANG DI-PERTUAN AGONG")
     lines[index] = lines[index].replace("AGONG", "AGUNG")
-    with pytest.raises(ParseError, match="vote total label does not match vote T.01"):
-        parse(p105="\n".join(lines))
+    corrections = [c for c in parse(p105="\n".join(lines)).corrections if c.rule == "VOTE_TOTAL_NAME_DIFFERS"]
+    assert len(corrections) == 1 and "T.01" in corrections[0].detail
 
 
 def test_row_missing_two_columns_fails() -> None:

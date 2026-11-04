@@ -15,6 +15,20 @@ DEFAULT_RAW_DIR = REPO_ROOT / "data" / "raw"
 
 
 @dataclass(frozen=True)
+class KnownMisprint:
+    """A printed total that disagrees with the rows under it in the source itself.
+
+    The load accepts exactly this mismatch (same total, same difference in sen) and fails
+    if it is absent, so a fix in the parser or a corrected PDF cannot leave it stale.
+    The mismatch stays visible in the reconciliation view.
+    """
+
+    key: str  # as the loader names the total, e.g. "programme total vote=B.24 programme=060000"
+    diffs_sen: tuple[int, ...]  # printed minus the sum of rows, per column
+    evidence: str
+
+
+@dataclass(frozen=True)
 class SourceDocument:
     id: str
     publisher: str
@@ -26,6 +40,7 @@ class SourceDocument:
     raw_path: str  # relative to the raw data directory
     operating_pages: tuple[int, int]  # Lampiran 1 (BM), PDF pages, 1-based, inclusive
     development_pages: tuple[int, int]  # Lampiran 2 (BM), whole two-page spreads
+    known_misprints: tuple[KnownMisprint, ...] = ()
 
 
 SOURCES: dict[int, SourceDocument] = {
@@ -64,6 +79,41 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2023.pdf",
         operating_pages=(95, 194),
         development_pages=(196, 231),
+    ),
+    2022: SourceDocument(
+        id="janm-penyata-kewangan-2022",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2022",
+        fiscal_year=2022,
+        url="https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2022_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="32a37d4d8ef374e92710bc987ccbf4ec63a847609accc56941c124d7c8b80871",
+        page_count=443,
+        raw_path="janm/2022.pdf",
+        operating_pages=(97, 195),
+        development_pages=(198, 229),
+    ),
+    2021: SourceDocument(
+        id="janm-penyata-kewangan-2021",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2021",
+        fiscal_year=2021,
+        url="https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2021_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="8fe75e5b7d7e1c839bd3f426a97d941ca76e732501dc17d5baaceb773e96763f",
+        page_count=456,
+        raw_path="janm/2021.pdf",
+        operating_pages=(89, 199),
+        development_pages=(202, 245),
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=B.24 programme=060000",
+                diffs_sen=(0, 0, 0, 0, -100_000_000),
+                evidence=(
+                    "PDF p142: 'Jumlah 060000' prints Sebenar 6,293,310.19, but its only activity (060100, "
+                    "Persidangan APEC 2020) and its per-object lines both sum to 7,293,310.19; the vote total "
+                    "agrees with the rows"
+                ),
+            ),
+        ),
     ),
 }
 

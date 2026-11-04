@@ -9,7 +9,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from pipeline.model import Amounts, DevelopmentStatement, Statement
-from pipeline.sources import SourceDocument
+from pipeline.sources import SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
 DEVELOPMENT_COLUMNS = (
@@ -112,6 +112,7 @@ def load_year(
         cur.execute("delete from operating_line where document_id = %s", (doc,))
         cur.execute("delete from development_printed_total where document_id = %s", (doc,))
         cur.execute("delete from development_project where document_id = %s", (doc,))
+        cur.execute("delete from development_statement where document_id = %s", (doc,))
         for table in ("activity", "programme", "vote"):
             cur.execute(f"delete from {table} where fiscal_year = %s", (year,))
         cur.execute("update development_group set parent_ordinal = null where fiscal_year = %s", (year,))
@@ -124,8 +125,13 @@ def load_year(
         operating_rows = _mismatches(cur, doc, "reconciliation", OPERATING_COLUMNS, _operating_key)
         development_rows = _mismatches(cur, doc, "development_reconciliation", DEVELOPMENT_COLUMNS, _development_key)
         mismatches = operating_rows[1] + development_rows[1]
-        if mismatches:
-            raise ReconciliationError(mismatches)
+        known = {(m.key, m.diffs_sen) for m in source.known_misprints}
+        found = {(m.key, m.diffs_sen) for m in mismatches}
+        if known - found:
+            raise SourceError(f"known misprints no longer occur: {sorted(known - found)}; update sources.py")
+        unexplained = [m for m in mismatches if (m.key, m.diffs_sen) not in known]
+        if unexplained:
+            raise ReconciliationError(unexplained)
 
     return YearLoad(
         LoadResult(
@@ -134,14 +140,14 @@ def load_year(
             activities=len(operating.activities),
             lines=len(operating.lines),
             printed_totals=len(operating.totals),
-            reconciled=operating_rows[0],
+            reconciled=operating_rows[0] - len(operating_rows[1]),
         ),
         DevelopmentLoadResult(
             votes=len(development.votes),
             groups=len(development.groups),
             projects=len(development.projects),
             printed_totals=len(development.totals),
-            reconciled=development_rows[0],
+            reconciled=development_rows[0] - len(development_rows[1]),
         ),
     )
 
@@ -211,6 +217,10 @@ def _insert_operating(cur: psycopg.Cursor, doc: str, statement: Statement) -> No
 
 def _insert_development(cur: psycopg.Cursor, doc: str, statement: DevelopmentStatement) -> None:
     year = statement.fiscal_year
+    cur.execute(
+        "insert into development_statement (document_id, fiscal_year, prior_plan, plan) values (%s, %s, %s, %s)",
+        (doc, year, statement.prior_plan, statement.plan),
+    )
     cur.executemany(
         "insert into development_vote (fiscal_year, code, name_ms) values (%s, %s, %s)",
         [(year, v.code, v.name) for v in statement.votes],

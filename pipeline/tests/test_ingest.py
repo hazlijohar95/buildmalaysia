@@ -177,6 +177,9 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
         # (votes, programmes, activities, leaf lines, printed totals); (votes, groups, projects, printed totals)
         (2024, (53, 237, 1068, 2206, 2280), (31, 57, 923, 89), 32_461_764_924_833, 8_401_159_546_378),
         (2023, (51, 231, 1037, 2094, 2201), (30, 58, 856, 89), 31_495_948_173_121, 9_608_973_712_254),
+        (2022, (52, 226, 1009, 2057, 2162), (29, 56, 746, 86), 29_435_676_061_497, 7_157_396_142_579),
+        # FY2021 prints one programme total RM1,000,000 short of its rows (sources.KnownMisprint).
+        (2021, (52, 229, 1032, 2089, 2210), (31, 69, 1051, 101), 23_375_205_502_913, 6_425_666_575_457),
     ],
 )
 def test_earlier_years_load_and_reconcile(
@@ -195,7 +198,8 @@ def test_earlier_years_load_and_reconcile(
         o, d = result.operating, result.development
         assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
-        assert o.reconciled == o.printed_totals and d.reconciled == d.printed_totals
+        assert o.reconciled == o.printed_totals - len(source.known_misprints)
+        assert d.reconciled == d.printed_totals
         row = conn.execute(
             "select operating_actual_sen, development_actual_sen from federal_spending where fiscal_year = %s",
             (year,),

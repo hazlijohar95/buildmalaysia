@@ -55,7 +55,7 @@ class Vote:
 class Programme:
     vote_code: str
     code: str
-    name: str
+    name: str | None  # None when the statement prints no heading for it (FY2022 B.24 020000)
     citation: Citation
 
 
@@ -181,6 +181,8 @@ class DevelopmentTotal:
 @dataclass(frozen=True)
 class DevelopmentStatement:
     fiscal_year: int
+    prior_plan: str  # Malaysia Plan of the left page's spending-to-prior-year column, e.g. "RMKe-11"
+    plan: str  # Malaysia Plan of the right page's spending-to-date column, e.g. "RMKe-12"
     votes: tuple[DevelopmentVote, ...]
     groups: tuple[DevelopmentGroup, ...]
     projects: tuple[DevelopmentProject, ...]
