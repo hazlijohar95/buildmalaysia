@@ -5,6 +5,10 @@ import { GLOSSARY } from "@/lib/glossary";
 import { Band, H2, PageHeader } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
 
+
+// Figures come from the database, which changes only when the pipeline loads; refresh hourly rather than
+// freezing them at build time.
+export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Methodology",
 };
