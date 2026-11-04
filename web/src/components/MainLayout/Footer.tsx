@@ -32,6 +32,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                 ...(budgetYear ? [{ href: `/budget/${budgetYear}`, label: `Budget ${budgetYear}` }] : []),
                 ...(spendingYear ? [{ href: `/${spendingYear}`, label: "By year" }] : []),
                 { href: "/methodology", label: "Methodology" },
+                { href: "/about", label: "About" },
               ].map((l) => (
                 <li key={l.href}>
                   <FooterLink href={l.href}>{l.label}</FooterLink>

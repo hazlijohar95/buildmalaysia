@@ -106,6 +106,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ]
       : []),
     { kind: "link", href: "/methodology", label: "Methodology", match: ["/methodology"] },
+    { kind: "link", href: "/about", label: "About", match: ["/about"] },
   ];
   return (
     <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`}>
