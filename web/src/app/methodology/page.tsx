@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 export default async function MethodologyPage() {
   const [{ sources, misprints, budgets }, gaps] = await Promise.all([getMethodologyChecks(), getOperatingGaps()]);
+  const ocr = sources.filter((s) => s.operating_ocr_engine);
 
   return (
     <>
@@ -29,11 +30,7 @@ export default async function MethodologyPage() {
         <H2>What the terms mean</H2>
         <dl className="mt-8 grid gap-x-12 md:grid-cols-2 m-0">
           {GLOSSARY.map((t) => (
-            <div
-              key={t.id}
-              id={t.id}
-              className="scroll-mt-4 border-t-2 border-foreground py-5 target:bg-linen-200 target:px-4"
-            >
+            <div key={t.id} id={t.id} className="border-t-2 border-foreground py-5 target:bg-linen-200 target:px-4">
               <dt className="font-display text-xl font-semibold">
                 {t.term}{" "}
                 <span lang="ms" className="font-sans text-sm font-normal text-charcoal-700">
@@ -230,19 +227,15 @@ export default async function MethodologyPage() {
         </Band>
       ))}
 
-      {sources.some((s) => s.operating_ocr_engine) && (
+      {ocr.length > 0 && (
         <Band wide id="ocr">
           <H2>Statements read by OCR</H2>
           <div className="mt-3 max-w-3xl space-y-4 text-charcoal-800">
             <p>
-              The published{" "}
-              {sources
-                .filter((s) => s.operating_ocr_engine)
-                .map((s) => s.fiscal_year)
-                .join(", ")}{" "}
-              Statement of Operating Expenditure (Lampiran 1) has no text layer, so its figures were read from the page.
-              The PDF still draws every character as a vector outline, so the position of each character, and the
-              pattern of digits, commas, periods and dashes in each cell, come from the PDF itself rather than from OCR.
+              The published {ocr.map((s) => s.fiscal_year).join(", ")} Statement of Operating Expenditure (Lampiran 1)
+              has no text layer, so its figures were read from the page. The PDF still draws every character as a vector
+              outline, so the position of each character, and the pattern of digits, commas, periods and dashes in each
+              cell, come from the PDF itself rather than from OCR.
             </p>
             <p>
               Each amount cell is read by OCR at 15 settings. A reading counts only if it fits the cell&apos;s drawn
@@ -252,13 +245,11 @@ export default async function MethodologyPage() {
               its rows exactly as in other years: it either matches or is a misprint confirmed on the page and listed
               below. Programme and activity names are OCR readings; the totals check does not cover them.
             </p>
-            {sources
-              .filter((s) => s.operating_ocr_engine)
-              .map((s) => (
-                <p key={s.fiscal_year} className="text-sm text-charcoal-700">
-                  {s.fiscal_year}: {s.operating_ocr_engine}.
-                </p>
-              ))}
+            {ocr.map((s) => (
+              <p key={s.fiscal_year} className="text-sm text-charcoal-700">
+                {s.fiscal_year}: {s.operating_ocr_engine}.
+              </p>
+            ))}
           </div>
         </Band>
       )}

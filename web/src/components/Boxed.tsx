@@ -46,6 +46,32 @@ export function PageHeader({
   );
 }
 
+/** A full-width note band: a caveat about the figures below it, such as a missing page or an OCR reading. */
+export function NoteBand({
+  title,
+  tone,
+  children,
+}: {
+  title: React.ReactNode;
+  tone: "copper" | "linen";
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      role="note"
+      className={cn(
+        "border-b-2 border-foreground px-5 py-6 sm:px-8 md:px-16",
+        tone === "copper" ? "bg-copper-100" : "bg-linen-200",
+      )}
+    >
+      <div className="mx-auto max-w-7xl">
+        <p className="m-0 font-semibold">{title}</p>
+        <p className="m-0 mt-2 max-w-4xl text-charcoal-800">{children}</p>
+      </div>
+    </section>
+  );
+}
+
 export function H2({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <h2 className={cn("m-0 font-display text-3xl md:text-4xl font-semibold tracking-tight", className)}>{children}</h2>

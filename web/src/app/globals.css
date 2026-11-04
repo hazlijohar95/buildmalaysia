@@ -140,7 +140,13 @@ main a:not([class]):hover {
   }
 }
 
-/* Anchored sections land below the sticky header (10px frame + 60px bar + borders). */
+/* The page frame's margin and the nav bar's height, which the sticky header and anchor offsets derive from. */
+:root {
+  --frame: 10px;
+  --bar: 60px;
+}
+
+/* Anchored sections land below the sticky header: frame, bar, its two 2px rules and some air. */
 html {
-  scroll-padding-top: 88px;
+  scroll-padding-top: calc(var(--frame) + var(--bar) + 18px);
 }

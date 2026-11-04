@@ -7,6 +7,7 @@ import { ChevronDown, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
 
 export interface NavLink {
@@ -22,17 +23,18 @@ export type NavItem =
       kind: "menu";
       label: string;
       links: NavLink[];
-      years?: { title: string; links: NavLink[] }; // a compact grid of year links beside the main links
+      years?: NavLink[]; // a compact "By year" grid beside the main links
     };
 
 // Sizes from buildcanada.com's nav: a 60px bar, 12px labels at 0.14em, 20px cell padding, 1px dividers,
 // and hover that inverts the cell.
 const cell =
   "flex items-center whitespace-nowrap px-5 font-mono text-[12px] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors";
-const kicker = "font-mono text-[12px] uppercase tracking-[0.22em]";
 
 const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
 const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
+
+const panelId = (label: string) => `nav-panel-${label.toLowerCase()}`;
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -44,19 +46,14 @@ export function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-const menuLinks = (item: NavItem): NavLink[] =>
-  item.kind === "link" ? [item] : [...item.links, ...(item.years?.links ?? [])];
-
 export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const openedByHover = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const triggers = useRef(new Map<string, HTMLButtonElement>());
 
   const isActive = (link: NavLink) => link.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
-  const itemActive = (item: NavItem) => menuLinks(item).some(isActive);
 
   const schedule = (fn: () => void, ms: number) => {
     clearTimeout(timer.current);
@@ -78,20 +75,13 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
     if (!openMenu && !mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (openMenu) triggers.current.get(openMenu)?.focus();
+      if (openMenu) document.querySelector<HTMLButtonElement>(`[aria-controls="${panelId(openMenu)}"]`)?.focus();
       setOpenMenu(null);
       setMobileOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openMenu, mobileOpen]);
-
-  // The panel animates in only when a menu opens from closed, not when moving between menus.
-  const wasOpen = useRef(false);
-  const entering = openMenu !== null && !wasOpen.current;
-  useEffect(() => {
-    wasOpen.current = openMenu !== null;
-  }, [openMenu]);
 
   return (
     <>
@@ -103,8 +93,8 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
           onClick={() => setOpenMenu(null)}
         />
       )}
-      <header className="sticky top-[10px] z-50 border-y-2 border-foreground bg-background">
-        <div className="flex min-h-[60px] items-stretch">
+      <header className="sticky top-[var(--frame)] z-50 border-y-2 border-foreground bg-background">
+        <div className="flex min-h-[var(--bar)] items-stretch">
           <Link
             href="/"
             className="flex items-center bg-auburn-800 px-4 py-3 text-linen-50 no-underline hover:bg-auburn-900"
@@ -114,21 +104,24 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
           </Link>
           <nav className="hidden lg:flex items-stretch border-r border-foreground" aria-label="Main navigation">
             {items.map((item) => {
-              const base = cn(cell, "border-l border-foreground text-foreground");
               if (item.kind === "link") {
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
                     aria-current={isActive(item) ? "page" : undefined}
-                    className={cn(base, isActive(item) ? "bg-linen-200" : "hover:bg-foreground hover:text-background")}
+                    className={cn(
+                      cell,
+                      "border-l border-foreground text-foreground",
+                      isActive(item) ? "bg-linen-200" : "hover:bg-foreground hover:text-background",
+                    )}
                   >
                     {item.label}
                   </Link>
                 );
               }
               const open = openMenu === item.label;
-              const panelId = `nav-panel-${item.label.toLowerCase()}`;
+              const active = [...item.links, ...(item.years ?? [])].some(isActive);
               return (
                 <div
                   key={item.label}
@@ -141,19 +134,14 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                 >
                   <button
                     type="button"
-                    ref={(el) => {
-                      if (el) triggers.current.set(item.label, el);
-                    }}
                     aria-expanded={open}
-                    aria-controls={panelId}
+                    aria-controls={panelId(item.label)}
                     onClick={() => {
                       clearTimeout(timer.current);
                       // A click right after hover opened the menu keeps it open instead of closing it.
-                      if (open && openedByHover.current) openedByHover.current = false;
-                      else {
-                        openedByHover.current = false;
-                        setOpenMenu(open ? null : item.label);
-                      }
+                      const keep = open && openedByHover.current;
+                      openedByHover.current = false;
+                      if (!keep) setOpenMenu(open ? null : item.label);
                     }}
                     className={cn(
                       cell,
@@ -161,7 +149,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                       open
                         ? // The open button is the panel's tab: same paper, covering the bar's bottom rule beneath it.
                           "relative z-10 bg-linen-50 after:absolute after:inset-x-0 after:-bottom-[2px] after:h-[2px] after:bg-linen-50"
-                        : itemActive(item)
+                        : active
                           ? "bg-linen-200 hover:bg-foreground hover:text-background"
                           : "hover:bg-foreground hover:text-background",
                     )}
@@ -172,7 +160,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                       className={cn("h-3 w-3 transition-transform duration-150", open && "rotate-180")}
                     />
                   </button>
-                  {open && <MenuPanel id={panelId} item={item} isActive={isActive} entering={entering} />}
+                  {open && <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} />}
                 </div>
               );
             })}
@@ -212,12 +200,10 @@ function MenuPanel({
   id,
   item,
   isActive,
-  entering,
 }: {
   id: string;
   item: Extract<NavItem, { kind: "menu" }>;
   isActive: (link: NavLink) => boolean;
-  entering: boolean;
 }) {
   const count = item.links.length;
   return (
@@ -227,13 +213,13 @@ function MenuPanel({
       id={id}
       className={cn(
         "absolute inset-x-0 top-full -mt-[2px] border-y-2 border-foreground bg-linen-50 shadow-[0_28px_56px_-28px_rgb(39_39_39/0.45)]",
-        entering && "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
+        "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
       )}
     >
       <div
         className={cn(
           "grid gap-px bg-foreground/15",
-          item.years && "grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]",
+          item.years?.length && "grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]",
         )}
       >
         <ul className="m-0 grid list-none grid-cols-3 gap-px p-0">
@@ -275,11 +261,11 @@ function MenuPanel({
             );
           })}
         </ul>
-        {item.years && (
+        {item.years?.length ? (
           <div className="bg-linen-50 px-7 py-7 xl:px-9">
-            <div className={cn(kicker, "text-[11px] text-charcoal-600")}>{item.years.title}</div>
+            <div className={cn(kicker, "text-[11px] text-charcoal-600")}>By year</div>
             <ul className="m-0 mt-5 grid list-none grid-cols-5 gap-px border border-foreground/25 bg-foreground/25 p-0">
-              {item.years.links.map((link) => (
+              {item.years.map((link) => (
                 <li key={link.href} className="flex">
                   <Link
                     href={link.href}
@@ -297,7 +283,7 @@ function MenuPanel({
               ))}
             </ul>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -331,9 +317,9 @@ function MobileMenu({
           <div key={item.label} className="border-b-2 border-foreground">
             <div className={cn(kicker, "px-3.5 pt-5 pb-2 text-charcoal-700")}>{item.label}</div>
             <div className="pl-4">{item.links.map(row)}</div>
-            {item.years && (
+            {item.years?.length ? (
               <ul className="m-0 flex list-none flex-wrap gap-0 px-3.5 py-4 pl-[calc(0.875rem+2px)]">
-                {item.years.links.map((link) => (
+                {item.years.map((link) => (
                   <li key={link.href} className="-ml-[2px] -mt-[2px]">
                     <Link
                       href={link.href}
@@ -349,7 +335,7 @@ function MobileMenu({
                   </li>
                 ))}
               </ul>
-            )}
+            ) : null}
           </div>
         ),
       )}

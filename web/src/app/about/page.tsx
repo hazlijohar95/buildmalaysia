@@ -8,7 +8,6 @@ import { cn } from "@/lib/cn";
 import { getCoverage } from "@/lib/queries/coverage";
 import { LuUsersRound } from "react-icons/lu";
 import { SiClaude } from "react-icons/si";
-import { FaLinkedin, FaXTwitter } from "react-icons/fa6";
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
@@ -48,8 +47,6 @@ interface Member {
   role: string;
   aside?: string; // set smaller after the role, on the same line
   portrait: React.ReactNode; // fills the card's square: a photo, or a mark when there is none yet
-  x?: string;
-  linkedin?: string;
 }
 
 // Portraits are cropped square and graded warm and slightly muted, so they sit together on the linen page.
@@ -163,8 +160,8 @@ export default async function AboutPage() {
 
   return (
     <>
-      <section className="border-b-2 border-foreground px-5 py-14 sm:px-8 md:px-16 md:py-20">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:gap-0">
+      <Band wide className="py-14 md:py-20">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-0">
           <h1 className="m-0 self-center font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl lg:pr-12">
             Every ringgit should be easy to follow.
           </h1>
@@ -182,7 +179,7 @@ export default async function AboutPage() {
             </p>
           </div>
         </div>
-      </section>
+      </Band>
 
       <nav aria-label="On this page" className="border-b-2 border-foreground px-5 sm:px-8 md:px-16">
         <ul className="mx-auto m-0 flex max-w-7xl list-none flex-wrap gap-x-8 p-0">
@@ -215,20 +212,6 @@ export default async function AboutPage() {
                   {m.role}
                   {m.aside && <span className="ml-1.5 text-[0.75em] text-charcoal-600">{m.aside}</span>}
                 </span>
-                {(m.x || m.linkedin) && (
-                  <span className="mt-auto flex justify-end gap-3 text-charcoal-600">
-                    {m.x && (
-                      <a href={m.x} aria-label={`${m.name} on X`} className="hover:text-foreground">
-                        <FaXTwitter aria-hidden="true" />
-                      </a>
-                    )}
-                    {m.linkedin && (
-                      <a href={m.linkedin} aria-label={`${m.name} on LinkedIn`} className="hover:text-foreground">
-                        <FaLinkedin aria-hidden="true" />
-                      </a>
-                    )}
-                  </span>
-                )}
               </div>
             </li>
           ))}

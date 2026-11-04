@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { getMethodologyChecks } from "@/lib/queries/reconciliation";
+import { getLoadedYears } from "@/lib/years";
 
 export interface Coverage {
   statements: number;
@@ -12,19 +13,18 @@ export interface Coverage {
 
 /** How much of the public record is loaded, counted live from the database. */
 export async function getCoverage(): Promise<Coverage> {
-  const [[counts], checks] = await Promise.all([
-    sql<{ first_year: number; last_year: number; line_items: string }[]>`
-      select (select min(fiscal_year) from federal_spending) as first_year,
-             (select max(fiscal_year) from federal_spending) as last_year,
-             (select count(*) from operating_line) + (select count(*) from development_project) as line_items
+  const [[counts], checks, years] = await Promise.all([
+    sql<{ line_items: string }[]>`
+      select (select count(*) from operating_line) + (select count(*) from development_project) as line_items
     `,
     getMethodologyChecks(),
+    getLoadedYears(),
   ]);
   return {
     statements: checks.sources.length,
     budgetBooks: checks.budgets.length,
-    firstYear: counts.first_year,
-    lastYear: counts.last_year,
+    firstYear: years.at(-1) ?? 0,
+    lastYear: years[0] ?? 0,
     lineItems: Number(counts.line_items),
     totalsChecked:
       checks.sources.reduce((n, s) => n + s.operating_total + s.development_total, 0) +

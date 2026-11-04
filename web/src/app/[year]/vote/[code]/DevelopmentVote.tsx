@@ -207,7 +207,7 @@ export default function DevelopmentVote({
                 <details
                   key={i}
                   id={s.group ? `g${s.group.ordinal}` : undefined}
-                  className="group/sec border-b border-border scroll-mt-4"
+                  className="group/sec border-b border-border"
                 >
                   <summary className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
                     <span

@@ -6,7 +6,7 @@ import Header, { type NavItem } from "@/components/MainLayout/Header";
 import Footer from "@/components/MainLayout/Footer";
 import { getLoadedYears } from "@/lib/years";
 import { getCovidYears } from "@/lib/queries/covid";
-import { getBudgetTotals, getBudgetYears } from "@/lib/queries/budget";
+import { getTabledBooks } from "@/lib/queries/budget";
 import { formatSenCompact } from "@/lib/money";
 
 const body = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
@@ -31,11 +31,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [years, budgets, [covidYear]] = await Promise.all([getLoadedYears(), getBudgetYears(), getCovidYears()]);
+  const [years, books, [covidYear]] = await Promise.all([getLoadedYears(), getTabledBooks(), getCovidYears()]);
   const [latest] = years;
-  const budgetTotals = await Promise.all(budgets.map((b) => getBudgetTotals(b)));
-  // Each book's grand total for the year it budgets, as tabled.
-  const tabled = new Map(budgets.map((b, i) => [b, budgetTotals[i].find((t) => t.fiscal_year === b)]));
   const items: NavItem[] = [
     {
       kind: "menu",
@@ -80,28 +77,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ]
           : []),
       ],
-      ...(latest && {
-        years: {
-          title: "By year",
-          links: years.map((y) => ({ href: `/${y}`, label: String(y), match: [`/${y}`] })),
-        },
-      }),
+      years: years.map((y) => ({ href: `/${y}`, label: String(y), match: [`/${y}`] })),
     },
     { kind: "link", href: "/revenue", label: "Revenue", match: ["/revenue"] },
-    ...(budgets.length > 0
+    ...(books.length > 0
       ? [
           {
             kind: "menu" as const,
             label: "Budget",
-            links: budgets.map((b) => {
-              const book = tabled.get(b);
-              return {
-                href: `/budget/${b}`,
-                label: `Budget ${b}`,
-                note: book ? `${formatSenCompact(book.grand_total_sen)} as tabled` : `The ${b} estimates`,
-                match: [`/budget/${b}`],
-              };
-            }),
+            links: books.map(({ budget_year: b, grand_total_sen }) => ({
+              href: `/budget/${b}`,
+              label: `Budget ${b}`,
+              note: grand_total_sen === null ? `The ${b} estimates` : `${formatSenCompact(grand_total_sen)} as tabled`,
+              match: [`/budget/${b}`],
+            })),
           },
         ]
       : []),
@@ -110,9 +99,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   ];
   return (
     <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`}>
-      <body className="min-h-screen p-[10px]">
-        <div className="min-h-[calc(100vh-20px)] border-x-2 border-b-2 border-foreground flex flex-col">
-          <div aria-hidden className="fixed inset-x-0 top-0 z-40 h-[10px] bg-background" />
+      <body className="min-h-screen p-[var(--frame)]">
+        <div className="min-h-[calc(100vh-2*var(--frame))] border-x-2 border-b-2 border-foreground flex flex-col">
+          <div aria-hidden className="fixed inset-x-0 top-0 z-40 h-[var(--frame)] bg-background" />
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-foreground focus:px-4 focus:py-3 focus:text-background"
@@ -123,7 +112,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main id="main" className="flex-1">
             {children}
           </main>
-          <Footer spendingYear={latest} budgetYear={budgets[0]} />
+          <Footer spendingYear={latest} budgetYear={books[0]?.budget_year} />
         </div>
       </body>
     </html>

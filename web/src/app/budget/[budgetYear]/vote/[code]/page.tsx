@@ -216,7 +216,7 @@ function Headings({
           {programmes.map((p) => {
             const acts = activities(p);
             return (
-              <details key={p.code} id={`p${p.code}`} className="group/prog border-b border-border scroll-mt-4">
+              <details key={p.code} id={`p${p.code}`} className="group/prog border-b border-border">
                 <summary className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
                   <span
                     aria-hidden="true"

@@ -1,5 +1,16 @@
 import sql from "@/lib/db";
-import { parseSen, type Sen } from "@/lib/money";
+import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
+
+/** Each loaded budget book, newest first, with its grand total for the year it budgets as tabled. */
+export async function getTabledBooks(): Promise<{ budget_year: number; grand_total_sen: Sen | null }[]> {
+  const rows = await sql<{ budget_year: number; grand_total_sen: string | null }[]>`
+    select d.budget_year, t.grand_total_sen
+    from budget_document d
+    left join budget_total t on t.document_id = d.document_id and t.fiscal_year = d.budget_year
+    order by d.budget_year desc
+  `;
+  return rows.map((r) => ({ ...r, grand_total_sen: parseSenOrNull(r.grand_total_sen) }));
+}
 
 /** Budget years with a loaded MOF budget book, newest first. */
 export async function getBudgetYears(): Promise<number[]> {
@@ -74,7 +85,14 @@ export interface BudgetVoteRow {
 /** Each vote's four figures as printed in the summary pages, in vote order. */
 export async function getBudgetVotes(budgetYear: number): Promise<BudgetVoteRow[]> {
   const rows = await sql<
-    { vote_code: string; heading: string; note: string | null; amounts: string[]; pdf_page: number; book_page: number }[]
+    {
+      vote_code: string;
+      heading: string;
+      note: string | null;
+      amounts: string[];
+      pdf_page: number;
+      book_page: number;
+    }[]
   >`
     select f.vote_code, min(f.heading) as heading, min(f.note) as note,
            array_agg(f.total_sen::text order by f.fiscal_year) as amounts,
@@ -181,7 +199,9 @@ export async function getBudgetProjects(budgetYear: number, voteCode: string): P
 }
 
 /** Results of comparing MOF's printed actuals with the audited statements. */
-export async function getBudgetActualCheck(budgetYear: number): Promise<{ result: string; count: number; worst_sen: number }[]> {
+export async function getBudgetActualCheck(
+  budgetYear: number,
+): Promise<{ result: string; count: number; worst_sen: number }[]> {
   const rows = await sql<{ result: string; count: string; worst_sen: string }[]>`
     select c.result, count(*) as count, max(abs(c.diff_sen)) as worst_sen
     from budget_actual_check c join budget_document d on d.document_id = c.document_id
@@ -194,9 +214,23 @@ export async function getBudgetActualCheck(budgetYear: number): Promise<{ result
 /** The development budget as first approved for a fiscal year, from the next year's budget book. */
 export async function getOriginalDevelopmentBudget(
   fiscalYear: number,
-): Promise<{ development_sen: Sen; contingency_sen: Sen; budget_year: number; url: string; pdf_page: number; book_page: number } | null> {
+): Promise<{
+  development_sen: Sen;
+  contingency_sen: Sen;
+  budget_year: number;
+  url: string;
+  pdf_page: number;
+  book_page: number;
+} | null> {
   const [row] = await sql<
-    { development_sen: string; contingency_sen: string; budget_year: number; url: string; pdf_page: number; book_page: number }[]
+    {
+      development_sen: string;
+      contingency_sen: string;
+      budget_year: number;
+      url: string;
+      pdf_page: number;
+      book_page: number;
+    }[]
   >`
     select t.development_sen, t.contingency_sen, d.budget_year, sd.url, t.pdf_page, t.book_page
     from budget_total t

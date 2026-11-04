@@ -6,6 +6,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Band, H2, PageHeader, StatRow, kicker } from "@/components/Boxed";
 import StackedBars from "@/components/StackedBars";
 import YearNav from "@/components/YearNav";
+import OcrNote from "@/components/OcrNote";
 import { cn } from "@/lib/cn";
 import { voteCodeToSlug } from "@/lib/citations";
 import { formatSen, formatSenCompact, parseSen, type Sen } from "@/lib/money";
@@ -121,10 +122,15 @@ export default async function MinistryPage({ params, searchParams }: Props) {
           hrefFor={(y) => `/ministries/${ministry.canonical}?year=${y}`}
         />
       </PageHeader>
+      <OcrNote year={year} />
 
       <StatRow
         stats={[
-          { label: `Spent in ${year}`, value: formatSenCompact(current.actual_sen), title: formatSen(current.actual_sen) },
+          {
+            label: `Spent in ${year}`,
+            value: formatSenCompact(current.actual_sen),
+            title: formatSen(current.actual_sen),
+          },
           {
             label: "Share of federal spending",
             value: `${(current.share * 100).toFixed(1)}%`,
@@ -227,7 +233,12 @@ export default async function MinistryPage({ params, searchParams }: Props) {
               </thead>
               <tbody>
                 {(projects.length > 0
-                  ? projects.map((p, i) => ({ key: `${p.code}-${i}`, name: p.name_ms, estimate: p.estimate_sen, actual: p.actual_sen }))
+                  ? projects.map((p, i) => ({
+                      key: `${p.code}-${i}`,
+                      name: p.name_ms,
+                      estimate: p.estimate_sen,
+                      actual: p.actual_sen,
+                    }))
                   : groups.map((g) => ({
                       key: g.name,
                       name: titleCase(g.name),

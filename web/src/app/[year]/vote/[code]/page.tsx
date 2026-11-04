@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import GapNote from "@/components/GapNote";
 import OcrNote from "@/components/OcrNote";
-import { getOcrEngine, getOperatingGaps } from "@/lib/queries/gaps";
+import { getOperatingGaps } from "@/lib/queries/gaps";
 import { notFound } from "next/navigation";
 import {
   getVoteHeader,
@@ -81,13 +81,12 @@ export default async function VoteDetailPage({ params }: Props) {
     );
   }
 
-  const [header, programmes, activities, lines, gaps, ocrEngine] = await Promise.all([
+  const [header, programmes, activities, lines, gaps] = await Promise.all([
     getVoteHeader(year, voteCode),
     getProgrammeTotals(year, voteCode),
     getActivityTotals(year, voteCode),
     getLeafLines(year, voteCode),
     getOperatingGaps(year).then((g) => g.filter((x) => x.vote_code === voteCode)),
-    getOcrEngine(year),
   ]);
   if (!header) notFound();
 
@@ -146,7 +145,7 @@ export default async function VoteDetailPage({ params }: Props) {
         </p>
       </PageHeader>
       <GapNote gaps={gaps} />
-      <OcrNote year={year} engine={ocrEngine} />
+      <OcrNote year={year} />
 
       <StatRow
         stats={[
@@ -269,7 +268,7 @@ export default async function VoteDetailPage({ params }: Props) {
           </p>
         )}
         {programmes.map((prog) => (
-          <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12 scroll-mt-4">
+          <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12">
             <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
               <span className="font-mono text-sm font-normal text-charcoal-700 mr-3">{prog.programme_code}</span>
               <span lang="ms">{titleCase(prog.programme_name_ms)}</span>
