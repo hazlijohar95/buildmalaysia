@@ -237,6 +237,11 @@ class _Parser:
         """Return the book page and the numbered lines below the column units line."""
         lines = [self.unbang(line) for line in page.layout.split("\n")]
         at = next((i for i, line in enumerate(lines) if units.fullmatch(_unbang(line))), None)
+        if at is None and self.slug_pages and side == "left":
+            # FY2016-2017 left pages print no "RM RM" units in the text layer; the head ends at
+            # the plan column's "Hingga 31.12.YYYY", which must occur once.
+            heads = [i for i, line in enumerate(lines) if re.search(r"Hingga 31\.12\.\d{4}", line)]
+            at = heads[0] if len(heads) == 1 else None
         if at is None:
             raise ParseError(page.pdf_page, 1, lines[0] if lines else "", "no column units line")
         book_pages: list[int] = []
@@ -268,6 +273,25 @@ class _Parser:
             raise ParseError(page.pdf_page, 1, lines[0], "page head has no single running head")
         return book_pages[0], [(i + 1, lines[i]) for i in range(at + 1, len(lines))]
 
+    def join_split_vote_headers(
+        self, page: PageText, book_page: int, lines: list[tuple[int, str]]
+    ) -> list[tuple[int, str]]:
+        """Named rule VOTE_HEADER_SPLIT (FY2016-2019): a vote code alone on its line, its name
+        on the next non-blank line (FY2017 p235 "P.28" / "KEMENTERIAN PENGANGKUTAN", pushed
+        apart in -layout by undrawn "!" glyphs). The two are read as one header line."""
+        out = list(lines)
+        for i, (line_no, line) in enumerate(out):
+            if not re.fullmatch(r"P\.\d{2}", line.strip()):
+                continue
+            j = next((j for j in range(i + 1, len(out)) if out[j][1].strip()), None)
+            if j is None or re.search(r"[a-z\d]", out[j][1]):
+                continue
+            joined = f"{line.strip()} {out[j][1].strip()}"
+            at = Citation(page.pdf_page, book_page, line_no, joined)
+            self.corrections.append(Correction("VOTE_HEADER_SPLIT", f"read as {joined!r}", at))
+            out[i], out[j] = (line_no, joined), (out[j][0], "")
+        return out
+
     def unbang(self, line: str) -> str:
         """FY2016-2018 text layers carry "!" glyphs the pages do not draw, after column heads,
         inside note lines and on lines of their own. In those years every "!" is blanked."""
@@ -289,12 +313,19 @@ class _Parser:
         in_notes = False
         first_new = len(self.projects)
         self.blank_before = False
+        if self.slug_pages:
+            left_lines = self.join_split_vote_headers(left, left_book, left_lines)
         for index, (line_no, line) in enumerate(left_lines):
             text = line.strip()
             self.where = Citation(left.pdf_page, left_book, line_no, text)
             if not text or _FOOTER.fullmatch(text):
                 in_notes = False if _FOOTER.fullmatch(text) else in_notes
                 self.blank_before = not text
+                continue
+            if self.slug_pages and not re.search(r"[^\W_]", text):
+                # Named rule STRAY_MARK_IGNORED: a line of punctuation only (FY2017 p245, a "+"
+                # drawn above P.48). It carries no name and no amount.
+                self.corrections.append(Correction("STRAY_MARK_IGNORED", f"dropped {text!r}", self.where))
                 continue
             note = _NOTE.fullmatch(text)
             if note is not None and self.slug_pages:
@@ -532,6 +563,17 @@ class _Parser:
             self.last_project.parts.append(text)
             self.last_project.lines.append(text)
             return
+        if (
+            _SAMB.search(text)
+            and self.slug_pages
+            and any(g.closed and _norm(g.name).startswith(_norm(text).rstrip(" -–")) for g in vote.groups)
+        ):
+            # Named rule STALE_HEADING_IGNORED: a "(SAMB.)" heading for a group of this vote
+            # already closed (FY2017 p229, P.23 "KEMENTERIAN/JABATAN KETUA PENGARAH TANAH DAN
+            # GALIAN - (SAMB.)" after "Jumlah JUPEM"). It continues nothing; the projects below
+            # it are read as if it were absent.
+            self.corrections.append(Correction("STALE_HEADING_IGNORED", f"{text!r} names a closed group", self.where))
+            return
         if _SAMB.search(text):
             raise self.fail("continued heading with no group open")
         vote.groups.append(_Group(vote.code, len(vote.groups) + 1, text, self.where))
@@ -763,7 +805,13 @@ class _Parser:
             footnote = None
             if p.mark:
                 footnote = self.notes.get(key)
-                if footnote is None:
+                if footnote is None and self.slug_pages:
+                    # Named rule MARK_WITHOUT_NOTE: the page marks the project but prints no note
+                    # for it (FY2017 p225, P.21 "*23000"; the page's one note names 10810, 22200
+                    # and 41000). No footnote is stored.
+                    detail = f"{p.vote_code} {p.code} is marked, and no note names it"
+                    self.corrections.append(Correction("MARK_WITHOUT_NOTE", detail, p.first))
+                elif footnote is None:
                     raise self.fail(f"project {p.code} carries a mark with no note", p.first)
                 used.add(key)
             raw = " ".join(" ".join(p.parts).split())

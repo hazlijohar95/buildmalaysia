@@ -19,7 +19,7 @@ uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildm
 The command:
 
 1. Uses `data/raw/janm/2025.pdf`, or downloads it from the URL in `src/pipeline/sources.py` if it is absent. It stops if the file's SHA-256 differs from the pinned hash. A download goes to a `.part` file and is renamed only after the hash matches.
-2. Extracts the Lampiran 1, Lampiran 2, Lampiran 3 and Note 5(a) page ranges registered in `src/pipeline/sources.py` (FY2018 and FY2021-FY2025), all in Bahasa Malaysia, with `pdftotext`.
+2. Extracts the Lampiran 1, Lampiran 2, Lampiran 3 and Note 5(a) page ranges registered in `src/pipeline/sources.py` (FY2017-FY2018 and FY2021-FY2025), all in Bahasa Malaysia, with `pdftotext`.
 3. Parses them into the typed model in `src/pipeline/model.py`. Any line it cannot place stops the run with the PDF page and line number.
 4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads the reconciliation views. It commits only when every row matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
 
@@ -51,17 +51,20 @@ The 2025 PDF has a clean text layer. `-layout` keeps each table row on one text 
 
 ## Note 5(a) (revenue by type)
 
-`src/pipeline/revenue.py` holds `parse_revenue(pages, fiscal_year)`. Note 5, *Akaun Hasil Disatukan*, prints *Hasil mengikut penjenisan* over two pages (`SourceDocument.revenue_pages`: FY2018 PDF pp. 64-65, FY2021 pp. 73-74, FY2022 81-82, FY2023 79-80, FY2024 83-84, FY2025 89-90). The table starts after the line `Hasil mengikut penjenisan bagi tahun berakhir 31 Disember YYYY adalah seperti berikut:`, breaks at `(disambung)`, resumes after `(sambungan)` and ends at `(b) Perbelanjaan Mengurus`. Each of those markers must occur exactly once on its page.
+`src/pipeline/revenue.py` holds `parse_revenue(pages, fiscal_year)`. Note 5, *Akaun Hasil Disatukan*, prints *Hasil mengikut penjenisan* over two pages (`SourceDocument.revenue_pages`: FY2017 PDF pp. 61-62, FY2018 pp. 64-65, FY2021 pp. 73-74, FY2022 81-82, FY2023 79-80, FY2024 83-84, FY2025 89-90). The table starts after the line `Hasil mengikut penjenisan bagi tahun berakhir 31 Disember YYYY adalah seperti berikut:`, breaks at `(disambung)`, resumes after `(sambungan)` and ends at `(b) Perbelanjaan Mengurus`. Each of those markers must occur exactly once on its page.
 
 - Each row ends in six columns: Anggaran Asal, Anggaran Disemak, Sebenar and % Anggaran for the year, Sebenar and % Anggaran for the year before. The four amounts must be whole ringgit (stored as sen) and the two percentages must carry two decimals; `-` is zero. % Anggaran is not stored or checked, because the note divides by Anggaran Asal where Anggaran Disemak is zero in some rows (FY2021 Terimaan Pelarasan) and prints `-` in others (FY2023 Sumbangan dan Bayaran Ganti).
 - A line without amounts continues the name of the row above it, only if it is indented past that row's name (`Duti Eksais Terhadap Barangan` / `Tempatan`). Any other text line is a ParseError, so a name printed above its amounts cannot be glued to the wrong row.
 - Column-header lines (`Anggaran`, `Asal`, `Disemak`, `Sebenar`, `RM`, `%`, years) are allowed only above a page's first row, and their years must be the fiscal year or the one before.
 - A row whose full name is in `revenue.CATEGORIES` is a category's printed total: `HASIL` (revenue), `HASIL CUKAI` (tax), `Cukai Langsung` (direct_tax), `Cukai Tidak Langsung` (indirect_tax; FY2021 prints `Cukai Tak Langsung`), `HASIL BUKAN CUKAI` (non_tax), `TERIMAAN BUKAN HASIL` (non_revenue_receipts), `HASIL WILAYAH PERSEKUTUAN` (federal_territory). Names are matched case-sensitively, so the item `Hasil Bukan Cukai Wilayah Persekutuan` is not the category. Every category must be printed once, inside its parent. Any other row is an item of the innermost open category, which must be one with no sub-categories.
 
+FY2017 prints Cukai Langsung and Cukai Tak Langsung as headings with no amounts (rule `CATEGORY_HEADING_WITHOUT_TOTAL`): their rows are stored with null amounts (migration `20261104160000_revenue_category_headings.sql`), their items under them, and `revenue_reconciliation` checks only the categories printed with amounts. Their sums (116,024,199,520 and 61,634,295,936) equal the FY2018 note's 2017 column.
+
 `revenue_reconciliation` recomputes all seven category totals from the items below them, in all four columns, and `revenue_operating_balance` compares HASIL's Sebenar with Lampiran 1's statement total. The Consolidated Revenue Account balances because the year's surplus is transferred to the Development Fund as a Lampiran 1 line. The note prints whole ringgit, so the two may differ by up to 50 sen. `load_year` rolls back unless both views match.
 
 | Year | Items | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
 |---|---|---|---|---|
+| 2017 | 26 | 220,406,001,884 | 220,406,001,883.63 | +37 sen |
 | 2018 | 26 | 232,882,562,288 | 232,882,562,287.80 | +20 sen |
 | 2021 | 27 | 233,752,055,029 | 233,752,055,029.13 | -13 sen |
 | 2022 | 25 | 294,356,760,615 | 294,356,760,614.97 | +3 sen |
@@ -105,6 +108,9 @@ A printed total that disagrees with its own rows in the published PDF is registe
   - B.28 activity 050300's only leaf is 30000 Aset, Dipinda 280,000, Amaun 102,863.15. Every object total above it (programme 050000, vote B.28, supply section, statement) counts the 280,000 under 20000 and the 102,863.15 under 30000: eight totals, ±RM280,000 in Dipinda (PDF p157, p216).
   - B.63 programmes 080000, 090000, 100000 and 110000 all print the same per-object Dipinda for 10000 (41,140,500) and 20000 (31,402,870), whatever their leaves: eight totals. The programme totals and B.63's object totals agree with the leaves (PDF p212-213).
   - Lampiran 2, P.23 'Jumlah FRIM': its left page (Kos Keseluruhan, RMKe-11 to 2017) sums its three projects, its right page (Anggaran, Sebenar) sums them plus the eight unheaded projects printed above its heading, 06400-07800 (PDF p228-229).
+- FY2017 (3 totals):
+  - T.08 programme 010000's second per-object line is labelled Pemberian dan Kenaan Bayaran Tetap but carries the figures of its only leaf, 20000 Perkhidmatan dan Bekalan, as the vote total does (PDF p77).
+  - B.11 'Jumlah 020700' and 'Jumlah 020800' print only their 40000 leaf, leaving out the 20000 leaf (Dipinda 1,023,900 and 871,900); the programme and vote totals include it (PDF p118).
 
 ## Lampiran 2 (development expenditure)
 
@@ -145,8 +151,8 @@ Each rule reads the source other than literally in one narrow case. Each applica
 | `STRAY_BACKTICK_IGNORED` | A `` ` `` at the start of a line in the text layer that the rendered page does not show. Dropped. | p151/137, three leaves of B.22 |
 | `PRINTER_SLUG` (page furniture) | An InDesign file name and print time (`WJD25-0381 Teks 5 Lampiran BM.indd 87 19/09/2025 11:32 AM`) outside the drawn page. Ignored. | FY2024 pages |
 | `SPLIT_ROW_JOINED`, `STRAY_DASH_DROPPED` | A row whose text layer breaks after a few amounts and continues on the next line with no label. The amounts are joined; if that gives eight tokens with exactly one `–`, the dash (not drawn on the page) is dropped, and only if the seven left pass every row check. | FY2024 p106/92 (T.12 030000 Pemberian dan Kenaan Bayaran Tetap) |
-| `PROGRAMME_HEADING_MISSING` | An activity straight after a programme total, under a programme whose heading is not printed, opens that programme from its code; the name is taken from its `(SAMB.)` heading on the next page. | FY2022 p144 (B.24 020000), checked on the rendered page |
-| `STALE_HEADING_IGNORED` | A `(SAMB.)` heading in the text layer for a programme already closed, which the page does not draw. | FY2021 p142 (B.24 030000), checked on the rendered page |
+| `PROGRAMME_HEADING_MISSING` | An activity straight after a programme total, under a programme whose heading is not printed, opens that programme from its code; the name is taken from its `(SAMB.)` heading on the next page. | FY2022 p144 (B.24 020000), checked on the rendered page; FY2017 p102 (B.06 530000: the next page reprints the closed 520000 heading instead, so 530000 has no name) |
+| `STALE_HEADING_IGNORED` | A `(SAMB.)` heading for a programme already closed. | FY2021 p142 (B.24 030000, not drawn); FY2017 p103 (520000, drawn) |
 | `SAMB_NAME_DIFFERS` | A `(SAMB.)` heading with the open item's code but a shorter name continues it. | FY2021 p164 (B.33 020000) |
 | `VOTE_TOTAL_NAME_DIFFERS` | A vote total whose name differs from the vote heading closes the open vote. | FY2022 B.64 (`PENGAJIAN` / `PENDIDIKAN TINGGI`); FY2022 P.24 (`(MITI)`) |
 | Continued marker in the Varian column | `(disambung...)` is removed before splitting, so a Varian pushed to the next line rejoins its row by column position. | FY2021 p111 |
@@ -159,28 +165,37 @@ Each occurrence was checked against the rendered page with `pdftoppm`.
 
 ## FY2016-2019 statements
 
-The FY2016-2019 statements are InDesign files laid out differently from FY2021 on. FY2018 is loaded. FY2019 is not: its PDF skips a page of Lampiran 1. PDF p89 (book p.77) ends inside B.05 programme 030000 after "Jumlah 030100" and "(disambung...)"; p90 (book p.78) opens "B.06 JABATAN PERDANA MENTERI – (SAMB.)" and programme 010000 "(SAMB.)" at activity 010600. B.05's 030000 programme total and vote total, and B.06's activities 010100-010500, are not in the file (the hidden appendix counter jumps from 41 to 43). The English section (p335) has only vote totals, so B.05 and B.06 cannot be reconciled and the year cannot load.
+The FY2016-2019 statements are InDesign files laid out differently from FY2021 on. FY2017 and FY2018 are loaded. FY2019 is not: its PDF skips a page of Lampiran 1. PDF p89 (book p.77) ends inside B.05 programme 030000 after "Jumlah 030100" and "(disambung...)"; p90 (book p.78) opens "B.06 JABATAN PERDANA MENTERI – (SAMB.)" and programme 010000 "(SAMB.)" at activity 010600. B.05's 030000 programme total and vote total, and B.06's activities 010100-010500, are not in the file (the hidden appendix counter jumps from 41 to 43). The English section (p335) has only vote totals, so B.05 and B.06 cannot be reconciled and the year cannot load.
 
 - **Four columns.** Lampiran 1 prints Anggaran Asal, Anggaran Dipinda (the revised estimate), Sebenar Amaun and % (`parse_statement(..., columns=4)`, `SourceDocument.operating_columns`). Tambahan/(Kurangan) and Viremen are not printed, so they are stored as null (migration `20261104140000_four_column_statements.sql`; the `reconciliation` view compares null-safely). The only row check is % = Amaun / Dipinda (the convention above), so columns are proven by the reconciliation views, which check Asal, Dipinda and Amaun against every printed total.
-- **Side tab.** The book page and "LAMPIRAN 1 - PERBELANJAAN MENGURUS" are printed in a tab at the page edge, level with table rows, and `-layout` interleaves the tab's text with those rows (FY2018 p85 breaks two rows into one column per line). Lampiran 1 and 2 are therefore read with `pdftotext -x 78 -W 500` (`SourceDocument.crop`); every table word lies inside x 83-575 on every page of these years. Note 5(a) is read whole, and a line holding only the page's book number is skipped.
+- **Side tab.** The book page and "LAMPIRAN 1 - PERBELANJAAN MENGURUS" are printed in a tab at the page edge, level with table rows, and `-layout` interleaves the tab's text with those rows (FY2018 p85 breaks two rows into one column per line). Lampiran 1 and 2 are therefore read with `pdftotext -x 78 -W 500` (`SourceDocument.operating_crop`, `development_crop`); every table word lies inside x 83-575 on every page of these years. Lampiran 1 is also read only from y 124: FY2017 p199 holds a copy of another page shrunk to 6 x 9 points at y 114-123, and the units line is never above y 149. Note 5(a) is read whole, and a line holding only the page's book number is skipped.
 - **Book pages.** The running head has no page number. The page carries the book page and the appendix's own counter (not drawn), so the book page is read from the printer slug (`... BM.indd 68 02/10/2019 ...`) and must also start a line of the page's `-raw` text; the offset from the PDF page must stay constant (`parse.slug_book_page`).
 - **Page furniture.** `PENYATA KEWANGAN KERAJAAN PERSEKUTUAN` (with `[2O18]`), `$10 Excellent Accounting @ Your Service`, the tab's words and bare page numbers inside the table area are ignored. FY2016-2018 text layers end column heads, `(disambung...)` and other lines with a `!` the pages do not draw: a trailing `!` is dropped in Lampiran 1 (one anywhere else in a line stops the parse), and every `!` is blanked in Lampiran 2, where they also sit inside note lines (`Nota: !*P.06–`).
 - **Lampiran 2 notes** are read from `-raw` text, which keeps each note on one line; `-layout` scatters them (FY2018 p236).
+- **Lampiran 2 left pages** of FY2016-2017 have no "RM RM" units line in the text layer; the head ends at the one line holding "Hingga 31.12.YYYY".
 
-| Rule | What it does | FY2018 occurrences (PDF page) |
+| Rule | What it does | Occurrences (year, PDF page) |
 |---|---|---|
 | `BLANK_CELL_READ_AS_ZERO` (four columns) | As above, for Asal, Dipinda or Amaun; % is never blank. | p113, p115 (Amaun) |
 | `BLANK_CELL_READ_AS_ZERO` (Lampiran 2 left page) | A left-page row with one of its two amounts, placed by its right edge against the nearest complete row (within 2 characters); the empty cell reads as zero. | p220 (P.06 95000, no Kos Keseluruhan) |
 | `SPLIT_ROW_JOINED` (four columns) | As above: an activity total whose % sits on the next line. | p147 (×6) |
 | `STRAY_GLYPH_IGNORED` | A lone lowercase letter after a row's last amount, or on a line of its own, that the page does not draw. | p141 ("99.94 b", "u") |
-| `SAMB_HEADING_OPENS` | A programme heading marked "(SAMB.)" for a programme never opened, straight after the previous programme's total, opens it. | p168 (B.32 040000; p167 ends with "Jumlah 030000") |
+| `SAMB_HEADING_OPENS` | A programme or vote heading marked "(SAMB.)" for one never opened, straight after the previous one's total, opens it. | 2018 p168 (B.32 040000; p167 ends with "Jumlah 030000"); 2017 p97, p105 (programmes), p200 (vote B.60, after B.48's total) |
+| `THOUSANDS_SEPARATORS_MISSING` | An amount with two decimals printed without thousands separators ("42830941.86", so drawn). | 2017 p102, p163 |
+| `DASH_ON_HEADING` | A heading row with a "–" drawn in the last column and no other amount; the dash is dropped. | 2017 p115-116 (B.10 060000) |
+| `OBJECT_TOTAL_PRINTED_AS_LEAF` | A coded object line ("20000 Perkhidmatan dan Bekalan") straight after an activity total, where no leaf can follow, is the programme's per-object total. A missed activity header cannot hide here: its total would follow a programme object line, which the machine rejects. | 2017 p142 |
 | `PROGRAMME_TOTAL_CODE_MISPRINTED` | Like `ACTIVITY_TOTAL_CODE_MISPRINTED`, for a programme total. A missed programme header cannot hide here: its activities would fail the code-prefix check. | p213 ("Jumlah 100000" closes B.63 110000) |
-| Activity notes (FY2018) | A note may wrap onto the next line, name several activities (`120100, 130300 dan 130600`; a code named twice is logged as `NOTE_CODE_REPEATED`), or start "– Program/Aktiviti - 050600 -" under the previous note's vote. | p92, p97, p119, p198-202 |
+| Activity notes | A note may wrap onto the next line, name several activities (`140200, 140300 dan 140400`), or start "– Program/Aktiviti - 050600 -" under the previous note's vote. | 2018 p92, p97, p198-202; 2017 p132, p198 |
+| `NOTE_CODE_REPEATED` | A note naming one code twice that leaves exactly one marked activity of its vote without a note is attached, verbatim, to that activity. | 2017 p125 (B.13 note names "130300, 130300"; 130100 is marked) |
 | `HEADING_WITHOUT_TOTAL` | A heading still open when its vote's total is printed, or followed after a blank line by another heading with no project between, is a caption: it is dropped and its projects belong to the vote only. | p220 (P.10 "PERBADANAN KEMAJUAN NEGERI"), p228 (P.22 "MAJLIS AMANAH RAKYAT (MARA)" reprinted over SLDB, LKTS, ...), p248 (P.60 "PENGURUSAN DASAR DALAM NEGERI") |
 | `SUBHEADING_NOT_TOTALLED` | Inside an open group, a heading that extends the group's own heading, or one set off by a blank line after projects. Its projects stay in the open group, whose total covers them. | p220 (P.10 "KASTAM DIRAJA MALAYSIA"), p236 (P.28 "PROJEK KTMB", "PENGANGKUTAN DARAT SEMENANJUNG") |
 | `TITLE_CASE_HEADING` | A line in title case with no project above it and no group open cannot continue a name; it opens a group. | p242 (P.43 "Kerajaan Tempatan", ...), p246-250 (P.60, P.62) |
 | `OWN_PROJECTS_TOTAL_IN_CAPITALS` | "JUMLAH <vote name>" under the ministry's own projects, followed by a heading of the same vote, totals those projects; the vote's total is the second such line. | p232 (P.24) |
 | `DUPLICATE_PROJECT_CODE` | Two different projects printed with one code, in different groups under different names, are both stored (`development_project` is keyed by code and citation, migration `20261104150000`). If both carry a note mark the note is ambiguous and the parse fails. | p224 (P.21 90700), p248/p250 (P.62 16000) |
+| `STALE_HEADING_IGNORED` (Lampiran 2) | A "(SAMB.)" heading naming a group of the vote already closed continues nothing and is skipped. | 2017 p229 (P.23) |
+| `VOTE_HEADER_SPLIT` | A vote code alone on its line, its name on the next, are read as one header line. | 2017 p235 (P.28) |
+| `STRAY_MARK_IGNORED` | A line of punctuation only (a "+" drawn above P.48). | 2017 p245 |
+| `MARK_WITHOUT_NOTE` | A project marked "*" for which the page prints no note; no footnote is stored. | 2017 p225 (P.21 23000), p249 (P.63 01100) |
 | `DOUBLED_TEXT_LAYER` (Note 5(a)) | A wrapped word held twice in the text layer a few points apart; the page draws the second, indented copy. The first is dropped. | p65 ("Kerajaan", "Wilayah", "Persekutuan") |
 
 ## Footnotes

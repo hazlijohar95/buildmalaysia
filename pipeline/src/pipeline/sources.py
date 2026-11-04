@@ -52,15 +52,22 @@ class SourceDocument:
     covid_columns: tuple[tuple[str, ...], tuple[str, ...]] = ((), ())
     # Lampiran 1's columns: 7 (FY2021 on), or 4 (FY2016-2019: Asal, Dipinda, Amaun, %).
     operating_columns: int = 7
-    # The part of each Lampiran 1 and 2 page `-layout` reads, (x, y, width, height) in points.
-    # FY2016-2019 print the book page in a side tab level with table rows, which -layout
-    # would interleave with them; their tables lie inside x 83-575.
-    crop: tuple[int, int, int, int] | None = None
+    # FY2016-2019: no page number in the running head; book pages come from the printer slug.
+    slug_pages: bool = False
+    # The part of each Lampiran 1 / Lampiran 2 page `-layout` reads, (x, y, width, height) in
+    # points. FY2016-2019 print the book page in a side tab level with table rows, which
+    # -layout would interleave with them; their tables lie inside x 83-575.
+    operating_crop: tuple[int, int, int, int] | None = None
+    development_crop: tuple[int, int, int, int] | None = None
 
 
 # FY2016-2019 print Lampiran 1 in four columns, with the book page in a side tab. FY2019 is
 # not registered: its PDF omits a page of Lampiran 1 (README, "FY2016-2019 statements").
-_SIDE_TAB_CROP = (78, 0, 500, 842)
+# Lampiran 1 is also read from y 124: its units line is never above y 149, and FY2017 p199
+# holds a copy of a page shrunk to 6 x 9 points at x 86-92, y 114-123, which -layout would
+# spread over the table.
+_OPERATING_CROP = (78, 124, 500, 718)
+_DEVELOPMENT_CROP = (78, 0, 500, 842)
 
 SOURCES: dict[int, SourceDocument] = {
     2025: SourceDocument(
@@ -138,7 +145,9 @@ SOURCES: dict[int, SourceDocument] = {
         development_pages=(218, 253),
         revenue_pages=(64, 65),
         operating_columns=4,
-        crop=_SIDE_TAB_CROP,
+        slug_pages=True,
+        operating_crop=_OPERATING_CROP,
+        development_crop=_DEVELOPMENT_CROP,
         known_misprints=(
             KnownMisprint(
                 key="programme total vote=B.09 programme=030000 object=40000",
@@ -214,6 +223,53 @@ SOURCES: dict[int, SourceDocument] = {
                     "Anggaran 147,011,642.00 and Sebenar 141,000,596.98: its projects (23,637,595.00; "
                     "23,374,000.00) plus the eight unheaded projects printed above its heading, 06400 to 07800 "
                     "(123,374,047.00; 117,626,596.98). The P.23 vote total agrees with the projects"
+                ),
+            ),
+        ),
+    ),
+    2017: SourceDocument(
+        id="janm-penyata-kewangan-2017",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2017",
+        fiscal_year=2017,
+        url="https://www.anm.gov.my/images/dokumen/arkib/penyata-kewangan/2017_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="d3a9e1d4de3af0c20a0e54984fd3a834f5f7410bee1f4a22e402c4d58ed3eae9",
+        page_count=400,
+        raw_path="janm/2017.pdf",
+        operating_pages=(75, 216),
+        development_pages=(219, 250),
+        revenue_pages=(61, 62),
+        operating_columns=4,
+        slug_pages=True,
+        operating_crop=_OPERATING_CROP,
+        development_crop=_DEVELOPMENT_CROP,
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=T.08 programme=010000 object=40000",
+                diffs_sen=(3_900_000, 0, 0, 3_900_000, 1_561_500),
+                evidence=(
+                    "PDF p77: T.08 programme 010000's second per-object line is labelled 'Pemberian dan Kenaan "
+                    "Bayaran Tetap' (39,000; 39,000; 15,615.00), but the programme's only activity, 010100, has "
+                    "no 40000 leaf: those are the figures of its leaf '20000 Perkhidmatan dan Bekalan', and the "
+                    "vote total prints them as 'Jumlah Perkhidmatan dan Bekalan'"
+                ),
+            ),
+            KnownMisprint(
+                key="activity total vote=B.11 programme=020000 activity=020700",
+                diffs_sen=(0, 0, 0, -102_390_000, -102_390_000),
+                evidence=(
+                    "PDF p118: 'Jumlah 020700' prints Dipinda 723,707,340 and Amaun 723,707,264.89, its 40000 "
+                    "leaf alone; its 20000 leaf (Dipinda 1,023,900, Amaun 1,023,900.00) is left out. Programme "
+                    "020000's totals and the vote's include it"
+                ),
+            ),
+            KnownMisprint(
+                key="activity total vote=B.11 programme=020000 activity=020800",
+                diffs_sen=(0, 0, 0, -87_190_000, -87_180_837),
+                evidence=(
+                    "PDF p118: 'Jumlah 020800' prints Dipinda 27,448,100 and Amaun 27,448,001.96, its 40000 leaf "
+                    "alone; its 20000 leaf (Dipinda 871,900, Amaun 871,808.37) is left out. Programme 020000's "
+                    "totals and the vote's include it"
                 ),
             ),
         ),

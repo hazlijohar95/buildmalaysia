@@ -112,3 +112,15 @@ FY2019 is not loaded: its PDF omits one page of Lampiran 1 (see `pipeline/README
 | 2018 | 232,882,562,288 | 232,882,562,287.80 | +20 sen |
 
 **Previous statement.** The FY2019 note's 2018 Sebenar column (PDF pp. 60-61) equals FY2018's Sebenar for all 7 categories and all 26 items, matched by value. FY2019 adds one item printed with a dash for 2018 ("Terimaan ... Kerajaan Lain", 12,697 in 2019).
+
+FY2017 and FY2018 (both loaded):
+
+| Year | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
+|---|---|---|---|
+| 2017 | 220,406,001,884 | 220,406,001,883.63 | +37 sen |
+
+**FY2018 against FY2017.** The FY2018 note's 2017 Sebenar column (PDF pp. 64-65) equals FY2017's Sebenar for all 26 items and the 5 categories FY2017 prints with amounts. FY2017 prints Cukai Langsung and Cukai Tak Langsung without amounts; the sums of their FY2017 items (116,024,199,520 and 61,634,295,936) equal FY2018's 2017 figures for them.
+
+**Lampiran 2, RMKe-11 spending to date.** FY2018's statement total for RMKe-11 spending to 31.12.2017 (RM86,878,876,528.87) equals FY2017's to-date column. By project, 741 of the 742 (vote, code) pairs in both statements agree; the other is P.21 90700, which FY2018 prints twice (the NATC row alone equals FY2017's).
+
+**Lampiran 1 transfer to the Development Fund.** B.12 'Kumpulan Wang Pembangunan' actual: FY2017 RM2,710,809,215.47 (the note prints RM2,710,809,216), FY2018 RM1,922,069,619.86 (the note prints the same).

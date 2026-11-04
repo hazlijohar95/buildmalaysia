@@ -51,6 +51,7 @@ class ParseError(Exception):
 _VALUE = re.compile(
     rf"(?P<marks>\**)(?:{DASH}|(?P<neg>\()?(?P<int>\d{{1,3}}(?:,\d{{3}})*)(?:\.(?P<dec>\d{{2}}))?(?(neg)\)))"
 )
+_UNSEPARATED = re.compile(r"\d{4,}\.\d{2}")
 _NUMBER_IN_TEXT = re.compile(r"(?<!\S)\(?\d{1,3}(?:,\d{3})+(?:\.\d{2})?\)?(?!\S)|(?<!\S)\d+\.\d{2}(?!\S)")
 
 
@@ -60,6 +61,7 @@ class Value:
     marks: str
     is_dash: bool
     has_decimals: bool
+    unseparated: bool = False  # printed without thousands separators (THOUSANDS_SEPARATORS_MISSING)
 
 
 def parse_value(token: str) -> Value | None:
@@ -113,6 +115,10 @@ def _split(line: str, limit: int = 7) -> _Split:
     label_end = len(line)
     for token in reversed(list(re.finditer(r"\S+", line))):
         value = parse_value(token.group())
+        if value is None and _UNSEPARATED.fullmatch(token.group()):
+            # FY2017 p102, p163: "42830941.86", drawn so on the page.
+            integer, decimals = token.group().split(".")
+            value = Value(int(integer) * 100 + int(decimals), "", False, True, unseparated=True)
         if value is None or len(values) == limit:
             break
         values.insert(0, value)
@@ -500,6 +506,7 @@ class _Parser:
         self.activity_notes: dict[tuple[str, str], str] = {}  # (vote, activity) -> note
         self.marked_activities: set[tuple[str, str]] = set()
         self.note_keys: list[tuple[str, str]] = []  # the activity note a wrapped line continues
+        self.repeated_code_notes: dict[str, tuple[str, Citation]] = {}  # vote -> a note naming a code twice
         self.notes_page: int | None = None
         self.book_page_offset: int | None = None
         self.where = Citation(0, 0, 0, "")
@@ -574,10 +581,27 @@ class _Parser:
                 row = self.fill_blank_cell(row, splits, i)
             if len(row.values) == width:
                 self.feed_row(row.label, row.values)
+            elif self.dash_on_heading(row, splits, i):
+                self.feed_text(row.label)
             else:
                 self.feed_text(lines[i].strip())
         if self.notes_page == page.pdf_page:
             self.read_notes(page)
+
+    def dash_on_heading(self, row: _Split, splits: list[_Split], i: int) -> bool:
+        """Named rule DASH_ON_HEADING: a heading row with a "–" drawn in the last column and
+        no other amount (FY2017 p115-116, B.10 "060000 PROGRAM KHUSUS"). The dash is dropped."""
+        if len(row.values) != 1 or not row.values[0].is_dash:
+            return False
+        samb = _SAMB.fullmatch(row.label)
+        if _classify(TEXT_KINDS, samb["rest"] if samb else row.label)[0] not in _HEADER_KINDS:
+            return False
+        complete = [s for s in splits if len(s.values) == len(self.layout.columns) and s.ends]
+        nearest = min(complete, key=lambda s: abs(splits.index(s) - i), default=None)
+        if nearest is None or abs(row.ends[0] - nearest.ends[-1]) > 2:
+            return False
+        self.corrections.append(Correction("DASH_ON_HEADING", "dropped a '–' in the last column", self.where))
+        return True
 
     def fill_blank_cell(self, row: _Split, splits: list[_Split], i: int) -> _Split:
         width = len(self.layout.columns)
@@ -666,9 +690,7 @@ class _Parser:
                 raise self.fail("a note with no vote, and no note above it to take the vote from")
             codes = re.findall(r"\d{6}", match["codes"])
             if len(set(codes)) != len(codes):
-                self.corrections.append(
-                    Correction("NOTE_CODE_REPEATED", f"note names {', '.join(codes)}; each is read once", self.where)
-                )
+                self.repeated_code_notes[vote] = (text, self.where)
             self.note_keys = [(vote, code) for code in dict.fromkeys(codes)]
             for key in self.note_keys:
                 if key in self.activity_notes:
@@ -717,6 +739,12 @@ class _Parser:
         amounts, error, percent_off = _check_row(values)
         if error is not None:
             raise self.fail(error)
+        for value in values:
+            if value.unseparated:
+                # Named rule THOUSANDS_SEPARATORS_MISSING: an amount with two decimals printed
+                # without thousands separators. Its value is unambiguous.
+                detail = f"{value.hundredths / 100:.2f} printed without thousands separators"
+                self.corrections.append(Correction("THOUSANDS_SEPARATORS_MISSING", detail, self.where))
         if percent_off is not None:
             self.corrections.append(Correction("PRINTED_PERCENT_DIFFERS", percent_off, self.where))
 
@@ -733,6 +761,20 @@ class _Parser:
         kind, match = _classify(ROW_KINDS, label)
         cite = self.where
         match kind:
+            case Kind.LEAF if self.phase in (Phase.ACTIVITY_DONE, Phase.PROGRAMME_OBJECTS):
+                # Named rule OBJECT_TOTAL_PRINTED_AS_LEAF: after an activity total no leaf can
+                # follow, so a coded object line there is the programme's per-object total
+                # (FY2017 p142, "20000 Perkhidmatan dan Bekalan" under "Jumlah 160100"). A missed
+                # activity header cannot hide here: its "Jumlah" would follow a programme
+                # object line, which the machine rejects.
+                if _OBJECT_LABELS.get(match["name"]) != match["code"]:
+                    raise self.fail(f"object {match['code']} is not named {match['name']!r}")
+                self.corrections.append(
+                    Correction(
+                        "OBJECT_TOTAL_PRINTED_AS_LEAF", f"'{match['code']}' line read as a programme total", cite
+                    )
+                )
+                self.object_total(match["code"], False, amounts, marks)
             case Kind.LEAF:
                 self.leaf(match["code"], match["name"], amounts, marks)
             case Kind.LEAF_EXTRA_LEADING_ZERO:
@@ -929,7 +971,14 @@ class _Parser:
         )
         if repeated:
             return  # the open vote's heading repeated at the top of a page; FY2021 omits "(SAMB.)"
-        if pending.samb:
+        opened = any(v.code == pending.code for v in self.votes)
+        if pending.samb and self.phase is Phase.VOTE_DONE and not opened:
+            # Named rule SAMB_HEADING_OPENS (votes): FY2017 p200 prints "B.60 KEMENTERIAN
+            # PERTAHANAN – (SAMB.)" on its first page, after B.48's total; it opens B.60.
+            self.corrections.append(
+                Correction("SAMB_HEADING_OPENS", f"'(SAMB.)' heading opens vote {pending.code}", at)
+            )
+        elif pending.samb:
             if self.vote is None or pending.code != self.vote.code:
                 raise self.fail(f"continued vote {pending.code} {pending.name!r} is not the open vote", at)
             self.note_samb_name(pending.name, self.vote.name, at)
@@ -972,7 +1021,7 @@ class _Parser:
                 # for a programme already closed, which the page does not draw (FY2021 p142,
                 # checked on the rendered page). The open programme continues.
                 self.corrections.append(
-                    Correction("STALE_HEADING_IGNORED", f"undrawn '(SAMB.)' heading for closed {pending.code}", at)
+                    Correction("STALE_HEADING_IGNORED", f"stale '(SAMB.)' heading for closed {pending.code}", at)
                 )
                 return
             opened = any(p.vote_code == self.vote.code and p.code == pending.code for p in self.programmes)
@@ -1056,6 +1105,15 @@ class _Parser:
             elif total.scope is Scope.ACTIVITY and (total.vote_code, total.activity_code) in self.marked_activities:
                 # A "*" on an activity header: its note is stored on the activity's total.
                 key = (total.vote_code or "", total.activity_code or "")
+                if key not in self.activity_notes and key[0] in self.repeated_code_notes:
+                    # Named rule NOTE_CODE_REPEATED: a note naming one code twice (FY2017 p125,
+                    # B.13 "120100, 130300, 130300, 130400, 130500 dan 130600") misses one marked
+                    # activity of its vote (130100). The note, stored verbatim, is attached to
+                    # it; only one activity may be covered this way.
+                    text, at = self.repeated_code_notes.pop(key[0])
+                    self.activity_notes[key] = text
+                    detail = f"note naming a code twice is attached to marked activity {key[1]}"
+                    self.corrections.append(Correction("NOTE_CODE_REPEATED", detail, at))
                 if key not in self.activity_notes:
                     raise self.fail(f"activity {key} is marked but has no note", total.citation)
                 total = replace(total, footnote=self.activity_notes.pop(key))

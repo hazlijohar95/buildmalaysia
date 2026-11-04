@@ -40,14 +40,14 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
         operating = parse_statement(
-            extract_pages(pdf, source.operating_pages, source.crop),
+            extract_pages(pdf, source.operating_pages, source.operating_crop),
             source.fiscal_year,
             source.operating_columns,
         )
         development = parse_development(
-            extract_pages(pdf, source.development_pages, source.crop), source.fiscal_year, source.crop is not None
+            extract_pages(pdf, source.development_pages, source.development_crop), source.fiscal_year, source.slug_pages
         )
-        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year, source.crop is not None)
+        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year, source.slug_pages)
         covid = (
             parse_covid(extract_pages(pdf, source.covid_pages), source.fiscal_year, source.covid_columns)
             if source.covid_pages

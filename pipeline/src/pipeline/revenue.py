@@ -39,13 +39,14 @@ CATEGORIES: dict[str, tuple[RevenueCategory, RevenueCategory | None]] = {
     "TERIMAAN BUKAN HASIL": (C.NON_REVENUE_RECEIPTS, C.REVENUE),
     "HASIL WILAYAH PERSEKUTUAN": (C.FEDERAL_TERRITORY, C.REVENUE),
 }
-_LISTS_ITEMS = set(RevenueCategory) - {parent for _, parent in CATEGORIES.values()}
 _START = re.compile(
     r"Hasil mengikut penjenisan bagi tahun berakhir 31 Disember (?P<year>\d{4}) adalah seperti berikut:"
 )
 _RESUME = re.compile(r"\(sambungan\)")
 _BREAK = re.compile(r"\(disambung\)")
 _END = re.compile(r"\(b\) Perbelanjaan Mengurus")
+_SIDE_TAB = re.compile(r"NOTA KEPADA PENYATA KEWANGAN")
+_JUMLAH = re.compile(r"(?i:jumlah) (?P<name>.+)")
 _HEADER_WORDS = {"Anggaran", "Asal", "Disemak", "Sebenar", "RM", "%"}
 _AMOUNT_COLUMNS = (0, 1, 2, 4)  # the other two are % Anggaran, neither stored nor checked
 
@@ -56,7 +57,7 @@ class _Row:
     parts: list[str]
     lines: list[str]
     at: Citation
-    amounts: RevenueAmounts
+    amounts: RevenueAmounts | None  # None for a category heading printed without amounts (FY2016-2017)
     doubled: list[str] = field(default_factory=list)  # continuation lines dropped as a doubled text layer
 
 
@@ -103,8 +104,8 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
             if not text:
                 open_row = None
                 continue
-            if slug_pages and text == str(book_pages[-1]):
-                continue  # FY2016-2019: the book page, printed in a side tab level with the rows
+            if slug_pages and (text == str(book_pages[-1]) or _SIDE_TAB.fullmatch(text)):
+                continue  # FY2016-2019: the book page and the tab's words, level with the rows
             words = text.split()
             if page_rows == 0 and all(w in _HEADER_WORDS or re.fullmatch(r"\d{4}", w) for w in words):
                 if {int(w) for w in words if w.isdigit()} - {fiscal_year, fiscal_year - 1}:
@@ -117,6 +118,13 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
                 # word twice, a few points apart; the page draws the indented copy, the second
                 # (FY2018 p65 "Kerajaan", "Wilayah", "Persekutuan"). The first is dropped.
                 open_row.doubled.append(text)
+                continue
+            if not values and slug_pages and label in CATEGORIES:
+                # FY2016-2017 print some categories as headings without amounts.
+                at = Citation(page.pdf_page, book_pages[-1], line_no, text)
+                rows.append(_Row(indent, [label], [text], at, None))
+                open_row = None
+                page_rows += 1
                 continue
             if not values:
                 if open_row is None or indent <= open_row.indent:
@@ -143,33 +151,78 @@ def parse_revenue(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool 
     if not pages:
         raise ValueError("no pages given for the revenue note")
     items: list[RevenueItem] = []
-    totals: list[RevenueTotal] = []
+    totals: dict[RevenueCategory, RevenueTotal] = {}  # in printed order, each after its parent
     open_path: list[RevenueCategory] = []  # the categories enclosing the next row, outermost first
     corrections: list[Correction] = []
+    names_by_casefold = {name.casefold(): name for name in CATEGORIES}
+
+    def open_category(name: str, amounts: RevenueAmounts | None, citation: Citation, at: tuple[int, int, str]) -> None:
+        category, parent = CATEGORIES[name]
+        if category in totals:
+            raise ParseError(*at, f"category {category} printed twice")
+        if slug_pages and parent is C.REVENUE and not open_path and C.REVENUE not in totals:
+            # FY2016 opens with "HASIL CUKAI"; HASIL is printed only as "JUMLAH HASIL" at the end.
+            totals[C.REVENUE] = RevenueTotal(C.REVENUE, None, "HASIL", None, citation)
+            open_path.append(C.REVENUE)
+        if parent is None and open_path or parent is not None and parent not in open_path:
+            raise ParseError(*at, f"category {category} is not inside {parent or 'nothing'}")
+        del open_path[open_path.index(parent) + 1 if parent else 0 :]
+        open_path.append(category)
+        totals[category] = RevenueTotal(category, parent, name, amounts, citation)
+
     for row in _rows(pages, fiscal_year, slug_pages):
         for text in row.doubled:
             corrections.append(Correction("DOUBLED_TEXT_LAYER", f"repeated line {text!r} read once", row.at))
         name = " ".join(" ".join(row.parts).split())
         citation = Citation(row.at.pdf_page, row.at.book_page, row.at.line_no, "\n".join(row.lines))
         at = (row.at.pdf_page, row.at.line_no, row.at.text)
-        if name in CATEGORIES:
-            category, parent = CATEGORIES[name]
-            if any(t.category == category for t in totals):
-                raise ParseError(*at, f"category {category} printed twice")
-            if parent is None and open_path or parent is not None and parent not in open_path:
-                raise ParseError(*at, f"category {category} is not inside {parent or 'nothing'}")
-            del open_path[open_path.index(parent) + 1 if parent else 0 :]
-            open_path.append(category)
-            totals.append(RevenueTotal(category, parent, name, row.amounts, citation))
+        jumlah = _JUMLAH.fullmatch(name) if slug_pages else None
+        closes = names_by_casefold.get(jumlah["name"].casefold()) if jumlah else None
+        if row.amounts is None:
+            open_category(name, None, citation, at)
+        elif closes is not None:
+            # Named rule CATEGORY_TOTAL_PRINTED_LAST (FY2016): "Jumlah Hasil Cukai" ... "JUMLAH
+            # HASIL" print a category's amounts below its items, under a heading with none.
+            category = CATEGORIES[closes][0]
+            total = totals.get(category)
+            if total is None or total.amounts is not None or not open_path or open_path[-1] != category:
+                raise ParseError(*at, f"{name!r} closes no open category heading")
+            totals[category] = RevenueTotal(category, total.parent, total.name, row.amounts, citation)
+            open_path.pop()
+            corrections.append(Correction("CATEGORY_TOTAL_PRINTED_LAST", f"{name!r} totals {category}", row.at))
+        elif name in CATEGORIES:
+            open_category(name, row.amounts, citation, at)
         else:
-            if not open_path or open_path[-1] not in _LISTS_ITEMS:
-                raise ParseError(*at, f"item {name!r} outside a category that lists items")
+            if not open_path:
+                raise ParseError(*at, f"item {name!r} outside any category")
             items.append(RevenueItem(len(items) + 1, open_path[-1], name, row.amounts, citation))
 
-    missing = set(RevenueCategory) - {t.category for t in totals}
-    if missing:
+    printed = set(totals)
+    parents = {t.parent for t in totals.values()}
+    for item in items:
+        if item.category in parents:
+            raise ParseError(item.citation.pdf_page, item.citation.line_no, item.name, "item beside sub-categories")
+    missing = set(RevenueCategory) - printed
+    if slug_pages and missing == {C.DIRECT_TAX, C.INDIRECT_TAX} and any(i.category is C.TAX for i in items):
+        # FY2016 lists tax items under HASIL CUKAI with no direct/indirect split.
+        corrections.append(
+            Correction(
+                "TAX_NOT_SPLIT", "no Cukai Langsung / Tak Langsung; tax items sit under HASIL CUKAI", items[0].citation
+            )
+        )
+    elif missing:
         raise ParseError(pages[0].pdf_page, 1, "", f"categories not printed: {sorted(missing)}")
+    for total in totals.values():
+        if total.amounts is None:
+            if not slug_pages or total.category not in (C.DIRECT_TAX, C.INDIRECT_TAX):
+                raise ParseError(
+                    total.citation.pdf_page, total.citation.line_no, total.name, "category with no amounts"
+                )
+            # Named rule CATEGORY_HEADING_WITHOUT_TOTAL (FY2017): the category is printed as a
+            # heading only; its items are stored and HASIL CUKAI's total still covers them.
+            detail = f"{total.name!r} printed without amounts"
+            corrections.append(Correction("CATEGORY_HEADING_WITHOUT_TOTAL", detail, total.citation))
     names = [i.name for i in items]
     if len(set(names)) != len(names):
         raise ParseError(pages[0].pdf_page, 1, "", "an item name repeats")
-    return RevenueStatement(fiscal_year, tuple(items), tuple(totals), tuple(corrections))
+    return RevenueStatement(fiscal_year, tuple(items), tuple(totals.values()), tuple(corrections))

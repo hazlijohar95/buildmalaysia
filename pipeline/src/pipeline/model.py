@@ -258,7 +258,7 @@ class RevenueTotal:
     category: RevenueCategory
     parent: RevenueCategory | None
     name: str  # as printed
-    amounts: RevenueAmounts
+    amounts: RevenueAmounts | None  # None: printed as a heading with no amounts (FY2017 Cukai Langsung)
     citation: Citation
 
 

@@ -248,6 +248,17 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
             None,
             23_288_256_228_800,
         ),
+        # FY2017: four columns; three Lampiran 1 totals disagree with their rows (sources.KnownMisprint).
+        (
+            2017,
+            (50, 392, 1256, 2525, 2887),
+            (27, 66, 743, 94),
+            26,
+            22_040_600_188_363,
+            4_488_383_883_201,
+            None,
+            22_040_600_188_400,
+        ),
     ],
 )
 def test_earlier_years_load_and_reconcile(
@@ -262,11 +273,13 @@ def test_earlier_years_load_and_reconcile(
 ) -> None:
     source = SOURCES[year]
     pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
-    operating = parse_statement(extract_pages(pdf, source.operating_pages, source.crop), year, source.operating_columns)
-    development = parse_development(
-        extract_pages(pdf, source.development_pages, source.crop), year, source.crop is not None
+    operating = parse_statement(
+        extract_pages(pdf, source.operating_pages, source.operating_crop), year, source.operating_columns
     )
-    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year, source.crop is not None)
+    development = parse_development(
+        extract_pages(pdf, source.development_pages, source.development_crop), year, source.slug_pages
+    )
+    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year, source.slug_pages)
     covid = (
         parse_covid(extract_pages(pdf, source.covid_pages), year, source.covid_columns) if source.covid_pages else None
     )
@@ -279,7 +292,9 @@ def test_earlier_years_load_and_reconcile(
         unreconciled = (o.printed_totals - o.reconciled) + (d.printed_totals - d.reconciled)
         assert unreconciled == len(source.known_misprints)
         r = result.revenue
-        assert (r.items, r.printed_totals, r.reconciled) == (revenue_items, 7, 7)
+        # FY2017 prints Cukai Langsung and Cukai Tak Langsung without amounts: 5 printed totals.
+        printed = 5 if year == 2017 else 7
+        assert (r.items, r.printed_totals, r.reconciled) == (revenue_items, printed, printed)
         assert (r.actual_sen, r.operating_actual_sen) == (revenue_actual, operating_actual)
         row = conn.execute(
             "select operating_actual_sen, development_actual_sen, covid_fund_actual_sen"

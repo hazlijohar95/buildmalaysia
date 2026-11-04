@@ -181,7 +181,7 @@ def load_year(
         ),
         RevenueLoadResult(
             items=len(revenue.items),
-            printed_totals=len(revenue.totals),
+            printed_totals=sum(1 for t in revenue.totals if t.amounts is not None),
             reconciled=revenue_rows[0] - len(revenue_rows[1]),
             actual_sen=revenue_actual,
             operating_actual_sen=operating_actual,
@@ -416,7 +416,7 @@ def _insert_revenue(cur: psycopg.Cursor, doc: str, statement: RevenueStatement) 
                 t.category.value,
                 t.parent.value if t.parent else None,
                 t.name,
-                *astuple(t.amounts),
+                *(astuple(t.amounts) if t.amounts else (None,) * len(REVENUE_COLUMNS)),
                 doc,
                 t.citation.pdf_page,
                 t.citation.book_page,

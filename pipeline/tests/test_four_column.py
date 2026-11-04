@@ -18,13 +18,15 @@ SOURCE = SOURCES[2018]
 @cache
 def operating() -> Statement:
     pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
-    return parse_statement(extract_pages(pdf, SOURCE.operating_pages, SOURCE.crop), 2018, SOURCE.operating_columns)
+    return parse_statement(
+        extract_pages(pdf, SOURCE.operating_pages, SOURCE.operating_crop), 2018, SOURCE.operating_columns
+    )
 
 
 @cache
 def development() -> DevelopmentStatement:
     pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
-    return parse_development(extract_pages(pdf, SOURCE.development_pages, SOURCE.crop), 2018, True)
+    return parse_development(extract_pages(pdf, SOURCE.development_pages, SOURCE.development_crop), 2018, True)
 
 
 def test_a_four_column_row_leaves_supplementary_and_virement_unknown() -> None:
