@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPrintedMismatches, getSourceChecks } from "@/lib/queries/reconciliation";
+import { getBudgetChecks, getPrintedMismatches, getSourceChecks } from "@/lib/queries/reconciliation";
 import { formatSen, parseSen } from "@/lib/money";
 import CitationLink from "@/components/CitationLink";
 
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function MethodologyPage() {
-  const [sources, misprints] = await Promise.all([getSourceChecks(), getPrintedMismatches()]);
+  const [sources, misprints, budgets] = await Promise.all([getSourceChecks(), getPrintedMismatches(), getBudgetChecks()]);
 
   return (
     <>
@@ -112,6 +112,49 @@ export default async function MethodologyPage() {
           </table>
         </div>
       </section>
+
+      {budgets.map((b) => (
+        <section key={b.budget_year} className="max-w-3xl mt-10 space-y-3">
+          <h2 className="text-lg font-semibold">Budget {b.budget_year}</h2>
+          <p className="text-sm">
+            The budget pages come from the Ministry of Finance&apos;s{" "}
+            <a href={b.url} target="_blank" rel="noopener noreferrer">
+              <em>{b.title}</em>
+            </a>{" "}
+            (SHA-256 <span className="font-mono text-xs break-all">{b.sha256}</span>). Its summary pages give each
+            vote&apos;s actual spending for two years, the current budget and the proposed one. Its detail tables
+            give every operating vote&apos;s programmes and activities by object group, with established posts, and
+            every development vote&apos;s projects with total cost and the proposed direct and loan-funded amounts.
+          </p>
+          <ul className="text-sm list-disc pl-5 space-y-1">
+            <li>
+              Operating detail: <Check matched={b.operating_matched} total={b.operating_total} /> printed totals equal
+              the sum of their activity lines.
+            </li>
+            <li>
+              Development detail: <Check matched={b.development_matched} total={b.development_total} /> group and
+              vote totals equal the sum of their projects, and every vote agrees with the book&apos;s development
+              appendix (Lampiran D).
+            </li>
+            <li>
+              <Check matched={b.votes_consistent} total={b.votes} /> vote totals in the detail tables equal the
+              same votes in the summary pages.
+            </li>
+            <li>
+              MOF&apos;s printed actuals agree with the audited statements for{" "}
+              <Check matched={b.actual_agree} total={b.actual_figures} /> vote figures, all within{" "}
+              {formatSen(parseSen(b.actual_worst_sen))}: MOF prints whole ringgit, and some of its totals are sums
+              of parts already rounded.
+            </li>
+          </ul>
+          <p className="text-sm">
+            Activity codes are reused for different activities from one year to the next (B.64 020400 is Universiti
+            Putra Malaysia in the 2025 statement and Universiti Sains Malaysia in Budget 2027), so the site compares
+            budgets with spending by vote, where the budget restates past actuals itself, and never matches
+            activities across documents by code.
+          </p>
+        </section>
+      ))}
 
       {misprints.length > 0 && (
         <section className="max-w-4xl mt-10">

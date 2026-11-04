@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { getLoadedYears } from "@/lib/years";
+import { getBudgetYears } from "@/lib/queries/budget";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -17,7 +18,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [latest] = await getLoadedYears();
+  const [[latest], [budget]] = await Promise.all([getLoadedYears(), getBudgetYears()]);
   return (
     <html lang="en" className={inter.className}>
       <body className="min-h-screen font-sans text-sm">
@@ -33,6 +34,11 @@ export default async function RootLayout({
               <Link href={latest ? `/${latest}/development` : "/"} style={{ color: "var(--muted)" }}>
                 Development
               </Link>
+              {budget && (
+                <Link href={`/budget/${budget}`} style={{ color: "var(--muted)" }}>
+                  Budget {budget}
+                </Link>
+              )}
               <Link href="/methodology" style={{ color: "var(--muted)" }}>
                 Methodology
               </Link>
@@ -46,7 +52,8 @@ export default async function RootLayout({
         >
           <div className="max-w-6xl mx-auto px-4">
             Data: Jabatan Akauntan Negara Malaysia,{" "}
-            <em>Penyata Kewangan Kerajaan Persekutuan</em>, the audited federal financial statements.{" "}
+            <em>Penyata Kewangan Kerajaan Persekutuan</em>, the audited federal financial statements; and
+            Kementerian Kewangan, <em>Anggaran Perbelanjaan Persekutuan</em>, the federal budget.{" "}
             <Link href="/methodology">Sources and checks</Link>.
           </div>
         </footer>

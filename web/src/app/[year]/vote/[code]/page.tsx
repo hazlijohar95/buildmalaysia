@@ -18,6 +18,7 @@ import { getDevelopmentPlan, getDevelopmentVote } from "@/lib/queries/developmen
 import { getPairedVote } from "@/lib/queries/spending";
 import DevelopmentVote from "./DevelopmentVote";
 import { requireYear } from "@/lib/years";
+import { getBudgetVotes, getBudgetYears } from "@/lib/queries/budget";
 
 interface Props {
   params: Promise<{ year: string; code: string }>;
@@ -42,21 +43,31 @@ export default async function VoteDetailPage({ params }: Props) {
   const voteCode = slugToVoteCode(slug);
 
   if (voteCode.startsWith("P.")) {
-    const [detail, paired, plan] = await Promise.all([
+    const [detail, paired, plan, budgetYear] = await Promise.all([
       getDevelopmentVote(year, voteCode),
       getPairedVote(year, voteCode),
       getDevelopmentPlan(year),
+      budgetFor(voteCode),
     ]);
     if (!detail) notFound();
-    return <DevelopmentVote detail={detail} year={year} plan={plan ?? "Plan"} operatingVoteCode={paired} />;
+    return (
+      <DevelopmentVote
+        detail={detail}
+        year={year}
+        plan={plan ?? "Plan"}
+        operatingVoteCode={paired}
+        budgetYear={budgetYear}
+      />
+    );
   }
 
-  const [header, programmes, activities, lines, paired] = await Promise.all([
+  const [header, programmes, activities, lines, paired, budget] = await Promise.all([
     getVoteHeader(year, voteCode),
     getProgrammeTotals(year, voteCode),
     getActivityTotals(year, voteCode),
     getLeafLines(year, voteCode),
     getPairedVote(year, voteCode),
+    budgetFor(voteCode),
   ]);
 
   if (!header) notFound();
@@ -83,6 +94,12 @@ export default async function VoteDetailPage({ params }: Props) {
             <>
               {" · "}
               <Link href={`/${year}/vote/${voteCodeToSlug(paired)}`}>development vote {paired}</Link>
+            </>
+          )}
+          {budget && (
+            <>
+              {" · "}
+              <Link href={`/budget/${budget}/vote/${voteCodeToSlug(voteCode)}`}>Budget {budget}</Link>
             </>
           )}
         </div>
@@ -138,6 +155,13 @@ export default async function VoteDetailPage({ params }: Props) {
       })}
     </>
   );
+}
+
+/** The latest budget year whose book has this vote, for a link from the spending page. */
+async function budgetFor(voteCode: string): Promise<number | null> {
+  const [latest] = await getBudgetYears();
+  if (latest === undefined) return null;
+  return (await getBudgetVotes(latest)).some((v) => v.vote_code === voteCode) ? latest : null;
 }
 
 function ProgrammeHeader({ year, prog }: { year: number; prog: ProgrammeTotal }) {

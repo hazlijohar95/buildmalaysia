@@ -6,11 +6,15 @@ Research behind the design: [`specs/`](specs/). Build Canada's repos, cloned for
 
 ## First source
 
-JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Loaded: FY2021 to FY2025 (FY2020's operating tables have no text layer and need OCR) (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`), e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
+JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Statements loaded: FY2021 to FY2025 (FY2020's operating tables have no text layer and need OCR) (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`), e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
 
 - Lampiran 1, *Penyata Perbelanjaan Mengurus* (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
 - Lampiran 2, *Penyata Perbelanjaan Pembangunan* (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
 - Lampiran 3, *Penyata Perbelanjaan Kumpulan Wang COVID-19* (FY2020-2023): the COVID-19 Fund's programmes, financed outside the operating account.
+
+## Budget source
+
+Kementerian Kewangan, *Anggaran Perbelanjaan Persekutuan 2027* (the federal budget book, 586 pp.): <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
 
 ## Layout
 
@@ -29,6 +33,7 @@ JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Stat
 - `reconciliation` (view): recomputes each printed total from the leaves. `matches` must be true for every row.
 - `development_project`: one row per Lampiran 2 project, nine amounts in sen, citing both pages of its spread. `development_vote` and `development_group` hold the hierarchy; `development_printed_total` and the `development_reconciliation` view work as above.
 - `covid_fund_line`, `covid_fund_total`, `covid_fund_reconciliation`: Lampiran 3.
+- `budget_vote_figure`, `budget_total`: the MOF budget book's vote summary (two years of actuals, the current and the proposed budget). `budget_heading`, `budget_operating_line`, `budget_operating_total`: operating estimates by programme, activity and object group with posts. `budget_development_project`, `budget_development_group`, `budget_development_total`: development estimates by project. Each has a reconciliation view; `budget_actual_check` compares MOF's actuals with JANM's.
 - `federal_spending` (view): the year's total: operating less its transfer to the Development Fund, plus development, plus COVID-19 Fund spending. `ministry_spending` (view): each ministry's supply vote B.nn beside its development vote P.nn.
 
 ## Local development
@@ -39,6 +44,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia 
 
 cd pipeline && uv sync
 for y in 2021 2022 2023 2024 2025; do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
+uv run python -m pipeline ingest-budget --year 2027 --database-url postgresql:///buildmalaysia
 uv run pytest                       # uses the buildmalaysia_pipeline db
 
 cd ../web && pnpm install

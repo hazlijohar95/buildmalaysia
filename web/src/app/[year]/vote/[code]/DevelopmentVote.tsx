@@ -43,11 +43,13 @@ export default function DevelopmentVote({
   year,
   plan,
   operatingVoteCode,
+  budgetYear,
 }: {
   detail: DevelopmentVoteDetail;
   year: number;
   plan: string;
   operatingVoteCode: string | null;
+  budgetYear: number | null;
 }) {
   const { vote } = detail;
   const over = vote.actual_sen > vote.estimate_sen;
@@ -66,6 +68,12 @@ export default function DevelopmentVote({
               <Link href={`/${year}/vote/${voteCodeToSlug(operatingVoteCode)}`}>
                 operating vote {operatingVoteCode}
               </Link>
+            </>
+          )}
+          {budgetYear && (
+            <>
+              {" · "}
+              <Link href={`/budget/${budgetYear}/vote/${voteCodeToSlug(vote.code)}`}>Budget {budgetYear}</Link>
             </>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { citationHref, citationLabel } from "@/lib/citations";
+import { citationHref, citationLabel, type CitedSource } from "@/lib/citations";
 
 interface Props {
   /** Fiscal year of the statement the page belongs to. */
@@ -8,6 +8,8 @@ interface Props {
   bookPage: number;
   /** The row is printed across a two-page spread starting at pdfPage. */
   spread?: boolean;
+  /** Defaults to JANM; budget pages cite the MOF budget book. */
+  source?: CitedSource;
   className?: string;
 }
 
@@ -17,6 +19,7 @@ export default function CitationLink({
   pdfPage,
   bookPage,
   spread = false,
+  source = "JANM",
   className,
 }: Props) {
   return (
@@ -27,7 +30,7 @@ export default function CitationLink({
       className={className}
       style={{ color: "var(--muted)", fontSize: "0.7rem", whiteSpace: "nowrap" }}
     >
-      {citationLabel(year, bookPage, spread)}
+      {citationLabel(year, bookPage, spread, source)}
     </a>
   );
 }

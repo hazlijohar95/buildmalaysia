@@ -35,6 +35,7 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
              as development_matched,
            (select c.matches from covid_fund_reconciliation c where c.document_id = d.id) as covid_matches
     from source_document d
+    where not exists (select 1 from budget_document b where b.document_id = d.id)
     order by d.fiscal_year desc
   `;
   return rows.map((r) => ({
@@ -71,4 +72,60 @@ export async function getPrintedMismatches(): Promise<PrintedMismatch[]> {
     where not r.matches
     order by r.fiscal_year, r.printed_total_id
   `;
+}
+
+export interface BudgetCheck {
+  budget_year: number;
+  title: string;
+  url: string;
+  sha256: string;
+  operating_total: number;
+  operating_matched: number;
+  development_total: number;
+  development_matched: number;
+  votes_consistent: number;
+  votes: number;
+  actual_figures: number;
+  actual_agree: number;
+  actual_worst_sen: number;
+}
+
+/** Each loaded budget book with the live result of its reconciliation views. */
+export async function getBudgetChecks(): Promise<BudgetCheck[]> {
+  const rows = await sql<Record<keyof BudgetCheck, string | number>[]>`
+    select b.budget_year, sd.title, sd.url, sd.sha256,
+      (select count(*) from budget_operating_reconciliation r where r.document_id = b.document_id) as operating_total,
+      (select count(*) from budget_operating_reconciliation r where r.document_id = b.document_id and r.matches)
+        as operating_matched,
+      (select count(*) from budget_development_reconciliation r where r.document_id = b.document_id) as development_total,
+      (select count(*) from budget_development_reconciliation r where r.document_id = b.document_id and r.matches)
+        as development_matched,
+      (select count(*) filter (where c.matches) from budget_vote_consistency c where c.document_id = b.document_id)
+        + (select count(*) filter (where c.matches) from budget_development_consistency c where c.document_id = b.document_id)
+        as votes_consistent,
+      (select count(*) from budget_vote_consistency c where c.document_id = b.document_id)
+        + (select count(*) from budget_development_consistency c where c.document_id = b.document_id) as votes,
+      (select count(*) from budget_actual_check c where c.document_id = b.document_id) as actual_figures,
+      (select count(*) from budget_actual_check c where c.document_id = b.document_id
+        and c.result in ('matches', 'rounding')) as actual_agree,
+      (select coalesce(max(abs(c.diff_sen)), 0) from budget_actual_check c where c.document_id = b.document_id)
+        as actual_worst_sen
+    from budget_document b join source_document sd on sd.id = b.document_id
+    order by b.budget_year desc
+  `;
+  return rows.map((r) => ({
+    budget_year: Number(r.budget_year),
+    title: String(r.title),
+    url: String(r.url),
+    sha256: String(r.sha256),
+    operating_total: Number(r.operating_total),
+    operating_matched: Number(r.operating_matched),
+    development_total: Number(r.development_total),
+    development_matched: Number(r.development_matched),
+    votes_consistent: Number(r.votes_consistent),
+    votes: Number(r.votes),
+    actual_figures: Number(r.actual_figures),
+    actual_agree: Number(r.actual_agree),
+    actual_worst_sen: Number(r.actual_worst_sen),
+  }));
 }

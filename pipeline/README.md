@@ -53,6 +53,20 @@ The 2025 PDF has a clean text layer. `-layout` keeps each table row on one text 
 
 `src/pipeline/covid.py` holds `parse_covid(pages, fiscal_year, columns)`. One two-page spread lists the fund's programmes and a grand total (`Jumlah Keseluruhan`). The columns differ by year, so each source names its left- and right-page columns in `covid_columns`. Each row must satisfy allocation + supplementary + virement = revised, revised − actual = variance, and spent before the year + actual = spent to date, which proves the column naming. The `covid_fund_reconciliation` view checks the grand total in all eight stored columns. % Prestasi is not stored; FY2021 prints one row's percentage on the line below it, and that line is skipped.
 
+## MOF budget book (Budget 2027)
+
+```bash
+uv run python -m pipeline ingest-budget --year 2027 --database-url postgresql:///buildmalaysia_pipeline
+```
+
+One document, `BUDGET_SOURCES` in `sources.py`, three parsers, one transaction:
+
+- `budget.py`: the vote summary (book pp. 21-33): every vote's 2024 and 2025 actuals, 2026 original estimate and 2027 estimate, with its parts (emoluments and other; or direct and loan). Every printed total is checked as it is read: parts against the vote, agency blocks, ministry groups (a capitals heading starts a ministry, a title-case heading an agency within it), the charged-votes summary and the grand summary.
+- `budget_detail.py`: each operating vote's object-group summary and its programme -> activity -> object-group table with 2026 and 2027 estimates and posts; for B/P ministries also the development object-group table and the RINGKASAN tying the two. Wrapped names may share a line with an object row or follow it. `budget_operating_reconciliation` recomputes every printed total from the activity lines (posts only where printed) and `budget_vote_consistency` checks each vote against the summary pages; the load rolls back otherwise.
+- `budget_development.py`: each P vote's projects, with group headings and Jumlah lines, and Lampiran D, the development appendix, which every vote table must match. `budget_development_reconciliation` and `budget_development_consistency` gate the load the same way. P.70's own table prints the contingency as direct spending while Lampiran D and the summary keep it apart, so only its total is compared.
+
+`budget_actual_check` compares the summary's actuals with the audited statements and is reported, not gated: 272 of 272 figures agree, within RM1.45. Activity codes are reused for different activities across years, so nothing joins activities between documents by code.
+
 ## Known misprints
 
 A printed total that disagrees with its own rows in the published PDF is registered in `sources.py` as a `KnownMisprint` with its evidence. The load accepts exactly that mismatch (same total, same difference in sen), fails if it no longer occurs, and leaves it visible in the reconciliation view. FY2021: programme B.24 060000 prints Sebenar 6,293,310.19; its only activity and its per-object lines sum to 7,293,310.19, and the vote total agrees with the rows (PDF p142).
