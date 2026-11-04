@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
 import { getCoverage } from "@/lib/queries/coverage";
+import { LuUsersRound } from "react-icons/lu";
+import { SiClaude } from "react-icons/si";
+import { FaLinkedin, FaXTwitter } from "react-icons/fa6";
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
@@ -39,7 +42,37 @@ const PRINCIPLES = [
   },
 ];
 
+interface Member {
+  name: string;
+  role: string;
+  portrait: React.ReactNode; // fills the card's square: a photo, or a mark when there is none yet
+  x?: string;
+  linkedin?: string;
+}
+
+const initials = (text: string) => (
+  <span className="flex h-full w-full items-center justify-center bg-auburn-800 font-display text-3xl font-semibold text-linen-50">
+    {text}
+  </span>
+);
+
+const TEAM: Member[] = [
+  { name: "Hazli Johar", role: "Chief Maintainer", portrait: initials("HJ") },
+  {
+    name: "Claude Code",
+    role: "Principal Engineer",
+    portrait: (
+      <span className="flex h-full w-full items-center justify-center bg-linen-50">
+        <SiClaude aria-hidden="true" className="h-14 w-14 text-[#D97757]" />
+      </span>
+    ),
+  },
+  { name: "Mochi", role: "Chief Morale Officer (cat)", portrait: initials("M") },
+];
+
 const sections = [
+  { id: "team", label: "Core team" },
+  { id: "board", label: "Board" },
   { id: "principles", label: "Principles" },
   { id: "coverage", label: "What we've read" },
   { id: "faqs", label: "FAQs" },
@@ -51,6 +84,26 @@ export default async function AboutPage() {
     {
       q: "What is Build Malaysia?",
       a: "A website that shows how the Malaysian federal government raises and spends public money, read directly from the audited financial statements and the budget books.",
+    },
+    {
+      q: "Are you a partisan group?",
+      a: "No. Build Malaysia does not support or oppose any party, politician or government. It publishes what the government's own documents say, the same way whoever is in power.",
+    },
+    {
+      q: "Is this a lobby group?",
+      a: "No. We don't argue for or against any policy or spending decision. The aim is a shared set of facts that anyone can argue from.",
+    },
+    {
+      q: "Why are you doing this?",
+      a: "Because public money is public. The records already exist, audited and published, but almost nobody can read them. A country argues better about where it should go when everyone can see where the money went.",
+    },
+    {
+      q: "How is Build Malaysia funded?",
+      a: "Build Malaysia is self-funded by its founders and takes no government or political money.",
+    },
+    {
+      q: "How can I contact you?",
+      a: "We don't publish an inbox. Every number on this site can be traced to its source with a little effort, and so can we. If you're serious, you'll find us. Consider it your first assignment as a member of the board.",
     },
     {
       q: "Where do the numbers come from?",
@@ -140,6 +193,53 @@ export default async function AboutPage() {
           ))}
         </ul>
       </nav>
+
+      <Band id="team">
+        <H2>Core team</H2>
+        <ul className="m-0 mt-10 grid list-none gap-6 p-0 md:grid-cols-2 lg:grid-cols-3">
+          {TEAM.map((m) => (
+            <li key={m.name} className="flex border border-foreground/40">
+              <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">{m.portrait}</div>
+              <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
+                <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
+                <span className="mt-1 text-charcoal-700">{m.role}</span>
+                {(m.x || m.linkedin) && (
+                  <span className="mt-auto flex justify-end gap-3 text-charcoal-600">
+                    {m.x && (
+                      <a href={m.x} aria-label={`${m.name} on X`} className="hover:text-foreground">
+                        <FaXTwitter aria-hidden="true" />
+                      </a>
+                    )}
+                    {m.linkedin && (
+                      <a href={m.linkedin} aria-label={`${m.name} on LinkedIn`} className="hover:text-foreground">
+                        <FaLinkedin aria-hidden="true" />
+                      </a>
+                    )}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Band>
+
+      <Band id="board">
+        <H2>Board</H2>
+        <div className="mt-10 flex flex-col border border-foreground/40 sm:flex-row">
+          <div className="flex h-28 shrink-0 items-center justify-center bg-foreground text-linen-50 sm:h-auto sm:w-56">
+            <LuUsersRound aria-hidden="true" className="h-12 w-12" />
+          </div>
+          <div className="px-6 py-6 md:px-8 md:py-8">
+            <span className="font-display text-2xl font-semibold tracking-tight">The Rakyat</span>
+            <span className="mt-1 block text-charcoal-700">Every Malaysian · Board of journalists</span>
+            <p className="m-0 mt-5 max-w-3xl text-lg leading-relaxed text-charcoal-800">
+              Our board is every one of us. We believe every Malaysian has a fiduciary duty to the truth: to report what
+              happened, and to count what should be counted. That makes all of us journalists, held to a
+              journalist&apos;s ethics. This site is our part of the count.
+            </p>
+          </div>
+        </div>
+      </Band>
 
       <Band id="principles">
         <H2>Principles</H2>
