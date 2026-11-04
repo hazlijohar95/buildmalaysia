@@ -10,11 +10,17 @@ import {
   getBudgetTotals,
   getBudgetVotes,
   type BudgetVoteRow,
+  type BudgetYearTotal,
 } from "@/lib/queries/budget";
-import { formatSen, formatSenCompact, type Sen, parseSen } from "@/lib/money";
+import { getPrintedVoteNames } from "@/lib/queries/vote-nav";
+import { titleCase } from "@/lib/queries/sankey";
+import { formatSen, parseSen, type Sen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
-import { columnLabel, requireBudgetYear } from "@/lib/budgetYear";
+import { columnLabel, columnLabelMs, requireBudgetYear } from "@/lib/budgetYear";
+import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import { Money, Term, change, formatRinggit, money } from "@/components/Figures";
+import YearNav from "@/components/YearNav";
 
 interface Props {
   params: Promise<{ budgetYear: string }>;
@@ -24,25 +30,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `Budget ${(await params).budgetYear}` };
 }
 
-const SECTIONS: { letter: string; title: string; note: string }[] = [
-  { letter: "B", title: "Supply votes (operating)", note: "Bekalan: voted each year by Parliament, per ministry." },
+const SECTIONS: { letter: string; title: string; note: React.ReactNode }[] = [
+  {
+    letter: "B",
+    title: "Supply votes",
+    note: (
+      <>
+        <Term id="vote-codes">Bekalan (B)</Term>: <Term id="operating-development">operating</Term> spending voted each
+        year by Parliament, one vote per ministry or department.
+      </>
+    ),
+  },
   {
     letter: "T",
-    title: "Charged votes (operating)",
-    note: "Tanggungan: charged on the Consolidated Fund by law, such as debt service and pensions.",
+    title: "Charged votes",
+    note: "Tanggungan (T): operating spending charged on the Consolidated Fund by law, such as debt service and pensions.",
   },
-  { letter: "P", title: "Development votes", note: "Pembangunan: projects, per ministry." },
+  { letter: "P", title: "Development votes", note: "Pembangunan (P): spending on projects, one vote per ministry." },
 ];
 
 export default async function BudgetPage({ params }: Props) {
   const year = await requireBudgetYear((await params).budgetYear);
-  const [source, totals, votes, check, years, dropped] = await Promise.all([
+  const [source, totals, votes, check, years, dropped, names] = await Promise.all([
     getBudgetSource(year),
     getBudgetTotals(year),
     getBudgetVotes(year),
     getBudgetActualCheck(year),
     getBudgetYears(),
     getDroppedProjects(year),
+    getPrintedVoteNames(year),
   ]);
   const proposed = totals.at(-1);
   const current = totals.at(-2);
@@ -51,86 +67,115 @@ export default async function BudgetPage({ params }: Props) {
   const agreed = check.filter((c) => c.result === "matches" || c.result === "rounding");
   const agreedCount = agreed.reduce((n, c) => n + c.count, 0);
   const worst = Math.max(0, ...agreed.map((c) => c.worst_sen));
+  const onCurrent = (now: Sen, before: Sen) => `${change(now, before)} on the ${current.fiscal_year} budget`;
 
   return (
     <>
-      <div className="mb-8">
-        {years.length > 1 && (
-          <nav className="flex gap-3 text-xs mb-4" aria-label="Budget year">
-            {[...years].sort().map((y) =>
-              y === year ? (
-                <span key={y} className="font-semibold" aria-current="page">
-                  Budget {y}
-                </span>
-              ) : (
-                <Link key={y} href={`/budget/${y}`} style={{ color: "var(--muted)" }}>
-                  Budget {y}
-                </Link>
-              ),
-            )}
-          </nav>
-        )}
-        <h1 className="text-2xl font-semibold mb-1">Budget {year}</h1>
-        <p style={{ color: "var(--muted)" }} className="text-sm max-w-2xl">
-          What the federal government set out to spend in {year} when the budget was tabled, from the Ministry of Finance&apos;s{" "}
-          <em>Anggaran Perbelanjaan Persekutuan {year}</em>, beside the two years already spent and the{" "}
-          {current.fiscal_year} budget.
-        </p>
-      </div>
+      <PageHeader
+        wide
+        eyebrow="Federal budget · Ministry of Finance"
+        title={`Budget ${year}`}
+        intro={
+          <p>
+            What the federal government set out to spend in {year} when the budget was tabled, from the Ministry of
+            Finance&apos;s <em lang="ms">Anggaran Perbelanjaan Persekutuan {year}</em>, beside the two years already
+            spent and the {current.fiscal_year} budget.
+          </p>
+        }
+      >
+        {years.length > 1 && <YearNav year={year} years={years} hrefFor={(y) => `/budget/${y}`} />}
+      </PageHeader>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3 p-4 rounded-lg border" style={{ borderColor: "var(--border)" }}>
-        <Stat label={`Budget ${year} as tabled`} value={formatSenCompact(proposed.grand_total_sen)} change={change(proposed.grand_total_sen, current.grand_total_sen, current.fiscal_year)} />
-        <Stat label="Operating" value={formatSenCompact(proposed.operating_sen)} change={change(proposed.operating_sen, current.operating_sen, current.fiscal_year)} />
-        <Stat label="Development" value={formatSenCompact(proposed.development_sen)} change={change(proposed.development_sen, current.development_sen, current.fiscal_year)} />
-      </div>
-      <p className="text-xs mb-8 max-w-3xl" style={{ color: "var(--muted)" }}>
-        Totals as printed (JUMLAH BESAR,{" "}
-        <CitationLink year={year} source="MOF" docUrl={source.url} pdfPage={proposed.pdf_page} bookPage={proposed.book_page} />
-        ). Development includes a{" "}
-        {formatSenCompact(proposed.contingency_sen)} contingency reserve (P.70). The printed total adds operating and
-        development as they stand, so the operating account&apos;s transfer to the Development Fund is counted in both;
-        the spending pages count it once.{" "}
-        {checked > 0 && (
-          <>
-            MOF&apos;s printed actuals for {totals[0].fiscal_year} and {totals[1].fiscal_year} agree with the audited
-            statements for {agreedCount} of {checked} vote figures
-            {worst > 0 ? `, all within ${formatSen(parseSen(worst))}` : ""}.
-          </>
-        )}
-      </p>
+      <StatRow
+        stats={[
+          {
+            label: <BiLabel en={`Budget ${year} as tabled`} ms="Jumlah Besar" />,
+            ...money(proposed.grand_total_sen, true),
+            sub: onCurrent(proposed.grand_total_sen, current.grand_total_sen),
+          },
+          {
+            label: <BiLabel en="Operating" ms="Mengurus" />,
+            ...money(proposed.operating_sen, true),
+            sub: onCurrent(proposed.operating_sen, current.operating_sen),
+          },
+          {
+            label: <BiLabel en="Development" ms="Pembangunan" />,
+            ...money(proposed.development_sen, true),
+            sub: onCurrent(proposed.development_sen, current.development_sen),
+          },
+        ]}
+      />
+
+      <Band wide>
+        <p className="max-w-3xl text-charcoal-800">
+          Totals as printed (<span lang="ms">Jumlah Besar</span>,{" "}
+          <CitationLink
+            year={year}
+            source="MOF"
+            docUrl={source.url}
+            pdfPage={proposed.pdf_page}
+            bookPage={proposed.book_page}
+          />
+          ). Development includes a <Money sen={proposed.contingency_sen} whole /> contingency reserve (P.70,{" "}
+          <span lang="ms">Simpanan Luar Jangka</span>). The printed total adds operating and development as they stand,
+          so the operating account&apos;s transfer to the Development Fund is counted in both; the spending pages count
+          it once.{" "}
+          {checked > 0 && (
+            <>
+              MOF&apos;s printed actuals for {totals[0].fiscal_year} and {totals[1].fiscal_year} agree with the audited
+              statements for {agreedCount} of {checked} vote figures
+              {worst > 0 ? `, all within ${formatSen(parseSen(worst))}` : ""}.
+            </>
+          )}
+        </p>
+      </Band>
 
       {SECTIONS.map((section) => {
         const rows = votes.filter((v) => v.vote_code.startsWith(section.letter));
         if (!rows.length) return null;
         return (
-          <section key={section.letter} className="mb-10">
-            <h2 className="text-lg font-semibold mb-1">{section.title}</h2>
-            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
-              {section.note}
-            </p>
-            <div className="table-scroll">
+          <Band wide key={section.letter}>
+            <H2>{section.title}</H2>
+            <p className="mt-3 max-w-3xl text-charcoal-800">{section.note}</p>
+            <div className="table-scroll mt-8">
               <table>
                 <thead>
                   <tr>
-                    <th>Vote</th>
-                    <th>Ministry or department</th>
+                    <th>
+                      <BiLabel en="Vote" ms="Kod" />
+                    </th>
+                    <th>
+                      <BiLabel en="Ministry or department" ms="Maksud Perbelanjaan" />
+                    </th>
                     {totals.map((t) => (
-                      <th key={t.fiscal_year} className="text-right">
-                        {columnLabel(t.fiscal_year, t.basis)} (RM)
+                      <th key={t.fiscal_year} className="!text-right">
+                        <BiLabel en={columnLabel(t.fiscal_year, t.basis)} ms={columnLabelMs(t.basis)} />
                       </th>
                     ))}
-                    <th className="text-right">Change</th>
-                    <th>Source</th>
+                    <th className="!text-right">Change</th>
+                    <th>
+                      <BiLabel en="Source" ms="Sumber" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((v) => (
-                    <VoteRow key={v.vote_code} year={year} url={source.url} vote={v} />
+                    <VoteRow
+                      key={v.vote_code}
+                      year={year}
+                      url={source.url}
+                      vote={v}
+                      name={names.get(v.vote_code) ?? v.heading}
+                      totals={totals}
+                    />
                   ))}
                 </tbody>
               </table>
             </div>
-          </section>
+            <p className="mt-6 text-sm text-charcoal-700">
+              Hover a figure for the exact amount in whole ringgit, as the book prints it.
+            </p>
+          </Band>
         );
       })}
 
@@ -140,14 +185,14 @@ export default async function BudgetPage({ params }: Props) {
 }
 
 function Dropped({ year, url, rows }: { year: number; url: string; rows: DroppedProjectRow[] }) {
-  const allocation = rows.reduce((sum, r) => sum + r.allocation_sen, 0);
+  const allocation = parseSen(rows.reduce((sum, r) => sum + r.allocation_sen, 0));
   const repeated = rows.filter((r) => r.printed_times > 1);
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold mb-1">Projects dropped from Budget {year}</h2>
-      <p className="text-xs mb-3 max-w-3xl" style={{ color: "var(--muted)" }}>
+    <Band wide>
+      <H2>Projects dropped from Budget {year}</H2>
+      <p className="mt-3 max-w-3xl text-charcoal-800">
         {rows.length} development projects of {year - 1} that this budget does not continue (Lampiran F), holding{" "}
-        {formatSen(parseSen(allocation))} of {year - 1} allocation. None of them appears in the budget&apos;s project
+        <Money sen={allocation} whole /> of {year - 1} allocation. None of them appears in the budget&apos;s project
         tables.
         {repeated.map((r) => (
           <span key={r.code}>
@@ -157,18 +202,30 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
           </span>
         ))}
       </p>
-      <details>
-        <summary className="text-sm cursor-pointer mb-2">Show the {rows.length} projects</summary>
-        <div className="table-scroll">
+      <details className="group/drop mt-8 border-t-2 border-foreground">
+        <summary className="flex items-baseline gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
+          <span
+            aria-hidden="true"
+            className="font-mono text-charcoal-700 group-open/drop:rotate-90 transition-transform"
+          >
+            ›
+          </span>
+          <span className="font-medium">Show the {rows.length} projects</span>
+        </summary>
+        <div className="table-scroll pb-4">
           <table>
             <thead>
               <tr>
                 <th>Vote</th>
-                <th>Code</th>
+                <th>
+                  <BiLabel en="Code" ms="Kod" />
+                </th>
                 <th>Project</th>
-                <th className="text-right">Total cost (RM)</th>
-                <th className="text-right">Allocation {year - 1} (RM)</th>
-                <th>Source</th>
+                <th className="!text-right">Total cost</th>
+                <th className="!text-right">Allocation {year - 1}</th>
+                <th>
+                  <BiLabel en="Source" ms="Sumber" />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -176,9 +233,9 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
                 <tr key={`${r.vote_code}-${r.code}`}>
                   <td className="font-mono text-xs">{r.vote_code}</td>
                   <td className="font-mono text-xs">{r.code}</td>
-                  <td className="max-w-sm">{r.name_ms}</td>
-                  <td className="num">{formatSen(r.total_cost_sen)}</td>
-                  <td className="num">{formatSen(r.allocation_sen)}</td>
+                  <td lang="ms">{r.name_ms}</td>
+                  <td className="num">{formatRinggit(r.total_cost_sen)}</td>
+                  <td className="num">{formatRinggit(r.allocation_sen)}</td>
                   <td>
                     <CitationLink year={year} source="MOF" docUrl={url} pdfPage={r.pdf_page} bookPage={r.book_page} />
                   </td>
@@ -188,58 +245,44 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
           </table>
         </div>
       </details>
-    </section>
+    </Band>
   );
 }
 
-function change(now: Sen, before: Sen, beforeYear: number): string | null {
-  if (before === 0) return null;
-  const pct = ((now - before) / before) * 100;
-  return `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% on the ${beforeYear} budget`;
-}
-
-function VoteRow({ year, url, vote }: { year: number; url: string; vote: BudgetVoteRow }) {
+function VoteRow({
+  year,
+  url,
+  vote,
+  name,
+  totals,
+}: {
+  year: number;
+  url: string;
+  vote: BudgetVoteRow;
+  name: string;
+  totals: BudgetYearTotal[];
+}) {
   const [proposed, current] = [vote.amounts.at(-1) ?? parseSen(0), vote.amounts.at(-2) ?? parseSen(0)];
-  const pct = current > 0 ? ((proposed - current) / current) * 100 : null;
   const href = `/budget/${year}/vote/${voteCodeToSlug(vote.vote_code)}`;
   return (
     <tr>
       <td className="font-mono text-xs whitespace-nowrap">
         <Link href={href}>{vote.vote_code}</Link>
       </td>
-      <td className="max-w-xs">
-        <Link href={href}>{vote.heading}</Link>
-        {vote.note && (
-          <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }} lang="ms">
-            Note: {vote.note}
-          </div>
-        )}
+      <td lang="ms">
+        <Link href={href}>{titleCase(name)}</Link>
+        {vote.vote_code === "P.70" && <span className="text-charcoal-700"> (contingency reserve)</span>}
+        {vote.note && <span className="block text-xs mt-0.5 text-charcoal-700">Note: {vote.note}</span>}
       </td>
-      {vote.amounts.map((a, i) => (
-        <td key={i} className={`num ${i === vote.amounts.length - 1 ? "font-medium" : ""}`}>
-          {formatSen(a)}
+      {totals.map((t, i) => (
+        <td key={t.fiscal_year} className={`num ${i === totals.length - 1 ? "font-semibold" : ""}`}>
+          {vote.amounts[i] === undefined ? "–" : <Money sen={vote.amounts[i]} whole />}
         </td>
       ))}
-      <td className="num">{pct === null ? "–" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}</td>
+      <td className="num">{change(proposed, current)}</td>
       <td>
         <CitationLink year={year} source="MOF" docUrl={url} pdfPage={vote.pdf_page} bookPage={vote.book_page} />
       </td>
     </tr>
-  );
-}
-
-function Stat({ label, value, change }: { label: string; value: string; change: string | null }) {
-  return (
-    <div>
-      <div className="text-xs mb-1" style={{ color: "var(--muted)" }}>
-        {label}
-      </div>
-      <div className="text-xl font-semibold tabnum">{value}</div>
-      {change && (
-        <div className="text-xs tabnum" style={{ color: "var(--muted)" }}>
-          {change}
-        </div>
-      )}
-    </div>
   );
 }
