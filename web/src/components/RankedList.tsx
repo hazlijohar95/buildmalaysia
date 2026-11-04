@@ -37,7 +37,10 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
           <span className="hidden md:block h-2.5 bg-linen-200" aria-hidden>
             <span className="block h-full bg-auburn-800" style={{ width: `${(item.amount_sen / max) * 100}%` }} />
           </span>
-          <span className="text-right font-display text-lg font-semibold tabular-nums" title={formatSen(item.amount_sen)}>
+          <span
+            className="text-right font-display text-lg font-semibold tabular-nums"
+            title={formatSen(item.amount_sen)}
+          >
             {formatSenCompact(item.amount_sen)}
           </span>
         </li>

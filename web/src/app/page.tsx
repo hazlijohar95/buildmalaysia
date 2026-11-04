@@ -13,7 +13,6 @@ import { getRevenueTotal } from "@/lib/queries/revenue";
 import { getFederalSpending } from "@/lib/queries/spending";
 import { getLoadedYears } from "@/lib/years";
 
-
 // Figures come from the database, which changes only when the pipeline loads; refresh hourly rather than
 // freezing them at build time.
 export const revalidate = 3600;

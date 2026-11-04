@@ -212,9 +212,7 @@ export async function getBudgetActualCheck(
 }
 
 /** The development budget as first approved for a fiscal year, from the next year's budget book. */
-export async function getOriginalDevelopmentBudget(
-  fiscalYear: number,
-): Promise<{
+export async function getOriginalDevelopmentBudget(fiscalYear: number): Promise<{
   development_sen: Sen;
   contingency_sen: Sen;
   budget_year: number;

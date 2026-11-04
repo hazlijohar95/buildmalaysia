@@ -6,7 +6,8 @@ import { getLoadedYears } from "@/lib/years";
 
 export const metadata: Metadata = {
   title: "Where your taxes go",
-  description: "Enter your income to see your Malaysian income tax and how the federal government spent it, ministry by ministry.",
+  description:
+    "Enter your income to see your Malaysian income tax and how the federal government spent it, ministry by ministry.",
 };
 
 interface Props {

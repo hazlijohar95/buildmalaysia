@@ -1,0 +1,8 @@
+.next
+.next-build
+node_modules
+pnpm-lock.yaml
+public
+next-env.d.ts
+tsconfig.tsbuildinfo
+THIRD_PARTY_NOTICES.md

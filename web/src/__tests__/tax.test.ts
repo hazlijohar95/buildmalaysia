@@ -39,6 +39,10 @@ describe("calculateTax", () => {
   });
 
   it("owes nothing when reliefs exceed income", () => {
-    expect(calculateTax({ income: 8_000, epf: true, otherReliefs: 0 })).toMatchObject({ chargeable: 0, tax: 0, marginalRatePct: 0 });
+    expect(calculateTax({ income: 8_000, epf: true, otherReliefs: 0 })).toMatchObject({
+      chargeable: 0,
+      tax: 0,
+      marginalRatePct: 0,
+    });
   });
 });

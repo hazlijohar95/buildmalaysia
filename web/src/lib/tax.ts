@@ -62,7 +62,14 @@ export function calculateTax(input: TaxInput, s: TaxSchedule = SCHEDULE): TaxRes
   const slices: BandSlice[] = s.bands.map((b) => {
     const top = b.upper === null ? chargeable : Math.min(chargeable, b.upper);
     const taxable = Math.max(0, top - b.lower);
-    return { band: b.band, lower: b.lower, upper: b.upper, ratePct: b.rate_pct, taxable, tax: sen((taxable * b.rate_pct) / 100) };
+    return {
+      band: b.band,
+      lower: b.lower,
+      upper: b.upper,
+      ratePct: b.rate_pct,
+      taxable,
+      tax: sen((taxable * b.rate_pct) / 100),
+    };
   });
   const taxBeforeRebate = sen(slices.reduce((t, b) => t + b.tax, 0));
   const rebate = chargeable < s.rebate.chargeable_income_below ? Math.min(s.rebate.amount, taxBeforeRebate) : 0;

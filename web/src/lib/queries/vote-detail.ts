@@ -131,10 +131,7 @@ function parseSens(r: {
   };
 }
 
-export async function getVoteHeader(
-  year: number,
-  voteCode: string,
-): Promise<VoteHeader | null> {
+export async function getVoteHeader(year: number, voteCode: string): Promise<VoteHeader | null> {
   const rows = await sql<RawVoteHeader[]>`
     select
       v.code, v.name_ms, v.section,
@@ -154,10 +151,7 @@ export async function getVoteHeader(
   return { ...r, ...parseSens(r) };
 }
 
-export async function getProgrammeTotals(
-  year: number,
-  voteCode: string,
-): Promise<ProgrammeTotal[]> {
+export async function getProgrammeTotals(year: number, voteCode: string): Promise<ProgrammeTotal[]> {
   const rows = await sql<RawProgrammeTotal[]>`
     select
       p.code  as programme_code,
@@ -178,10 +172,7 @@ export async function getProgrammeTotals(
   return rows.map((r) => ({ ...r, ...parseSens(r) }));
 }
 
-export async function getActivityTotals(
-  year: number,
-  voteCode: string,
-): Promise<ActivityTotal[]> {
+export async function getActivityTotals(year: number, voteCode: string): Promise<ActivityTotal[]> {
   const rows = await sql<RawActivityTotal[]>`
     select
       a.programme_code,
@@ -203,10 +194,7 @@ export async function getActivityTotals(
   return rows.map((r) => ({ ...r, ...parseSens(r) }));
 }
 
-export async function getLeafLines(
-  year: number,
-  voteCode: string,
-): Promise<LeafLine[]> {
+export async function getLeafLines(year: number, voteCode: string): Promise<LeafLine[]> {
   const rows = await sql<RawLeafLine[]>`
     select
       d.programme_code,

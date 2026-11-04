@@ -32,9 +32,22 @@ export default function StackedBars({
             <g key={r.year}>
               <title>{r.title ?? `${r.year}: ${formatSenCompact(parseSen(totals[i]))}`}</title>
               {r.values.map((v, s) => (
-                <rect key={series[s].label} x={x} y={tops[s]} width={barWidth} height={scale(v)} fill={series[s].color} />
+                <rect
+                  key={series[s].label}
+                  x={x}
+                  y={tops[s]}
+                  width={barWidth}
+                  height={scale(v)}
+                  fill={series[s].color}
+                />
               ))}
-              <text x={x + barWidth / 2} y={(tops.at(-1) ?? height) - 8} textAnchor="middle" fontSize="12" fill="currentColor">
+              <text
+                x={x + barWidth / 2}
+                y={(tops.at(-1) ?? height) - 8}
+                textAnchor="middle"
+                fontSize="12"
+                fill="currentColor"
+              >
                 {formatSenCompact(parseSen(totals[i]))}
               </text>
               <text x={x + barWidth / 2} y={height + 20} textAnchor="middle" fontSize="13" fill="currentColor">

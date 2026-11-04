@@ -31,10 +31,7 @@ interface RawRow {
 
 export type SortKey = "code" | "revised_sen" | "actual_sen";
 
-export async function getVoteSummaries(
-  year: number,
-  sort: SortKey = "code",
-): Promise<VoteSummaryRow[]> {
+export async function getVoteSummaries(year: number, sort: SortKey = "code"): Promise<VoteSummaryRow[]> {
   const validSort: Record<SortKey, string> = {
     code: "v.code",
     revised_sen: "pt.revised_sen desc",

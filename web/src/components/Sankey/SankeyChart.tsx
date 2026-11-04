@@ -66,9 +66,12 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
   const [mouse, setMouse] = useState<{ x: number; y: number } | null>(null);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (hideTimeout.current) clearTimeout(hideTimeout.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    },
+    [],
+  );
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -87,7 +90,11 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
       // Skip the "Other (n)" blocks the chart groups small items into: they say nothing about where an item sits.
       let parent = n.parent ? byId.get(`${n.type}:${n.parent}`) : undefined;
       while (parent?.id.endsWith("-other")) parent = byId.get(`${parent.type}:${parent.parent}`);
-      const context = parent ? (parent.searchName ?? parent.displayName) : n.type === "revenue" ? "Revenue" : "Spending";
+      const context = parent
+        ? (parent.searchName ?? parent.displayName)
+        : n.type === "revenue"
+          ? "Revenue"
+          : "Spending";
       const key = `${n.searchName ?? n.displayName}|${context}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -116,7 +123,11 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
         hideTimeout.current = null;
       }
       const value = node.realValue ?? 0;
-      setHover({ ...node, percent: (value / total) * 100, overallPercent: overall ? (value / overall) * 100 : undefined });
+      setHover({
+        ...node,
+        percent: (value / total) * 100,
+        overallPercent: overall ? (value / overall) * 100 : undefined,
+      });
       if (event) setMouse({ x: event.clientX, y: event.clientY });
     },
     [],

@@ -87,5 +87,8 @@ export async function getSpendingShares(year: number): Promise<{ total_sen: Sen;
   if (Math.abs(sum - totalSen) > 100) {
     throw new Error(`spending shares for ${year} sum to ${sum} sen, federal_spending prints ${totalSen}`);
   }
-  return { total_sen: parseSen(totalSen), items: items.filter((i) => i.amount_sen > 0).sort((a, b) => b.amount_sen - a.amount_sen) };
+  return {
+    total_sen: parseSen(totalSen),
+    items: items.filter((i) => i.amount_sen > 0).sort((a, b) => b.amount_sen - a.amount_sen),
+  };
 }

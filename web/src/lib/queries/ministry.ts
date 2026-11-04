@@ -131,7 +131,10 @@ export async function getProgrammeSpending(year: number, voteCode: string): Prom
 }
 
 /** A development vote's spending by group heading (projects without one grouped as "Other projects"). */
-export async function getDevelopmentGroups(year: number, voteCode: string): Promise<{ name: string; actual_sen: Sen; estimate_sen: Sen }[]> {
+export async function getDevelopmentGroups(
+  year: number,
+  voteCode: string,
+): Promise<{ name: string; actual_sen: Sen; estimate_sen: Sen }[]> {
   const rows = await sql<{ name: string | null; actual_sen: string; estimate_sen: string }[]>`
     select coalesce(par.name_ms, g.name_ms) as name, sum(p.actual_sen) as actual_sen, sum(p.estimate_sen) as estimate_sen
     from development_project p
@@ -149,9 +152,10 @@ export async function getDevelopmentGroups(year: number, voteCode: string): Prom
 }
 
 /** The latest budget book's figures for a set of votes: [vote, fiscal year, basis, total]. */
-export async function getBudgetForVotes(
-  codes: string[],
-): Promise<{ budget_year: number; rows: { vote_code: string; fiscal_year: number; basis: string; total_sen: Sen }[] } | null> {
+export async function getBudgetForVotes(codes: string[]): Promise<{
+  budget_year: number;
+  rows: { vote_code: string; fiscal_year: number; basis: string; total_sen: Sen }[];
+} | null> {
   const [book] = await sql<{ budget_year: number; document_id: string }[]>`
     select budget_year, document_id from budget_document order by budget_year desc limit 1
   `;

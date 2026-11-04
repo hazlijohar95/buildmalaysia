@@ -125,7 +125,9 @@ async function revenueRows(year?: number): Promise<{ totals: TotalRow[]; lines: 
 }
 
 /** Every loaded year's HASIL and its item-holding categories (zero where a year has no such category). */
-export async function getRevenueHistory(): Promise<{ year: number; total: Sen; byCategory: Record<RevenueCategory, Sen> }[]> {
+export async function getRevenueHistory(): Promise<
+  { year: number; total: Sen; byCategory: Record<RevenueCategory, Sen> }[]
+> {
   const { totals, lines } = await revenueRows();
   const years = [...new Set(totals.map((r) => r.fiscal_year))].sort((a, b) => a - b);
   return years.map((year) => {

@@ -112,8 +112,10 @@ export async function getDevelopmentVote(year: number, code: string): Promise<De
       where g.fiscal_year = ${year} and g.vote_code = ${code}
       order by g.ordinal
     `,
-    sql<(RawAmounts & SpreadSource & { code: string; name_ms: string; group_ordinal: number | null;
-      footnote: string | null })[]>`
+    sql<
+      (RawAmounts &
+        SpreadSource & { code: string; name_ms: string; group_ordinal: number | null; footnote: string | null })[]
+    >`
       select p.code, p.name_ms, p.group_ordinal, p.footnote, p.total_cost_sen, p.estimate_sen,
              p.actual_loan_sen, p.actual_sen, p.plan_actual_to_date_sen, p.pdf_page, p.book_page,
              sd.url as doc_url
