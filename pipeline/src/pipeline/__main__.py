@@ -9,6 +9,7 @@ import psycopg
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.budget import parse_budget_summary
+from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.load import ReconciliationError, load_budget, load_year
@@ -88,10 +89,11 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         pages = page_count(pdf)
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
-        statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year, source.known_misprints)
+        parse_summary = parse_budget_summary_word if source.layout == "word" else parse_budget_summary
+        statement = parse_summary(extract_pages(pdf, source.summary_pages), year, source.known_misprints)
         book = extract_pages(pdf, (source.summary_pages[1] + 1, pages))
         operating = parse_operating_estimates(book, year)
-        development = parse_development_estimates(book, year)
+        development = parse_development_estimates(book, year, source.known_misprints)
         dropped = parse_dropped_projects(book)
         with psycopg.connect(database_url, autocommit=True) as conn:
             result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating, development, dropped)

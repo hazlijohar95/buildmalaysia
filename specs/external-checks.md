@@ -84,3 +84,12 @@ Source: MOF, *Anggaran Perbelanjaan Persekutuan 2027* (586 pp, sha256 5caf1cc1â€
 
 - MOF's project-level "Perbelanjaan Sebenar 2025" in the Budget 2027 project tables is not JANM's project actual: of 605 projects in both, 114 agree after rounding (P.60 02000 PPP/PFI: JANM RM219.6m, MOF 0). The site does not show that column.
 - Lampiran F (projects dropped): Budget 2027 drops 32 of 2026's projects (RM264,620,300 of 2026 allocation); none appears in its project tables, and 31 of 32 carry the 2026 allocation Budget 2026 gave them (P.50 01600: 11,350,000 there, 10,850,000 here). Budget 2026 drops 84 of 2025's projects; it prints P.24 00200 twice (checked on the rendered page, book p.571) and its JUMLAH (987,416,473) counts it twice, RM10m more than the distinct projects. JANM's 2025 project estimates agree for 40 of 83, as JANM prints revised allocations.
+
+## Budget 2025 (MOF)
+
+*Anggaran Perbelanjaan Persekutuan 2025* (541 pp, Microsoft Word 2019, sha256 0a96d0a4â€¦). The summary pages use a different layout (vote code and name first, B votes print a Mengurus total, T votes do not), parsed by `budget_word.py`.
+
+- Actuals for 2022 and 2023: 278 of 278 vote figures agree with JANM (267 to the ringgit, 11 within rounding).
+- Original estimate for 2024 against JANM FY2024 Asal: 42 of 53 operating votes equal; the other 11 differences sum to exactly zero. The book restates 2024 in the 2025 ministry structure: B.33 takes RM340,087,300 from B.23, B.50 (Kementerian Digital, created 2024) RM182,265,600 from B.06, B.47 and others.
+- Four printed figures disagree with the book's own tables, registered as known misprints: Lampiran D prints P.60's total project cost as 58,124,929,556 (its table and 14 projects: 58,174,929,556); Lampiran D's grand total is RM1 below its rows; the grand summary's 2025 Emolumen is RM8,000,000 too high and Lain RM8,000,000 too low (the votes sum to 105,908,537,000 and 229,091,463,000, as Budget 2026 restates).
+- Project actuals and Lampiran F's actual column are rounded per project, so their totals differ from the rows by RM1-2; the checks allow that rounding in those columns only.

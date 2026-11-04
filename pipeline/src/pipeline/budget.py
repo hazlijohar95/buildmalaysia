@@ -54,6 +54,7 @@ class BudgetVote:
     total: BudgetFigure
     parts: dict[str, BudgetFigure] = field(default_factory=dict)
     note: str | None = None  # footnote on the ministry heading, e.g. a renamed or merged ministry
+    total_printed: bool = True  # Budget 2025 prints no total line for T votes; their block's Jumlah is it
 
     @property
     def operating(self) -> bool:
@@ -86,7 +87,7 @@ def _add(*rows: tuple[int, ...]) -> tuple[int, int, int, int]:
 
 
 class _Parser:
-    def __init__(self, budget_year: int, known_misprints: Sequence[tuple[str, tuple[int, int, int, int]]] = ()) -> None:
+    def __init__(self, budget_year: int, known_misprints: Sequence[tuple[str, tuple[int, ...]]] = ()) -> None:
         self.budget_year = budget_year
         self.known = dict(known_misprints)
         self.misprints_seen: list[str] = []
@@ -310,7 +311,7 @@ class _Parser:
 def parse_budget_summary(
     pages: Sequence[PageText],
     budget_year: int,
-    known_misprints: Sequence[tuple[str, tuple[int, int, int, int]]] = (),
+    known_misprints: Sequence[tuple[str, tuple[int, ...]]] = (),
 ) -> BudgetStatement:
     parser = _Parser(budget_year, known_misprints)
     for page in pages:
@@ -322,7 +323,7 @@ def parse_budget_summary(
     unused = set(parser.notes) - set(parser.vote_marks.values())
     if unused:
         raise ParseError(pages[-1].pdf_page, 0, "", f"footnotes {sorted(unused)} are on no heading")
-    missing = {label for label, _ in known_misprints} - set(parser.misprints_seen)
+    missing = {label for label, _ in known_misprints if not label.startswith("Lampiran")} - set(parser.misprints_seen)
     if missing:
         raise ParseError(pages[-1].pdf_page, 0, "", f"known misprints no longer occur: {sorted(missing)}")
     if "grand_total" not in parser.summary:

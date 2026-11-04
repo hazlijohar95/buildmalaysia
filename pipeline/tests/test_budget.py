@@ -7,6 +7,7 @@ import psycopg
 import pytest
 
 from pipeline.budget import parse_budget_summary
+from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.development import parse_development
@@ -211,3 +212,51 @@ def test_dropped_projects_total_and_duplicates(
     assert len(dropped.projects) == projects
     assert dropped.total[2] == allocation  # the printed JUMLAH, duplicates included
     assert [(p.vote_code, p.code, p.printed_times) for p in dropped.projects if p.printed_times > 1] == repeated
+
+
+def test_budget_2025_word_layout_loads_and_restates_2024_by_ministry() -> None:
+    source = BUDGET_SOURCES[2025]
+    pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
+    summary = parse_budget_summary_word(extract_pages(pdf, source.summary_pages), 2025, source.known_misprints)
+    assert (len(summary.votes), summary.checks) == (85, 155)  # includes B.32 / P.32, dissolved in 2023
+    assert summary.summary.lines["grand_total"].amounts[3] == 42_300_000_000_000  # Budget 2025: RM423 bn
+    book = extract_pages(pdf, (source.summary_pages[1] + 1, source.page_count))
+    development = parse_development_estimates(book, 2025, source.known_misprints)
+    dropped = parse_dropped_projects(book)
+    assert dropped is not None
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        if conn.execute("select 1 from federal_spending where fiscal_year = 2024").fetchone() is None:
+            janm = SOURCES[2024]
+            janm_pdf = ensure_pdf(janm, DEFAULT_RAW_DIR)
+            load_year(
+                conn,
+                janm,
+                parse_statement(extract_pages(janm_pdf, janm.operating_pages), 2024),
+                parse_development(extract_pages(janm_pdf, janm.development_pages), 2024),
+                page_count(janm_pdf),
+                retrieved_at(janm_pdf),
+            )
+        result = load_budget(
+            conn,
+            source,
+            summary,
+            page_count(pdf),
+            retrieved_at(pdf),
+            parse_operating_estimates(book, 2025),
+            development,
+            dropped,
+        )
+        assert (result.operating_lines, result.operating_totals_reconciled) == (2256, 2488)
+        assert (result.development_projects, result.development_totals_reconciled, result.dropped_projects) == (
+            683,
+            86,
+            54,
+        )
+        # 2024 original estimate: 42 of 53 operating votes equal JANM's Asal; the other 11
+        # differences net to zero (money moved between ministries, e.g. B.23 -> B.33).
+        row = conn.execute(
+            "select count(*), count(*) filter (where matches), sum(diff_sen) from budget_original_check"
+            " where document_id = %s",
+            (source.id,),
+        ).fetchone()
+        assert row == (53, 42, 0)

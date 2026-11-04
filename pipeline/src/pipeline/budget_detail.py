@@ -30,6 +30,7 @@ _HEAD_WORDS = {
     "Kod", "Anggaran", "Bil.", "Jawatan", "Butiran", "Program/Aktiviti", "(Objek", "Am)", "RM",
     "Jenis", "Perbelanjaan", "Tahun",
 }  # fmt: skip
+_LEADERS = re.compile(r"(?<!\S)\.{2,}(?!\S)")
 _HEADING = re.compile(r"(?P<code>\d{6})(?:\s+(?P<name>.*))?")
 _OBJECT = re.compile(r"(?:(?P<text>.*?)\s+)?(?P<code>[1-5]0000)")
 _OBJECT_ROW = re.compile(r"(?P<code>[1-5]0000)\s+(?P<name>\D.*)")
@@ -74,6 +75,8 @@ class OperatingVote:
     development_total: tuple[Estimate, Citation] | None = None
     object_section: str = "operating"  # which table of the object page is being read
     summary_rows: dict[str, Estimate] = field(default_factory=dict)
+    total_pending: bool = False  # a JUMLAH printed without amounts, which follow on the next line
+    last_ends: list[int] = field(default_factory=list)  # where the last two-amount row's amounts end
     development_split: tuple[Estimate, Estimate] | None = None  # (Cara Langsung, Pinjaman)
 
 
@@ -118,7 +121,22 @@ class _Parser:
         self.vote: OperatingVote | None = None
         self.heading: Heading | None = None
         self.closed = False  # the open vote's detail table has printed its JUMLAH
+        # Budget 2025 prints a small vote's object-group summary ("RINGKASAN ANGGARAN
+        # PERBELANJAAN") at the top of its detail page; then the vote name, then the table.
+        self.embedded = False
+        self.after_embedded = False
+        self.notes: list[str] = []  # named rules applied, for the ingest log
         self.where = Citation(0, 0, 0, "")
+        self.page_offset: int | None = None
+
+    def book_page(self, page: PageText, texts: list[str]) -> int | None:
+        """The printed page number; Budget 2025 omits it on a few pages, which then take it
+        from the PDF-to-book offset of the pages that print one."""
+        printed = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), None)
+        if printed is not None:
+            self.page_offset = page.pdf_page - printed
+            return printed
+        return page.pdf_page - self.page_offset if self.page_offset is not None else None
 
     def fail(self, message: str) -> ParseError:
         return ParseError(self.where.pdf_page, self.where.line_no, self.where.text, message)
@@ -127,13 +145,13 @@ class _Parser:
         lines = page.layout.split("\n")
         texts = [" ".join(line.split()) for line in lines]
         body = "\n".join(texts)
-        if "MENGIKUT OBJEK AM" in body:
-            kind = "objects"
+        if "MENGIKUT OBJEK AM" in body or ("Jenis Perbelanjaan" in body and "Bil. Jawatan" not in body):
+            kind = "objects"  # Budget 2025 titles some of these pages without "MENGIKUT OBJEK AM"
         elif "Bil. Jawatan" in body and "Butiran" in body:
             kind = "detail"
         else:
             return  # charts, outcome tables, development tables, blank pages
-        book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), None)
+        book_page = self.book_page(page, texts)
         if book_page is None:
             raise ParseError(page.pdf_page, 1, "", "no book page in the footer")
         head = next((i for i, t in enumerate(texts) if _TITLE.search(t)), None)
@@ -150,14 +168,16 @@ class _Parser:
         if units is None:
             raise ParseError(page.pdf_page, 1, "", "no 'RM RM' units line")
         for i in range(units + 1, len(lines)):
-            text = texts[i]
-            self.where = Citation(page.pdf_page, book_page, i + 1, text)
+            # Budget 2025 (Word) prints leader dots between a heading's name and its amounts.
+            line = _LEADERS.sub(" ", lines[i]).strip()
+            text = " ".join(line.split())
+            self.where = Citation(page.pdf_page, book_page, i + 1, texts[i])
             if not text or _FOOTER.fullmatch(text):
                 continue
             if kind == "objects":
-                self.object_page_line(text)
+                self.object_page_line(line)
             else:
-                self.detail_line(lines[i].strip())
+                self.detail_line(line)
 
     def enter_vote(self, code: str, name: str, at: Citation) -> None:
         if self.vote is not None and self.vote.code == code:
@@ -170,20 +190,36 @@ class _Parser:
         self.votes[code] = self.vote
         self.heading, self.closed = None, False
 
-    def object_page_line(self, text: str) -> None:
+    def object_page_line(self, line: str) -> None:
         """Operating by object group; for B/P ministries also development by object group and a
         RINGKASAN of the two, whose rows are checked here against the two tables' totals."""
         vote = self.vote
         assert vote is not None
+        text = " ".join(line.split())
         if text.startswith("ANGGARAN PERBELANJAAN PEMBANGUNAN BAGI TAHUN"):
             vote.object_section = "development"
             return
         if text == "RINGKASAN":
             vote.object_section = "summary"
             return
-        label, values, _ = trailing_values(text, 2)
+        label, values, ends = trailing_values(line, 2)
+        label = " ".join(label.split())
+        if len(values) == 2:
+            vote.last_ends = ends
+        elif len(values) == 1 and vote.last_ends:
+            # One cell blank (Budget 2025: a Pinjaman row with nothing in the prior year):
+            # place the amount by its right edge against the row above; the blank reads as zero.
+            nearest = min(range(2), key=lambda c: abs(ends[0] - vote.last_ends[c]))
+            zero = parse_value("0")
+            assert zero is not None
+            values = [zero, values[0]] if nearest == 1 else [values[0], zero]
         if not values:
+            if text.startswith("JUMLAH ANGGARAN PERBELANJAAN"):
+                vote.total_pending = True  # the amounts follow on the next line, beside the vote name
             return  # column heads, a wrapped "MENGURUS"/"PEMBANGUNAN", the vote name under the table
+        if vote.total_pending:
+            vote.total_pending = False
+            label = "JUMLAH ANGGARAN PERBELANJAAN"
         if len(values) != 2:
             raise self.fail("object summary row without two amounts")
         estimate = _estimate(values)
@@ -222,10 +258,23 @@ class _Parser:
         op, dev = vote.object_page_total, vote.development_total
         if op is None or dev is None or "operating" not in rows or "direct" not in rows:
             raise self.fail("RINGKASAN without both tables and rows")
-        loan = rows.get("loan", Estimate(0, 0))
 
         def pair(e: Estimate) -> tuple[int, int]:
             return (e.prior, e.estimate)
+
+        if "loan" in rows:
+            loan = rows["loan"]
+        else:
+            # Named rule RINGKASAN_LOAN_ROW_MISSING: Budget 2025 prints no (Pinjaman) row for
+            # B/P.6 although its JUMLAH and development table include RM60m loan-funded in
+            # 2024. With no loan row, the loan is what the development table has beyond the
+            # direct row; it must not be negative, and Mengurus and JUMLAH still check.
+            gap = (dev[0].prior - rows["direct"].prior, dev[0].estimate - rows["direct"].estimate)
+            if min(gap) < 0:
+                raise self.fail(f"RINGKASAN direct row exceeds the development table by {gap}")
+            loan = Estimate(gap[0], gap[1])
+            if any(gap):
+                self.notes.append(f"{vote.code} RINGKASAN has no (Pinjaman) row; loan read as {gap} sen")
 
         checks = [
             ("Mengurus", pair(rows["operating"]), pair(op[0])),
@@ -241,6 +290,17 @@ class _Parser:
         assert self.vote is not None
         if self.closed:
             return  # notes printed below the table's JUMLAH
+        text = " ".join(line.split())
+        if text == "RINGKASAN ANGGARAN PERBELANJAAN" and not self.vote.headings:
+            self.embedded = True
+            return
+        if self.embedded:
+            if self.vote.object_page_total is None:
+                self.object_page_line(text)  # title lines without amounts are skipped there
+                return
+            self.embedded, self.after_embedded = False, True
+        if self.after_embedded and not self.vote.headings and not trailing_values(text, 2)[1]:
+            return  # the vote name printed between the summary and the table
         # Programme and activity rows carry two amounts and no posts; a name can end in a
         # number ("Cawangan Kerja Bangunan Am 1"), so take only two from those rows.
         label, values, _ = trailing_values(line, 2 if _HEADING.match(line) else 4)

@@ -100,10 +100,26 @@ class _Parser:
         self.vote: DevelopmentVoteEstimate | None = None
         self.last: Project | None = None  # the project a text line would continue
         self.awaiting_total = False  # "JUMLAH ANGGARAN" printed, amounts on a later line
+        self.pending_jumlah: str | None = None  # "Jumlah <name>" printed, amounts on the next line
+        self.named_group: Group | None = None  # the group the last "Jumlah <name>" closed; its label may wrap
+        self.named_group_is_headless = False
+        self.jumlah_label = ""
         # Lampiran D, "Ringkasan Anggaran Perbelanjaan Pembangunan": per vote, total project
         # cost and the budget year's direct, loan and total; and the grand total.
         self.appendix: dict[str, tuple[tuple[int, int, int, int], Citation]] = {}
         self.where = Citation(0, 0, 0, "")
+        self.page_offset: int | None = None
+        self.known: dict[str, tuple[int, ...]] = {}  # "Lampiran D P.nn" -> appendix minus table, sen
+        self.misprints_seen: list[str] = []
+
+    def book_page(self, page: PageText, texts: list[str]) -> int | None:
+        """The printed page number; Budget 2025 omits it on a few pages, which then take it
+        from the PDF-to-book offset of the pages that print one."""
+        printed = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), None)
+        if printed is not None:
+            self.page_offset = page.pdf_page - printed
+            return printed
+        return page.pdf_page - self.page_offset if self.page_offset is not None else None
 
     def fail(self, message: str) -> ParseError:
         return ParseError(self.where.pdf_page, self.where.line_no, self.where.text, message)
@@ -116,7 +132,7 @@ class _Parser:
             return
         if not any("Harga Projek" in t for t in texts) or any(t.startswith("LAMPIRAN ") for t in texts[:3]):
             return
-        book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), None)
+        book_page = self.book_page(page, texts)
         head = next((i for i, t in enumerate(texts) if _TITLE.search(t)), None)
         if book_page is None or head is None:
             raise ParseError(page.pdf_page, 1, texts[0], "development table page without title or page number")
@@ -139,11 +155,15 @@ class _Parser:
 
     def appendix_page(self, page: PageText, texts: list[str]) -> None:
         book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), 0)
+        total_label = False  # Budget 2025 prints "JUMLAH ANGGARAN PERBELANJAAN" above its amounts
         for i, text in enumerate(texts):
             self.where = Citation(page.pdf_page, book_page, i + 1, text)
             label, values, _ = trailing_values(text, 4)
             if len(values) != 4:
+                total_label = total_label or text.startswith("JUMLAH ANGGARAN PERBELANJAAN")
                 continue
+            if not label and total_label:
+                label = "JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN"
             a = tuple(v.hundredths for v in values)
             amounts = (a[0], a[1], a[2], a[3])
             if amounts[1] + amounts[2] != amounts[3] and not label.startswith("P.70"):
@@ -175,7 +195,16 @@ class _Parser:
             else:
                 expected = (cost, direct, loan, total)
             if printed != expected:
-                raise ParseError(at.pdf_page, at.line_no, at.text, f"Lampiran D disagrees with the {code} table")
+                diffs = tuple(e - p for e, p in zip(expected, printed, strict=True))
+                if self.known.get(f"Lampiran D {code}") == diffs:
+                    self.misprints_seen.append(f"Lampiran D {code}")
+                else:
+                    raise ParseError(
+                        at.pdf_page,
+                        at.line_no,
+                        at.text,
+                        f"Lampiran D disagrees with the {code} table: appendix minus table {diffs} sen",
+                    )
             checks += 1
         extra = set(self.appendix) - set(self.votes) - {"total", "P.70"}
         if extra:
@@ -184,7 +213,12 @@ class _Parser:
         summed = tuple(sum(r[i] for r in rows) for i in range(4))
         total, at = self.appendix["total"]
         if summed != total:
-            raise ParseError(at.pdf_page, at.line_no, at.text, f"Lampiran D total {total}, its rows sum to {summed}")
+            diffs = tuple(t - r for t, r in zip(total, summed, strict=True))
+            if self.known.get("Lampiran D total") != diffs:
+                raise ParseError(
+                    at.pdf_page, at.line_no, at.text, f"Lampiran D total {total}, its rows sum to {summed}"
+                )
+            self.misprints_seen.append("Lampiran D total")
         return checks + 1
 
     def enter_vote(self, code: str, name: str) -> None:
@@ -217,13 +251,25 @@ class _Parser:
                 return
             vote.total = (amounts, self.where)
             return
-        if label == "Jumlah":
-            group = vote.groups[-1] if vote.groups else None
-            if amounts is None or group is None or group.total is not None:
-                raise self.fail("group Jumlah with no open group or no amounts")
-            group.total = (amounts, self.where)
+        if label.startswith("Jumlah") and amounts is None:
+            self.pending_jumlah = label  # Budget 2025: "Jumlah <name>", amounts on the next line
             self.last = None
             return
+        if amounts is not None and self.pending_jumlah:
+            # The amounts sit on the label's next line, bare or beside more of the label.
+            label, self.pending_jumlah = f"{self.pending_jumlah} {label}".strip(), None
+        if label == "Jumlah" or label.startswith("Jumlah "):
+            if amounts is None:
+                raise self.fail("group Jumlah without amounts")
+            self.close_group(vote, label.removeprefix("Jumlah").strip(), amounts)
+            self.last = None
+            return
+        if self.named_group is not None and self.continues_jumlah(label):
+            self.jumlah_label += " " + label  # the wrapped end of "Jumlah <name>"
+            if self.named_group_is_headless:
+                self.named_group.name = self.jumlah_label
+            return
+        self.named_group = None
         if (m := _PROJECT.fullmatch(label)) is not None:
             # After a group's Jumlah, projects with no new heading belong to the vote only.
             group = vote.groups[-1].ordinal if vote.groups and vote.groups[-1].total is None else None
@@ -243,6 +289,42 @@ class _Parser:
             return
         vote.groups.append(Group(len(vote.groups) + 1, label, self.where))
 
+    def continues_jumlah(self, text: str) -> bool:
+        """Whether a text line after a "Jumlah <name>" finishes that name rather than opening a
+        heading: for a group with a heading, while the label stays a prefix of the heading
+        ("Jumlah Dasar, Pembangunan dan" + "Pengurusan"); for a headless group, while the label
+        ends in a joining word or the line starts in lower case ("... Perladangan" + "dan Komoditi")."""
+        assert self.named_group is not None
+        joined = f"{self.jumlah_label} {text}"
+        if not self.named_group_is_headless:
+            heading = " ".join(self.named_group.name.split()).casefold()
+            return heading != self.jumlah_label.casefold() and heading.startswith(joined.casefold())
+        last = self.jumlah_label.split()[-1].casefold()
+        return text[:1].islower() or last in {"dan", "-", "&", "serta", "bagi", "di", "ke"} or last.endswith(",")
+
+    def close_group(self, vote: DevelopmentVoteEstimate, name: str, amounts: ProjectAmounts) -> None:
+        """A group total closes the open group. With no group open, "Jumlah <name>" closes the
+        run of projects just above it that have no heading (Budget 2025: a ministry's own
+        projects), which becomes a group of that name."""
+        group = vote.groups[-1] if vote.groups and vote.groups[-1].total is None else None
+        headless = group is None
+        if group is None:
+            run: list[Project] = []
+            for project in reversed(vote.projects):
+                if project.group is not None:
+                    break
+                run.insert(0, project)
+            if not name or not run:
+                raise self.fail("group Jumlah with no open group and no unheaded projects above it")
+            group = Group(len(vote.groups) + 1, name, run[0].citation)
+            vote.groups.append(group)
+            for project in run:
+                project.group = group.ordinal
+        group.total = (amounts, self.where)
+        self.named_group = group if name else None
+        self.named_group_is_headless = headless
+        self.jumlah_label = name
+
     def finish_vote(self) -> None:
         vote = self.vote
         assert vote is not None
@@ -261,13 +343,21 @@ class _Parser:
             raise self.fail(f"{vote.code} repeats a project code")
 
 
-def parse_development_estimates(pages: Sequence[PageText], budget_year: int) -> DevelopmentEstimates:
+def parse_development_estimates(
+    pages: Sequence[PageText],
+    budget_year: int,
+    known_misprints: Sequence[tuple[str, tuple[int, ...]]] = (),
+) -> DevelopmentEstimates:
     parser = _Parser()
+    parser.known = dict(known_misprints)
     for page in pages:
         parser.feed_page(page)
     if parser.vote is not None:
         parser.finish_vote()
     checks = parser.check_appendix()
+    missing = {k for k, _ in known_misprints if k.startswith("Lampiran D")} - set(parser.misprints_seen)
+    if missing:
+        raise ParseError(0, 0, "", f"known misprints no longer occur: {sorted(missing)}")
     contingency = parser.appendix["P.70"][0][3]
     return DevelopmentEstimates(budget_year, tuple(parser.votes.values()), contingency, checks)
 
@@ -350,7 +440,10 @@ def parse_dropped_projects(pages: Sequence[PageText]) -> DroppedProjects | None:
     if total is None:
         raise ParseError(pages[-1].pdf_page, 0, "", "Lampiran F has no JUMLAH")
     summed = (sum(r.total_cost for r in rows), sum(r.actual_prior for r in rows), sum(r.allocation for r in rows))
-    if summed != total[0]:
+    diffs = [t - s for t, s in zip(total[0], summed, strict=True)]
+    # The actual column restates spending rounded to the ringgit per project, so its total
+    # may differ from the rows by rounding (50 sen x (rows + 1)); cost and allocation are exact.
+    if diffs[0] or diffs[2] or abs(diffs[1]) > 50 * (len(rows) + 1):
         c = total[1]
         raise ParseError(c.pdf_page, c.line_no, c.text, f"Lampiran F JUMLAH {total[0]}, rows sum to {summed}")
     # Named rule DUPLICATE_ROW: a project printed more than once with identical figures (and

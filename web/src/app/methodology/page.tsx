@@ -150,6 +150,10 @@ export default async function MethodologyPage() {
               <li>
                 The book&apos;s original estimate for {b.budget_year - 1} equals the audited statement&apos;s original
                 estimate (Asal) for <Check matched={b.original_matched} total={b.original_votes} /> operating votes.
+                {b.original_matched < b.original_votes &&
+                  (b.original_net_diff_sen === 0
+                    ? " The other differences add up to exactly zero: the book restates the year in its own ministry structure, after money moved between votes when ministries were reorganised."
+                    : ` The differences do not net to zero (${formatSen(parseSen(b.original_net_diff_sen))}).`)}
                 Below vote level the book restates {b.budget_year - 1} in its own structure (Budget 2026, for
                 example, spreads the 2025 public service pay adjustment, SSPA, which the statement keeps as an
                 activity of its own, across other activities), so its activity figures for that year are not the

@@ -14,7 +14,7 @@ JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Stat
 
 ## Budget source
 
-Kementerian Kewangan, *Anggaran Perbelanjaan Persekutuan* (the federal budget book), Budget 2026 and Budget 2027, e.g. <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
+Kementerian Kewangan, *Anggaran Perbelanjaan Persekutuan* (the federal budget book), Budget 2025, 2026 and 2027, e.g. <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
 
 ## Layout
 
@@ -44,7 +44,7 @@ for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia 
 
 cd pipeline && uv sync
 for y in 2021 2022 2023 2024 2025; do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
-for y in 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
+for y in 2025 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
 uv run pytest                       # uses the buildmalaysia_pipeline db
 
 cd ../web && pnpm install

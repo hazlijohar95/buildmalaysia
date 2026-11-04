@@ -177,10 +177,36 @@ class BudgetSource:
     summary_pages: tuple[int, int]  # "Ringkasan Perbelanjaan Sebenar dan Anggaran ...", PDF pages
     # Summary totals that disagree with their own parts beyond rounding: label -> printed
     # minus computed, sen per column. Accepted exactly; an absent one fails the parse.
-    known_misprints: tuple[tuple[str, tuple[int, int, int, int]], ...] = ()
+    known_misprints: tuple[tuple[str, tuple[int, ...]], ...] = ()
+    layout: str = "latex"  # "word" for Budget 2025, whose summary pages are laid out differently
 
 
 BUDGET_SOURCES: dict[int, BudgetSource] = {
+    2025: BudgetSource(
+        id="mof-anggaran-perbelanjaan-2025",
+        publisher="Kementerian Kewangan Malaysia",
+        title="Anggaran Perbelanjaan Persekutuan 2025",
+        budget_year=2025,
+        url="https://belanjawan.mof.gov.my/pdf/belanjawan2025/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2025.pdf",
+        sha256="0a96d0a4c468b701482c2b1d0b00a1770c6c0d24391c52bc5d5bf28fda6710e6",
+        page_count=541,
+        raw_path="mof/2025/Anggaran_Perbelanjaan_Persekutuan_2025.pdf",
+        summary_pages=(32, 42),
+        layout="word",
+        known_misprints=(
+            # Lampiran D (book p.524) prints P.60's total project cost as 58,124,929,556; the
+            # P.60 table's total and the sum of its 14 projects are 58,174,929,556.
+            ("Lampiran D P.60", (-5_000_000_000, 0, 0, 0)),
+            # Its JUMLAH prints total project cost 676,988,446,255; its rows (with P.60 as
+            # printed) sum to 676,988,446,256.
+            ("Lampiran D total", (-100, 0, 0, 0)),
+            # The grand summary (book p.31) prints the 2025 estimate's Emolumen as
+            # 105,916,537,000 and Lain as 229,083,463,000; the votes sum to 105,908,537,000 and
+            # 229,091,463,000, the figures Budget 2026 restates. Mengurus is right.
+            ("Emolumen", (0, 0, 0, 800_000_000)),
+            ("Lain", (0, 0, 0, -800_000_000)),
+        ),
+    ),
     2026: BudgetSource(
         id="mof-anggaran-perbelanjaan-2026",
         publisher="Kementerian Kewangan Malaysia",
