@@ -284,8 +284,10 @@ TEXT_KINDS = _table(
         (Kind.NOTES_LABEL, r"Nota\s*:"),
         (
             Kind.ACTIVITY_NOTE,
-            r"(?:Nota\s*:\s*)?\(?\*\)?\s*(?P<vote>[TB])\.?(?P<num>\d{2})\s*[-–]\s*Program/Aktiviti"
-            r"\s*[-–]\s*(?P<codes>\d{6}(?:\s*(?:,|dan)\s*\d{6})*)\s*[-–]\s*.+",
+            (
+                r"(?:Nota\s*:\s*)?\(?\*\)?\s*(?P<vote>[TB])\.?(?P<num>\d{2})\s*[-–]\s*Program/Aktiviti"
+                r"\s*[-–]\s*(?P<codes>\d{6}(?:\s*(?:,|dan)\s*\d{6})*)\s*[-–]\s*.+"
+            ),
         ),
         (
             Kind.ACTIVITY_NOTE_SAME_VOTE,

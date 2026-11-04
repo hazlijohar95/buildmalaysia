@@ -9,10 +9,10 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, RevenueStatement, Statement
 from pipeline.budget import BudgetStatement
 from pipeline.budget_detail import Estimate, OperatingEstimates
 from pipeline.budget_development import DevelopmentEstimates, DroppedProjects
+from pipeline.model import Amounts, Citation, CovidFundStatement, DevelopmentStatement, RevenueStatement, Statement
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
@@ -136,7 +136,7 @@ def load_year(
                 page_count,
                 retrieved_at,
                 operating_ocr_engine,
-            ),  # fmt: skip
+            ),
         )
         # The hierarchies are keyed by fiscal year. This document is the year's only source,
         # so its hierarchy is replaced too; a row another document still uses fails the FK.
@@ -368,9 +368,16 @@ def _insert_development(cur: psycopg.Cursor, doc: str, statement: DevelopmentSta
 
 
 COVID_COLUMNS = (
-    "ceiling", "spent_prior", "allocation", "supplementary", "withdrawal", "virement", "revised", "actual",
+    "ceiling",
+    "spent_prior",
+    "allocation",
+    "supplementary",
+    "withdrawal",
+    "virement",
+    "revised",
+    "actual",
     "spent_to_date",
-)  # fmt: skip
+)
 
 
 def _insert_covid(cur: psycopg.Cursor, doc: str, statement: CovidFundStatement) -> None:
@@ -437,7 +444,7 @@ def _covid_mismatches(cur: psycopg.Cursor, doc: str) -> list[Mismatch]:
             row[2],
             ("revised", "actual", "spent_to_date"),
             (int(row[3]), int(row[4]), int(row[5])),
-        )  # fmt: skip
+        )
     ]
 
 

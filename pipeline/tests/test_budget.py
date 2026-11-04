@@ -7,9 +7,9 @@ import psycopg
 import pytest
 
 from pipeline.budget import parse_budget_summary
-from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
+from pipeline.budget_word import parse_budget_summary_word
 from pipeline.development import parse_development
 from pipeline.load import load_budget, load_year
 from pipeline.parse import PageText, ParseError, parse_statement
@@ -24,6 +24,9 @@ from pipeline.sources import (
     page_count,
     retrieved_at,
 )
+
+# Loads the full source PDFs into Postgres: run locally with the data, not in CI.
+pytestmark = pytest.mark.integration
 
 DATABASE_URL = os.environ.get("PIPELINE_DATABASE_URL", "postgresql:///buildmalaysia_pipeline")
 SOURCE = BUDGET_SOURCES[2027]

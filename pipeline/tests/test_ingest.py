@@ -16,6 +16,10 @@ from pipeline.revenue import parse_revenue
 from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, ensure_pdf, extract_pages, page_count, retrieved_at
 from pipeline.year import parse_year
 
+# Loads the full source PDFs into Postgres: run locally with the data, not in CI.
+pytestmark = pytest.mark.integration
+
+
 DATABASE_URL = os.environ.get("PIPELINE_DATABASE_URL", "postgresql:///buildmalaysia_pipeline")
 SOURCE = SOURCES[2025]
 
@@ -375,7 +379,18 @@ def test_every_revenue_row_cites_note_5(ingest: Ingest) -> None:
     )
     first, second = str(wrapped).split("\n")
     assert first.split() == (
-        "Duti Eksais Terhadap Barangan 6,721,760,000 5,999,427,000 6,263,107,506 104.40 6,704,465,519 100.55".split()
+        [
+            "Duti",
+            "Eksais",
+            "Terhadap",
+            "Barangan",
+            "6,721,760,000",
+            "5,999,427,000",
+            "6,263,107,506",
+            "104.40",
+            "6,704,465,519",
+            "100.55",
+        ]
     )
     assert second == "Tempatan"
 

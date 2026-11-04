@@ -7,9 +7,9 @@ import subprocess
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Protocol
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import certifi
 
@@ -586,7 +586,7 @@ SOURCES: dict[int, SourceDocument] = {
                     3_090_512_848,
                     11_762_659_698,
                     11_762_659_698,
-                ),  # fmt: skip
+                ),
                 evidence=(
                     "PDF p228-229: 'Jumlah FRIM' prints Kos Keseluruhan 143,970,000.00 and RMKe-11 to 2017 "
                     "41,384,000.00, the sums of its three projects (08100, 08400, 08510), but on the right page "

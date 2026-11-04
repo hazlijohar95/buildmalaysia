@@ -7,10 +7,21 @@ import pytest
 
 from pipeline.development import parse_development
 from pipeline.model import DevelopmentStatement, Statement
-from pipeline.parse import FOUR_COLUMNS, PageText, ParseError, _check_row, _fill_blank_cell, _split, slug_book_page
+from pipeline.parse import (
+    FOUR_COLUMNS,
+    PageText,
+    ParseError,
+    _check_row,
+    _fill_blank_cell,
+    _split,
+    parse_statement,
+    slug_book_page,
+)
 from pipeline.revenue import parse_revenue
 from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, ensure_pdf, extract_pages
-from pipeline.parse import parse_statement
+
+# Parses the FY2016-2019 source PDFs: run locally with the data, not in CI.
+pytestmark = pytest.mark.integration
 
 SOURCE = SOURCES[2018]
 

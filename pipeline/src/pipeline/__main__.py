@@ -6,16 +6,14 @@ from pathlib import Path
 
 import psycopg
 
-from pipeline.ocr import OcrError
 from pipeline.budget import parse_budget_summary
-from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
+from pipeline.budget_word import parse_budget_summary_word
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
+from pipeline.ocr import OcrError
 from pipeline.parse import ParseError
-from pipeline.tax_schedule import ScheduleError, write_schedule
-from pipeline.year import parse_year
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -26,6 +24,8 @@ from pipeline.sources import (
     page_count,
     retrieved_at,
 )
+from pipeline.tax_schedule import ScheduleError, write_schedule
+from pipeline.year import parse_year
 
 
 def ingest(year: int, database_url: str, raw_dir: Path) -> int:

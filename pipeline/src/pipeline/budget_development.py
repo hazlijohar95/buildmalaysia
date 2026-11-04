@@ -166,9 +166,8 @@ class _Parser:
                 label = "JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN"
             a = tuple(v.hundredths for v in values)
             amounts = (a[0], a[1], a[2], a[3])
-            if amounts[1] + amounts[2] != amounts[3] and not label.startswith("P.70"):
-                if not label.startswith("JUMLAH"):
-                    raise self.fail("Lampiran D row: direct + loan != total")
+            if amounts[1] + amounts[2] != amounts[3] and not label.startswith(("P.70", "JUMLAH")):
+                raise self.fail("Lampiran D row: direct + loan != total")
             if (m := re.match(r"P\.(\d{1,2})\s", label)) is not None:
                 self.appendix[f"P.{int(m[1]):02d}"] = (amounts, self.where)
             elif label.startswith("JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN"):
@@ -408,9 +407,10 @@ def parse_dropped_projects(pages: Sequence[PageText]) -> DroppedProjects | None:
 
     for page in pages:
         texts = [" ".join(line.split()) for line in page.layout.split("\n")]
-        if not any("YANG DIMANSUHKAN" in t for t in texts) or not any(_DROPPED_VOTE.fullmatch(t) for t in texts):
-            if not (found and any(_DROPPED_VOTE.fullmatch(t) for t in texts)):
-                continue
+        has_vote = any(_DROPPED_VOTE.fullmatch(t) for t in texts)
+        starts_section = any("YANG DIMANSUHKAN" in t for t in texts) and has_vote
+        if not starts_section and not (found and has_vote):
+            continue
         found = True
         book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), 0)
         for i, text in enumerate(texts):

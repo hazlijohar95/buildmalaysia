@@ -47,6 +47,7 @@ import tempfile
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 
 from pipeline.parse import PageText
@@ -618,7 +619,7 @@ class DrawnPage:
     def cells(self, top: float, bottom: float, bounds: Sequence[float]) -> list[str]:
         return [
             " ".join(w.text for w in self.words_in(top, bottom) if left < (w.x0 + w.x1) / 2 < right)
-            for left, right in zip(bounds, bounds[1:])
+            for left, right in pairwise(bounds)
         ]
 
     def book_page(self) -> int:

@@ -341,7 +341,7 @@ class _Parser:
 
         waiting: list[_Project | _Total] = []  # left rows with amounts, in print order
         # Where each amount ends on the left page's complete rows, to place a lone amount.
-        self.left_ends = {n: ends for n, line in left_lines if len((ends := trailing_values(line, 2)[2])) == 2}
+        self.left_ends = {n: ends for n, line in left_lines if len(ends := trailing_values(line, 2)[2]) == 2}
         in_notes = False
         first_new = len(self.projects)
         self.blank_before = False

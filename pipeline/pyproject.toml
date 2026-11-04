@@ -17,6 +17,7 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["integration: needs the source PDFs in data/raw and a Postgres database (PIPELINE_DATABASE_URL)"]
 
 [tool.ruff]
 line-length = 120
