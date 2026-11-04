@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // The only images are two portraits already sized to 640px, so there is nothing for an optimizer to do.
+  images: { unoptimized: true },
 };
 
 export default nextConfig;

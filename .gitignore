@@ -11,3 +11,7 @@ __pycache__/
 .DS_Store
 .worktrees/
 .next-build/
+.open-next/
+.wrangler/
+.dev.vars*
+supabase/.temp/
