@@ -93,3 +93,10 @@ Source: MOF, *Anggaran Perbelanjaan Persekutuan 2027* (586 pp, sha256 5caf1cc1â€
 - Original estimate for 2024 against JANM FY2024 Asal: 42 of 53 operating votes equal; the other 11 differences sum to exactly zero. The book restates 2024 in the 2025 ministry structure: B.33 takes RM340,087,300 from B.23, B.50 (Kementerian Digital, created 2024) RM182,265,600 from B.06, B.47 and others.
 - Four printed figures disagree with the book's own tables, registered as known misprints: Lampiran D prints P.60's total project cost as 58,124,929,556 (its table and 14 projects: 58,174,929,556); Lampiran D's grand total is RM1 below its rows; the grand summary's 2025 Emolumen is RM8,000,000 too high and Lain RM8,000,000 too low (the votes sum to 105,908,537,000 and 229,091,463,000, as Budget 2026 restates).
 - Project actuals and Lampiran F's actual column are rounded per project, so their totals differ from the rows by RM1-2; the checks allow that rounding in those columns only.
+
+## FY2021-FY2025 revenue (Note 5(a)): internal checks
+
+Each statement's revenue note was checked against two figures in the same set of statements. No discrepancy was found.
+
+- **Lampiran 1.** HASIL Sebenar equals Lampiran 1's operating total including the transfer to the Development Fund, within the note's rounding to whole ringgit: -13, +3, -21, -33 and +50 sen for 2021 to 2025. This is the source for the observation above that data.gov.my `revenue` equals that operating total. The Consolidated Revenue Account transfers its surplus to the Development Fund, so revenue and spending after the transfer are equal by construction.
+- **Previous statement.** Each statement's prior-year Sebenar equals the previous statement's Sebenar for all seven categories and every item, FY2022 to FY2025. Four items match only across a rename: FY2022 renames `Aktiviti Carigali Minyak dan Gas MTJA`, `Faedah dan Perolehan daripada Pelaburan` and `Sumbangan dan Bayaran Ganti daripada Luar Negeri ...`, and FY2024 renames `Duti Eksais` to `Duti Eksais Terhadap Barangan Tempatan`. The values are unchanged in each case. FY2022 drops the two GST items, which were zero in FY2021 and FY2020.

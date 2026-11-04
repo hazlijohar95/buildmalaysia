@@ -13,6 +13,7 @@ from pipeline.budget_development import parse_development_estimates, parse_dropp
 from pipeline.development import parse_development
 from pipeline.load import load_budget, load_year
 from pipeline.parse import PageText, ParseError, parse_statement
+from pipeline.revenue import parse_revenue
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -72,6 +73,7 @@ def test_mof_actuals_agree_with_the_audited_statements(pages: list[PageText]) ->
                     source,
                     parse_statement(extract_pages(janm, source.operating_pages), year),
                     parse_development(extract_pages(janm, source.development_pages), year),
+                    parse_revenue(extract_pages(janm, source.revenue_pages), year),
                     page_count(janm),
                     retrieved_at(janm),
                 )
@@ -171,6 +173,7 @@ def test_budget_2026_restates_the_audited_years_and_the_2025_original_estimate()
                 janm,
                 parse_statement(extract_pages(janm_pdf, janm.operating_pages), 2025),
                 parse_development(extract_pages(janm_pdf, janm.development_pages), 2025),
+                parse_revenue(extract_pages(janm_pdf, janm.revenue_pages), 2025),
                 page_count(janm_pdf),
                 retrieved_at(janm_pdf),
             )
@@ -233,6 +236,7 @@ def test_budget_2025_word_layout_loads_and_restates_2024_by_ministry() -> None:
                 janm,
                 parse_statement(extract_pages(janm_pdf, janm.operating_pages), 2024),
                 parse_development(extract_pages(janm_pdf, janm.development_pages), 2024),
+                parse_revenue(extract_pages(janm_pdf, janm.revenue_pages), 2024),
                 page_count(janm_pdf),
                 retrieved_at(janm_pdf),
             )

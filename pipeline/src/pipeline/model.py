@@ -219,3 +219,49 @@ class CovidFundStatement:
     lines: tuple[CovidFundLine, ...]
     total: CovidAmounts
     total_citation: SpreadCitation
+
+
+# --- Note 5(a): Hasil mengikut penjenisan (revenue by type) ---------------------------
+
+
+class RevenueCategory(StrEnum):
+    REVENUE = "revenue"  # HASIL
+    TAX = "tax"  # HASIL CUKAI
+    DIRECT_TAX = "direct_tax"  # Cukai Langsung
+    INDIRECT_TAX = "indirect_tax"  # Cukai Tidak Langsung
+    NON_TAX = "non_tax"  # HASIL BUKAN CUKAI
+    NON_REVENUE_RECEIPTS = "non_revenue_receipts"  # TERIMAAN BUKAN HASIL
+    FEDERAL_TERRITORY = "federal_territory"  # HASIL WILAYAH PERSEKUTUAN
+
+
+@dataclass(frozen=True)
+class RevenueAmounts:
+    original_estimate: int  # Anggaran Asal
+    revised_estimate: int  # Anggaran Disemak
+    actual: int  # Sebenar, the statement's year
+    prior_year_actual: int  # Sebenar, the year before
+
+
+@dataclass(frozen=True)
+class RevenueItem:
+    ordinal: int  # 1-based position among the note's items
+    category: RevenueCategory  # the innermost category printed above it
+    name: str
+    amounts: RevenueAmounts
+    citation: Citation
+
+
+@dataclass(frozen=True)
+class RevenueTotal:
+    category: RevenueCategory
+    parent: RevenueCategory | None
+    name: str  # as printed
+    amounts: RevenueAmounts
+    citation: Citation
+
+
+@dataclass(frozen=True)
+class RevenueStatement:
+    fiscal_year: int
+    items: tuple[RevenueItem, ...]
+    totals: tuple[RevenueTotal, ...]  # in printed order, each after its parent

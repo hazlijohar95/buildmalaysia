@@ -11,8 +11,9 @@ import pytest
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.load import ReconciliationError, YearLoad, load_year
-from pipeline.model import DevelopmentStatement, Statement
-from pipeline.parse import parse_statement
+from pipeline.model import DevelopmentStatement, RevenueCategory, RevenueStatement, Statement
+from pipeline.parse import ParseError, parse_statement
+from pipeline.revenue import parse_revenue
 from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, ensure_pdf, extract_pages, page_count, retrieved_at
 
 DATABASE_URL = os.environ.get("PIPELINE_DATABASE_URL", "postgresql:///buildmalaysia_pipeline")
@@ -24,6 +25,7 @@ class Ingest:
     conn: psycopg.Connection
     statement: Statement
     development: DevelopmentStatement
+    revenue: RevenueStatement
     result: YearLoad
     pages: int
     retrieved: datetime
@@ -34,10 +36,11 @@ def ingest() -> Iterator[Ingest]:
     pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
     statement = parse_statement(extract_pages(pdf, SOURCE.operating_pages), SOURCE.fiscal_year)
     development = parse_development(extract_pages(pdf, SOURCE.development_pages), SOURCE.fiscal_year)
+    revenue = parse_revenue(extract_pages(pdf, SOURCE.revenue_pages), SOURCE.fiscal_year)
     pages, retrieved = page_count(pdf), retrieved_at(pdf)
     with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
-        result = load_year(conn, SOURCE, statement, development, pages, retrieved)
-        yield Ingest(conn, statement, development, result, pages, retrieved)
+        result = load_year(conn, SOURCE, statement, development, revenue, pages, retrieved)
+        yield Ingest(conn, statement, development, revenue, result, pages, retrieved)
 
 
 def scalar(conn: psycopg.Connection, sql: str) -> object:
@@ -86,7 +89,7 @@ def test_one_sen_edit_is_rejected_and_rolled_back(ingest: Ingest) -> None:
     bad = replace(ingest.statement, lines=(edited, *ingest.statement.lines[1:]))
 
     with pytest.raises(ReconciliationError) as error:
-        load_year(ingest.conn, SOURCE, bad, ingest.development, ingest.pages, ingest.retrieved)
+        load_year(ingest.conn, SOURCE, bad, ingest.development, ingest.revenue, ingest.pages, ingest.retrieved)
 
     # Every total above T.01 / 010100 / Emolumen: activity, programme (object and all),
     # vote (object and all), section (object and all), statement (object and all).
@@ -102,12 +105,16 @@ def test_one_sen_edit_is_rejected_and_rolled_back(ingest: Ingest) -> None:
 
 
 def test_rerun_converges_to_the_same_rows(ingest: Ingest) -> None:
-    again = load_year(ingest.conn, SOURCE, ingest.statement, ingest.development, ingest.pages, ingest.retrieved)
+    again = load_year(
+        ingest.conn, SOURCE, ingest.statement, ingest.development, ingest.revenue, ingest.pages, ingest.retrieved
+    )
     assert again == ingest.result
     assert scalar(ingest.conn, "select count(*) from operating_line where document_id = %s") == 2309
     assert scalar(ingest.conn, "select count(*) from printed_total where document_id = %s") == 2474
     assert scalar(ingest.conn, "select count(*) from development_project where document_id = %s") == 918
     assert scalar(ingest.conn, "select count(*) from development_printed_total where document_id = %s") == 89
+    assert scalar(ingest.conn, "select count(*) from revenue_line where document_id = %s") == 25
+    assert scalar(ingest.conn, "select count(*) from revenue_total where document_id = %s") == 7
 
 
 def test_every_development_total_reconciles(ingest: Ingest) -> None:
@@ -160,7 +167,7 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
     bad = replace(ingest.development, projects=(edited, *ingest.development.projects[1:]))
 
     with pytest.raises(ReconciliationError) as error:
-        load_year(ingest.conn, SOURCE, ingest.statement, bad, ingest.pages, ingest.retrieved)
+        load_year(ingest.conn, SOURCE, ingest.statement, bad, ingest.revenue, ingest.pages, ingest.retrieved)
 
     mismatches = error.value.mismatches
     assert [m.key for m in mismatches] == ["vote total vote=P.06", "statement total"]
@@ -173,28 +180,61 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
 
 
 @pytest.mark.parametrize(
-    ("year", "operating_counts", "development_counts", "operating_actual", "development_actual", "covid_actual"),
+    (
+        "year",
+        "operating_counts",
+        "development_counts",
+        "revenue_items",
+        "operating_actual",
+        "development_actual",
+        "covid_actual",
+        "revenue_actual",
+    ),
     [
         # (votes, programmes, activities, leaf lines, printed totals); (votes, groups, projects, printed totals)
         # covid_actual: COVID-19 Fund (Lampiran 3) spending, None where the statement has no Lampiran 3.
-        (2024, (53, 237, 1068, 2206, 2280), (31, 57, 923, 89), 32_461_764_924_833, 8_401_159_546_378, None),
-        (2023, (51, 231, 1037, 2094, 2201), (30, 58, 856, 89), 31_495_948_173_121, 9_608_973_712_254, 0),
+        # revenue_actual: Note 5(a) HASIL, whole ringgit, within 50 sen of operating_actual.
+        (
+            2024,
+            (53, 237, 1068, 2206, 2280),
+            (31, 57, 923, 89),
+            25,
+            32_461_764_924_833,
+            8_401_159_546_378,
+            None,
+            32_461_764_924_800,
+        ),
+        (
+            2023,
+            (51, 231, 1037, 2094, 2201),
+            (30, 58, 856, 89),
+            25,
+            31_495_948_173_121,
+            9_608_973_712_254,
+            0,
+            31_495_948_173_100,
+        ),
         (
             2022,
             (52, 226, 1009, 2057, 2162),
             (29, 56, 746, 86),
+            25,
             29_435_676_061_497,
             7_157_396_142_579,
             3_097_911_954_653,
+            29_435_676_061_500,
         ),
         # FY2021 prints one programme total RM1,000,000 short of its rows (sources.KnownMisprint).
+        # Its revenue note also lists the two GST items, all dashes.
         (
             2021,
             (52, 229, 1032, 2089, 2210),
             (31, 69, 1051, 101),
+            27,
             23_375_205_502_913,
             6_425_666_575_457,
             3_771_101_636_510,
+            23_375_205_502_900,
         ),
     ],
 )
@@ -202,24 +242,30 @@ def test_earlier_years_load_and_reconcile(
     year: int,
     operating_counts: tuple[int, ...],
     development_counts: tuple[int, ...],
+    revenue_items: int,
     operating_actual: int,
     development_actual: int,
     covid_actual: int | None,
+    revenue_actual: int,
 ) -> None:
     source = SOURCES[year]
     pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
     operating = parse_statement(extract_pages(pdf, source.operating_pages), year)
     development = parse_development(extract_pages(pdf, source.development_pages), year)
+    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year)
     covid = (
         parse_covid(extract_pages(pdf, source.covid_pages), year, source.covid_columns) if source.covid_pages else None
     )
     with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
-        result = load_year(conn, source, operating, development, page_count(pdf), retrieved_at(pdf), covid)
+        result = load_year(conn, source, operating, development, revenue, page_count(pdf), retrieved_at(pdf), covid)
         o, d = result.operating, result.development
         assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
         assert o.reconciled == o.printed_totals - len(source.known_misprints)
         assert d.reconciled == d.printed_totals
+        r = result.revenue
+        assert (r.items, r.printed_totals, r.reconciled) == (revenue_items, 7, 7)
+        assert (r.actual_sen, r.operating_actual_sen) == (revenue_actual, operating_actual)
         row = conn.execute(
             "select operating_actual_sen, development_actual_sen, covid_fund_actual_sen"
             " from federal_spending where fiscal_year = %s",
@@ -229,3 +275,90 @@ def test_earlier_years_load_and_reconcile(
         if covid is not None:
             sql = "select matches, line_count from covid_fund_reconciliation where fiscal_year = %s"
             assert conn.execute(sql, (year,)).fetchone() == (True, 31)
+
+
+def test_revenue_totals_reconcile_and_balance_operating_spending(ingest: Ingest) -> None:
+    r = ingest.result.revenue
+    assert (r.items, r.printed_totals, r.reconciled) == (25, 7, 7)
+    # Book p.75: HASIL Sebenar 336,069,262,969; Lampiran 1 (book p.197) 336,069,262,968.50.
+    assert (r.actual_sen, r.operating_actual_sen) == (33_606_926_296_900, 33_606_926_296_850)
+    actual = dict(
+        ingest.conn.execute(
+            "select category::text, actual_sen from revenue_total where document_id = %s", (SOURCE.id,)
+        ).fetchall()
+    )
+    assert actual == {
+        "revenue": 33_606_926_296_900,
+        "tax": 25_982_644_031_500,
+        "direct_tax": 18_055_858_324_700,
+        "indirect_tax": 7_926_785_706_800,
+        "non_tax": 6_689_834_785_600,
+        "non_revenue_receipts": 886_262_212_300,
+        "federal_territory": 48_185_267_500,
+    }
+
+
+def test_every_revenue_row_cites_note_5(ingest: Ingest) -> None:
+    for table in ("revenue_line", "revenue_total"):
+        bad = scalar(
+            ingest.conn,
+            f"select count(*) from {table} where document_id = %s"
+            " and not (pdf_page in (89, 90) and book_page = pdf_page - 14 and source_text <> '')",
+        )
+        assert bad == 0, table
+    wrapped = scalar(
+        ingest.conn,
+        "select source_text from revenue_line where document_id = %s and name_ms = 'Duti Eksais Terhadap Barangan Tempatan'",
+    )
+    first, second = str(wrapped).split("\n")
+    assert first.split() == (
+        "Duti Eksais Terhadap Barangan 6,721,760,000 5,999,427,000 6,263,107,506 104.40 6,704,465,519 100.55".split()
+    )
+    assert second == "Tempatan"
+
+
+def test_one_ringgit_revenue_item_edit_is_rejected_and_rolled_back(ingest: Ingest) -> None:
+    first = ingest.revenue.items[0]  # Cukai Pendapatan, under Cukai Langsung
+    assert (first.name, first.category) == ("Cukai Pendapatan", RevenueCategory.DIRECT_TAX)
+    edited = replace(first, amounts=replace(first.amounts, actual=first.amounts.actual + 100))
+    bad = replace(ingest.revenue, items=(edited, *ingest.revenue.items[1:]))
+
+    with pytest.raises(ReconciliationError) as error:
+        load_year(ingest.conn, SOURCE, ingest.statement, ingest.development, bad, ingest.pages, ingest.retrieved)
+
+    mismatches = error.value.mismatches
+    assert sorted(m.key for m in mismatches) == [
+        "revenue total category=direct_tax",
+        "revenue total category=revenue",
+        "revenue total category=tax",
+    ]
+    assert all(m.diffs_sen == (0, 0, -100, 0) for m in mismatches)
+    stored = scalar(
+        ingest.conn, "select actual_sen from revenue_line where document_id = %s and name_ms = 'Cukai Pendapatan'"
+    )
+    assert stored == first.amounts.actual
+
+
+def test_one_ringgit_edit_to_hasil_breaks_the_balance_with_operating_spending(ingest: Ingest) -> None:
+    hasil = ingest.revenue.totals[0]
+    edited = replace(hasil, amounts=replace(hasil.amounts, actual=hasil.amounts.actual + 100))
+    bad = replace(ingest.revenue, totals=(edited, *ingest.revenue.totals[1:]))
+
+    with pytest.raises(ReconciliationError) as error:
+        load_year(ingest.conn, SOURCE, ingest.statement, ingest.development, bad, ingest.pages, ingest.retrieved)
+
+    assert [(m.view, m.diffs_sen) for m in error.value.mismatches] == [
+        ("revenue_reconciliation", (0, 0, 100, 0)),
+        ("revenue_operating_balance", (150,)),
+    ]
+
+
+def test_a_revenue_line_it_cannot_place_stops_the_parse() -> None:
+    pages = extract_pages(ensure_pdf(SOURCE, DEFAULT_RAW_DIR), SOURCE.revenue_pages)
+    # A name printed above its amounts, at the row's own indent, would otherwise be read
+    # as the end of the name above.
+    lines = pages[1].layout.split("\n")
+    at = next(i for i, line in enumerate(lines) if line.strip().startswith("Sewaan"))
+    lines.insert(at, " " * (len(lines[at]) - len(lines[at].lstrip())) + "Sewaan Tanah")
+    with pytest.raises(ParseError, match=f"pdf page 90, line {at + 1}: text line that does not continue"):
+        parse_revenue([pages[0], replace(pages[1], layout="\n".join(lines))], SOURCE.fiscal_year)

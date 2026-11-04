@@ -45,6 +45,7 @@ class SourceDocument:
     raw_path: str  # relative to the raw data directory
     operating_pages: tuple[int, int]  # Lampiran 1 (BM), PDF pages, 1-based, inclusive
     development_pages: tuple[int, int]  # Lampiran 2 (BM), whole two-page spreads
+    revenue_pages: tuple[int, int]  # Note 5(a), "Hasil mengikut penjenisan", PDF pages
     known_misprints: tuple[KnownMisprint, ...] = ()
     # Lampiran 3 (COVID-19 Fund, FY2020-2023): its spread and the column names on each page.
     covid_pages: tuple[int, int] | None = None
@@ -63,6 +64,7 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2025.pdf",
         operating_pages=(103, 212),
         development_pages=(214, 249),
+        revenue_pages=(89, 90),
     ),
     2024: SourceDocument(
         id="janm-penyata-kewangan-2024",
@@ -75,6 +77,7 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2024.pdf",
         operating_pages=(99, 203),
         development_pages=(206, 241),
+        revenue_pages=(83, 84),
     ),
     2023: SourceDocument(
         id="janm-penyata-kewangan-2023",
@@ -87,6 +90,7 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2023.pdf",
         operating_pages=(95, 194),
         development_pages=(196, 231),
+        revenue_pages=(79, 80),
         covid_pages=(234, 235),
         covid_columns=(
             ("ceiling", "spent_prior"),
@@ -104,6 +108,7 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2022.pdf",
         operating_pages=(97, 195),
         development_pages=(198, 229),
+        revenue_pages=(81, 82),
         covid_pages=(232, 233),
         covid_columns=(
             ("ceiling", "spent_prior"),
@@ -121,6 +126,7 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2021.pdf",
         operating_pages=(89, 199),
         development_pages=(202, 245),
+        revenue_pages=(73, 74),
         covid_pages=(248, 249),
         covid_columns=(
             ("ceiling", "spent_prior", "allocation", "supplementary"),

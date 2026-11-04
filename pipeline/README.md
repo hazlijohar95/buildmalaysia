@@ -1,6 +1,6 @@
 # pipeline
 
-Fetches the JANM federal financial statements, parses Lampiran 1 (*Penyata Perbelanjaan Mengurus*, operating expenditure budget against actual) and Lampiran 2 (*Penyata Perbelanjaan Pembangunan*, development expenditure by project), and loads both into Postgres. A load commits only when every total printed in the document equals the sum of the rows under it, as computed by the `reconciliation` and `development_reconciliation` views in `supabase/migrations/`.
+Fetches the JANM federal financial statements, parses Lampiran 1 (*Penyata Perbelanjaan Mengurus*, operating expenditure budget against actual) and Lampiran 2 (*Penyata Perbelanjaan Pembangunan*, development expenditure by project), Lampiran 3 (COVID-19 Fund, where printed) and Note 5(a) (*Hasil mengikut penjenisan*, revenue by type), and loads them into Postgres. A load commits only when every total printed in the document equals the sum of the rows under it, as computed by the `reconciliation`, `development_reconciliation`, `covid_fund_reconciliation` and `revenue_reconciliation` views in `supabase/migrations/`, and revenue balances operating spending (`revenue_operating_balance`).
 
 ## Requirements
 
@@ -19,9 +19,9 @@ uv run python -m pipeline ingest --year 2025 --database-url postgresql:///buildm
 The command:
 
 1. Uses `data/raw/janm/2025.pdf`, or downloads it from the URL in `src/pipeline/sources.py` if it is absent. It stops if the file's SHA-256 differs from the pinned hash. A download goes to a `.part` file and is renamed only after the hash matches.
-2. Extracts the Lampiran 1 and Lampiran 2 page ranges registered in `src/pipeline/sources.py` (FY2021-FY2025), both in Bahasa Malaysia, with `pdftotext`.
+2. Extracts the Lampiran 1, Lampiran 2, Lampiran 3 and Note 5(a) page ranges registered in `src/pipeline/sources.py` (FY2021-FY2025), all in Bahasa Malaysia, with `pdftotext`.
 3. Parses them into the typed model in `src/pipeline/model.py`. Any line it cannot place stops the run with the PDF page and line number.
-4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads both reconciliation views. It commits only when every row of both matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
+4. In one transaction, it upserts `source_document`, deletes this document's rows and the fiscal year's hierarchies, inserts the new rows, and reads the reconciliation views. It commits only when every row matches. Otherwise it rolls back and prints every mismatch. Re-running converges to the same rows.
 
 Options: `--raw-dir` sets where source PDFs are kept (default `<repo>/data/raw`). `retrieved_at` is the local file's modification time.
 
@@ -31,7 +31,7 @@ Options: `--raw-dir` sets where source PDFs are kept (default `<repo>/data/raw`)
 uv run pytest
 ```
 
-`tests/test_ingest.py` loads the full FY2025 statement into `PIPELINE_DATABASE_URL` (default `postgresql:///buildmalaysia_pipeline`) and replaces that document's rows there. It also proves the gate for both statements: a copy with one operating leaf's actual changed by one sen is rejected with exactly the nine totals above that leaf, a copy with one development project's total cost changed by one sen is rejected with exactly its vote and statement totals, and the stored rows are unchanged.
+`tests/test_ingest.py` loads the full FY2025 statement, with its Note 5(a) revenue table, into `PIPELINE_DATABASE_URL` (default `postgresql:///buildmalaysia_pipeline`) and replaces that document's rows there. It also proves the gate for both statements: a copy with one operating leaf's actual changed by one sen is rejected with exactly the nine totals above that leaf, a copy with one development project's total cost changed by one sen is rejected with exactly its vote and statement totals, and the stored rows are unchanged. A revenue item edited by one ringgit is rejected with exactly its three category totals, and HASIL edited by one ringgit is rejected by both its reconciliation and the balance with Lampiran 1.
 
 The parser fixtures in `tests/fixtures/` are lines copied verbatim from the PDF. `uv run python tests/fixtures/build.py` rebuilds them and names the page and line of each.
 
@@ -48,6 +48,27 @@ The 2025 PDF has a clean text layer. `-layout` keeps each table row on one text 
 - Every row is checked as it is read: Asal + Tambahan + Viremen = Jumlah, Jumlah − Sebenar = Varian, and % Prestasi follows the convention below. `–` is zero and `(x)` is negative. Amounts are integer sen.
 - A vote total's label, joined across its wrapped lines, must equal `JUMLAH` plus the vote name. Duplicate votes, programmes, activities and (vote, activity, object) leaves are errors.
 - A footnote marker (`*`) on a total is resolved against the `Nota:` text and stored in `printed_total.footnote`. A marker on a leaf is an error, because `operating_line` has no column for it.
+
+## Note 5(a) (revenue by type)
+
+`src/pipeline/revenue.py` holds `parse_revenue(pages, fiscal_year)`. Note 5, *Akaun Hasil Disatukan*, prints *Hasil mengikut penjenisan* over two pages (`SourceDocument.revenue_pages`: FY2021 PDF pp. 73-74, FY2022 81-82, FY2023 79-80, FY2024 83-84, FY2025 89-90). The table starts after the line `Hasil mengikut penjenisan bagi tahun berakhir 31 Disember YYYY adalah seperti berikut:`, breaks at `(disambung)`, resumes after `(sambungan)` and ends at `(b) Perbelanjaan Mengurus`. Each of those markers must occur exactly once on its page.
+
+- Each row ends in six columns: Anggaran Asal, Anggaran Disemak, Sebenar and % Anggaran for the year, Sebenar and % Anggaran for the year before. The four amounts must be whole ringgit (stored as sen) and the two percentages must carry two decimals; `-` is zero. % Anggaran is not stored or checked, because the note divides by Anggaran Asal where Anggaran Disemak is zero in some rows (FY2021 Terimaan Pelarasan) and prints `-` in others (FY2023 Sumbangan dan Bayaran Ganti).
+- A line without amounts continues the name of the row above it, only if it is indented past that row's name (`Duti Eksais Terhadap Barangan` / `Tempatan`). Any other text line is a ParseError, so a name printed above its amounts cannot be glued to the wrong row.
+- Column-header lines (`Anggaran`, `Asal`, `Disemak`, `Sebenar`, `RM`, `%`, years) are allowed only above a page's first row, and their years must be the fiscal year or the one before.
+- A row whose full name is in `revenue.CATEGORIES` is a category's printed total: `HASIL` (revenue), `HASIL CUKAI` (tax), `Cukai Langsung` (direct_tax), `Cukai Tidak Langsung` (indirect_tax; FY2021 prints `Cukai Tak Langsung`), `HASIL BUKAN CUKAI` (non_tax), `TERIMAAN BUKAN HASIL` (non_revenue_receipts), `HASIL WILAYAH PERSEKUTUAN` (federal_territory). Names are matched case-sensitively, so the item `Hasil Bukan Cukai Wilayah Persekutuan` is not the category. Every category must be printed once, inside its parent. Any other row is an item of the innermost open category, which must be one with no sub-categories.
+
+`revenue_reconciliation` recomputes all seven category totals from the items below them, in all four columns, and `revenue_operating_balance` compares HASIL's Sebenar with Lampiran 1's statement total. The Consolidated Revenue Account balances because the year's surplus is transferred to the Development Fund as a Lampiran 1 line. The note prints whole ringgit, so the two may differ by up to 50 sen. `load_year` rolls back unless both views match.
+
+| Year | Items | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
+|---|---|---|---|---|
+| 2021 | 27 | 233,752,055,029 | 233,752,055,029.13 | -13 sen |
+| 2022 | 25 | 294,356,760,615 | 294,356,760,614.97 | +3 sen |
+| 2023 | 25 | 314,959,481,731 | 314,959,481,731.21 | -21 sen |
+| 2024 | 25 | 324,617,649,248 | 324,617,649,248.33 | -33 sen |
+| 2025 | 25 | 336,069,262,969 | 336,069,262,968.50 | +50 sen |
+
+FY2021 also lists the two GST items (`Cukai Barangan dan Perkhidmatan Import` and `Tempatan`), printed as dashes and stored as zero. Item names change between years, so nothing joins items across years by name. The renames are `Duti Eksais` (to FY2023) to `Duti Eksais Terhadap Barangan Tempatan` (FY2024), and three non-tax names in FY2022, including `Faedah dan Perolehan daripada Pelaburan` to `... Pinjaman Persekutuan dan Terbitan Instrumen Kewangan Kerajaan`.
 
 ## Lampiran 3 (COVID-19 Fund, FY2020-2023)
 

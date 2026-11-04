@@ -47,7 +47,7 @@ def _units_index(lines: list[str], count: int) -> int:
     raise ParseError(0, 0, "", f"no units line with {count} columns")
 
 
-def _book_page(page: PageText, head: list[str], year: int) -> int:
+def running_head_book_page(page: PageText, head: list[str], year: int) -> int:
     for line in head:
         text = " ".join(line.split())
         m = _RUNNING_HEAD.fullmatch(text)
@@ -70,8 +70,8 @@ def parse_covid(
     left_lines, right_lines = left.layout.split("\n"), right.layout.split("\n")
     lu = _units_index(left_lines, len(left_cols))
     ru = _units_index(right_lines, len(right_cols))
-    left_book = _book_page(left, left_lines[:lu], fiscal_year)
-    right_book = _book_page(right, right_lines[:ru], fiscal_year)
+    left_book = running_head_book_page(left, left_lines[:lu], fiscal_year)
+    right_book = running_head_book_page(right, right_lines[:ru], fiscal_year)
     if (right.pdf_page, right_book) != (left.pdf_page + 1, left_book + 1):
         raise ParseError(right.pdf_page, 1, "", "right page does not follow its left page")
 

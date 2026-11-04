@@ -15,6 +15,7 @@ from pipeline.budget_development import parse_development_estimates, parse_dropp
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
+from pipeline.revenue import parse_revenue
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -39,18 +40,19 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
         operating = parse_statement(extract_pages(pdf, source.operating_pages), source.fiscal_year)
         development = parse_development(extract_pages(pdf, source.development_pages), source.fiscal_year)
+        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year)
         covid = (
             parse_covid(extract_pages(pdf, source.covid_pages), source.fiscal_year, source.covid_columns)
             if source.covid_pages
             else None
         )
         with psycopg.connect(database_url, autocommit=True) as conn:
-            result = load_year(conn, source, operating, development, pages, retrieved_at(pdf), covid)
+            result = load_year(conn, source, operating, development, revenue, pages, retrieved_at(pdf), covid)
     except (SourceError, ParseError, ReconciliationError) as error:
         print(f"ingest {year} failed: {error}", file=sys.stderr)
         return 1
 
-    o, d = result.operating, result.development
+    o, d, r = result.operating, result.development, result.revenue
     print(f"ingested {source.id} from {pdf}")
     print(
         f"  operating (Lampiran 1): votes {o.votes}, programmes {o.programmes}, activities {o.activities}, "
@@ -59,6 +61,11 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
     print(
         f"  development (Lampiran 2): votes {d.votes}, groups {d.groups}, projects {d.projects}, "
         f"printed totals {d.printed_totals}, reconciled {d.reconciled}"
+    )
+    print(
+        f"  revenue (Note 5(a)): items {r.items}, printed totals {r.printed_totals}, reconciled {r.reconciled}; "
+        f"HASIL {r.actual_sen} sen against Lampiran 1's {r.operating_actual_sen} sen "
+        f"(difference {r.actual_sen - r.operating_actual_sen:+d} sen, the note's rounding to whole ringgit)"
     )
     if covid is not None:
         print(f"  COVID-19 Fund (Lampiran 3): programmes {result.covid_lines}, total reconciled")

@@ -8,13 +8,14 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, Statement
+from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, RevenueStatement, Statement
 from pipeline.budget import BudgetStatement
 from pipeline.budget_detail import Estimate, OperatingEstimates
 from pipeline.budget_development import DevelopmentEstimates, DroppedProjects
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
+REVENUE_COLUMNS = ("original_estimate", "revised_estimate", "actual", "prior_year_actual")
 DEVELOPMENT_COLUMNS = (
     "total_cost",
     "plan_actual_prior",
@@ -70,9 +71,19 @@ class DevelopmentLoadResult:
 
 
 @dataclass(frozen=True)
+class RevenueLoadResult:
+    items: int
+    printed_totals: int
+    reconciled: int
+    actual_sen: int  # HASIL, Sebenar
+    operating_actual_sen: int  # Lampiran 1's statement total, which the revenue must balance
+
+
+@dataclass(frozen=True)
 class YearLoad:
     operating: LoadResult
     development: DevelopmentLoadResult
+    revenue: RevenueLoadResult
     covid_lines: int  # COVID-19 Fund programmes loaded; zero for a year without Lampiran 3
 
 
@@ -85,6 +96,7 @@ def load_year(
     source: SourceDocument,
     operating: Statement,
     development: DevelopmentStatement,
+    revenue: RevenueStatement,
     page_count: int,
     retrieved_at: datetime,
     covid: CovidFundStatement | None = None,
@@ -96,7 +108,7 @@ def load_year(
     """
     if not conn.autocommit:
         raise ValueError("load_year needs an autocommit connection")
-    if operating.fiscal_year != source.fiscal_year or development.fiscal_year != source.fiscal_year:
+    if {operating.fiscal_year, development.fiscal_year, revenue.fiscal_year} != {source.fiscal_year}:
         raise ValueError("statements and source document disagree on the fiscal year")
     doc, year = source.id, source.fiscal_year
     with conn.transaction(), conn.cursor() as cur:
@@ -120,6 +132,8 @@ def load_year(
         cur.execute("delete from development_statement where document_id = %s", (doc,))
         cur.execute("delete from covid_fund_line where document_id = %s", (doc,))
         cur.execute("delete from covid_fund_total where document_id = %s", (doc,))
+        cur.execute("delete from revenue_line where document_id = %s", (doc,))
+        cur.execute("delete from revenue_total where document_id = %s", (doc,))
         for table in ("activity", "programme", "vote"):
             cur.execute(f"delete from {table} where fiscal_year = %s", (year,))
         cur.execute("update development_group set parent_ordinal = null where fiscal_year = %s", (year,))
@@ -130,16 +144,21 @@ def load_year(
         _insert_development(cur, doc, development)
         if covid is not None:
             _insert_covid(cur, doc, covid)
+        _insert_revenue(cur, doc, revenue)
 
         operating_rows = _mismatches(cur, doc, "reconciliation", OPERATING_COLUMNS, _operating_key)
         development_rows = _mismatches(cur, doc, "development_reconciliation", DEVELOPMENT_COLUMNS, _development_key)
-        mismatches = operating_rows[1] + development_rows[1]
+        revenue_rows = _revenue_mismatches(cur, doc)
+        mismatches = operating_rows[1] + development_rows[1] + revenue_rows[1]
         known = {(m.key, m.diffs_sen) for m in source.known_misprints}
         found = {(m.key, m.diffs_sen) for m in mismatches}
         if known - found:
             raise SourceError(f"known misprints no longer occur: {sorted(known - found)}; update sources.py")
         unexplained = [m for m in mismatches if (m.key, m.diffs_sen) not in known]
         unexplained += _covid_mismatches(cur, doc)
+        revenue_actual, operating_actual, unbalanced = _revenue_balance(cur, doc)
+        if unbalanced is not None:
+            unexplained.append(unbalanced)
         if unexplained:
             raise ReconciliationError(unexplained)
 
@@ -158,6 +177,13 @@ def load_year(
             projects=len(development.projects),
             printed_totals=len(development.totals),
             reconciled=development_rows[0] - len(development_rows[1]),
+        ),
+        RevenueLoadResult(
+            items=len(revenue.items),
+            printed_totals=len(revenue.totals),
+            reconciled=revenue_rows[0] - len(revenue_rows[1]),
+            actual_sen=revenue_actual,
+            operating_actual_sen=operating_actual,
         ),
         covid_lines=len(covid.lines) if covid else 0,
     )
@@ -373,6 +399,90 @@ def _covid_mismatches(cur: psycopg.Cursor, doc: str) -> list[Mismatch]:
             (int(row[3]), int(row[4]), int(row[5])),
         )  # fmt: skip
     ]
+
+
+def _insert_revenue(cur: psycopg.Cursor, doc: str, statement: RevenueStatement) -> None:
+    year = statement.fiscal_year
+    amounts = ", ".join(f"{c}_sen" for c in REVENUE_COLUMNS)
+    cite = "document_id, pdf_page, book_page, line_no, source_text"
+    # In printed order, so that each category's parent is inserted before it.
+    cur.executemany(
+        f"insert into revenue_total (fiscal_year, category, parent_category, name_ms, {amounts}, {cite})"
+        " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        [
+            (
+                year,
+                t.category.value,
+                t.parent.value if t.parent else None,
+                t.name,
+                *astuple(t.amounts),
+                doc,
+                t.citation.pdf_page,
+                t.citation.book_page,
+                t.citation.line_no,
+                t.citation.text,
+            )
+            for t in statement.totals
+        ],
+    )
+    cur.executemany(
+        f"insert into revenue_line (fiscal_year, ordinal, category, name_ms, {amounts}, {cite})"
+        " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        [
+            (
+                year,
+                i.ordinal,
+                i.category.value,
+                i.name,
+                *astuple(i.amounts),
+                doc,
+                i.citation.pdf_page,
+                i.citation.book_page,
+                i.citation.line_no,
+                i.citation.text,
+            )
+            for i in statement.items
+        ],
+    )
+
+
+def _revenue_mismatches(cur: psycopg.Cursor, doc: str) -> tuple[int, list[Mismatch]]:
+    diffs = ", ".join(f"{c}_diff_sen" for c in REVENUE_COLUMNS)
+    rows = cur.execute(
+        f"select matches, category, pdf_page, line_count, {diffs} from revenue_reconciliation"
+        " where document_id = %s order by category",
+        (doc,),
+    ).fetchall()
+    mismatches = [
+        Mismatch(
+            "revenue_reconciliation",
+            0,
+            f"revenue total category={r[1]}",
+            r[2],
+            r[3],
+            REVENUE_COLUMNS,
+            tuple(int(d) for d in r[4:]),
+        )
+        for r in rows
+        if not r[0]
+    ]
+    return len(rows), mismatches
+
+
+def _revenue_balance(cur: psycopg.Cursor, doc: str) -> tuple[int, int, Mismatch | None]:
+    """HASIL against Lampiran 1's statement total: (revenue sen, operating sen, the mismatch if beyond rounding)."""
+    row = cur.execute(
+        "select revenue_actual_sen, operating_actual_sen, diff_sen, matches, revenue_pdf_page"
+        " from revenue_operating_balance where document_id = %s",
+        (doc,),
+    ).fetchone()
+    if row is None:
+        raise SourceError(f"{doc}: no HASIL total or no Lampiran 1 statement total to balance; load rolled back")
+    revenue, operating, diff, matches, pdf_page = row
+    if matches:
+        return revenue, operating, None
+    key = "revenue HASIL against the Lampiran 1 statement total"
+    return revenue, operating, Mismatch("revenue_operating_balance", 0, key, pdf_page, 0, ("actual",), (int(diff),))
 
 
 def _operating_key(row: dict[str, Any]) -> str:
