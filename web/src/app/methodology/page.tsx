@@ -206,9 +206,10 @@ export default async function MethodologyPage() {
         <Band wide>
           <H2>Totals the statements misprint</H2>
           <p className="mt-3 max-w-3xl text-charcoal-800">
-            These printed totals disagree with the rows under them in the published statement itself. Each one is listed
-            in the pipeline with the evidence, and the load accepts exactly this difference and no other. The site shows
-            the printed figure.
+            These printed totals disagree with the rows under them in the published statement itself: errors in the
+            document, not in the load. Each is registered in the pipeline with the evidence, the load accepts exactly
+            this difference and no other, and the site shows the printed figure. A misprint in one row repeats in every
+            total above it, so one error can appear at programme, vote, section and statement level.
           </p>
           <div className="table-scroll mt-8">
             <table>
@@ -216,34 +217,33 @@ export default async function MethodologyPage() {
                 <tr>
                   <th>Year</th>
                   <th>Total</th>
-                  <th className="text-right">Printed actual</th>
-                  <th className="text-right">Sum of its rows</th>
+                  <th>Column</th>
+                  <th className="text-right">Printed minus its rows</th>
                   <th>Source</th>
                 </tr>
               </thead>
               <tbody>
-                {misprints.map((m, i) => {
-                  const printed = parseSen(m.printed_actual_sen);
-                  const rows = parseSen(m.printed_actual_sen) - parseSen(m.actual_diff_sen);
-                  return (
-                    <tr key={i}>
-                      <td>{m.fiscal_year}</td>
-                      <td>
-                        {m.scope} {[m.vote_code, m.programme_code, m.activity_code].filter(Boolean).join(" ")}
-                      </td>
-                      <td className="num">{formatSen(printed)}</td>
-                      <td className="num">{formatSen(parseSen(rows))}</td>
-                      <td>
-                        <CitationLink
-                          year={m.fiscal_year}
-                          docUrl={m.doc_url}
-                          pdfPage={m.pdf_page}
-                          bookPage={m.book_page}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {misprints.map((m, i) => (
+                  <tr key={i}>
+                    <td>{m.fiscal_year}</td>
+                    <td>
+                      {m.scope} {[m.vote_code, m.programme_code, m.activity_code].filter(Boolean).join(" ")}
+                      {m.object_code && <span className="text-charcoal-700"> · object {m.object_code}</span>}
+                    </td>
+                    <td>{m.diffs.map((d) => COLUMN_LABEL[d.column]).join(", ")}</td>
+                    <td className="num">
+                      {m.diffs.map((d) => (
+                        <span key={d.column} className="block">
+                          {Number(d.sen) > 0 ? "+" : ""}
+                          {formatSen(parseSen(d.sen))}
+                        </span>
+                      ))}
+                    </td>
+                    <td>
+                      <CitationLink year={m.fiscal_year} docUrl={m.doc_url} pdfPage={m.pdf_page} bookPage={m.book_page} />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -252,6 +252,14 @@ export default async function MethodologyPage() {
     </>
   );
 }
+
+const COLUMN_LABEL = {
+  original: "Original budget",
+  supplementary: "Supplementary",
+  virement: "Virement",
+  revised: "Revised budget",
+  actual: "Spent",
+} as const;
 
 function Check({ matched, total }: { matched: number; total: number }) {
   const ok = total > 0 && matched === total;

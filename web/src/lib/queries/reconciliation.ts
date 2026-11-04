@@ -22,7 +22,7 @@ const cachedChecks = unstable_cache(
     ]);
     return { version, sources, misprints, budgets };
   },
-  ["methodology-checks"],
+  ["methodology-checks-v2"], // bump when the cached shape changes
 );
 
 /** Every check the methodology page reports, recomputed only after the data changes. */
@@ -87,25 +87,49 @@ export interface PrintedMismatch {
   vote_code: string | null;
   programme_code: string | null;
   activity_code: string | null;
+  object_code: string | null;
   pdf_page: number;
   book_page: number;
   doc_url: string;
-  printed_actual_sen: string;
-  actual_diff_sen: string;
+  /** Printed total minus the sum of its rows, per column; zero where that column agrees. */
+  diffs: { column: "original" | "supplementary" | "virement" | "revised" | "actual"; sen: string }[];
 }
 
 /** Operating totals the statements print that disagree with their own rows (accepted only as known misprints). */
 export async function getPrintedMismatches(): Promise<PrintedMismatch[]> {
-  return sql<PrintedMismatch[]>`
-    select r.fiscal_year, r.scope::text, r.vote_code, r.programme_code, r.activity_code, r.pdf_page,
-           t.book_page, sd.url as doc_url, t.actual_sen::text as printed_actual_sen,
-           r.actual_diff_sen::text
+  const rows = await sql<
+    (Omit<PrintedMismatch, "diffs"> & {
+      original_diff_sen: string | null;
+      supplementary_diff_sen: string | null;
+      virement_diff_sen: string | null;
+      revised_diff_sen: string | null;
+      actual_diff_sen: string | null;
+    })[]
+  >`
+    select r.fiscal_year, r.scope::text, r.vote_code, r.programme_code, r.activity_code, r.object_code, r.pdf_page,
+           t.book_page, sd.url as doc_url, r.original_diff_sen::text, r.supplementary_diff_sen::text,
+           r.virement_diff_sen::text, r.revised_diff_sen::text, r.actual_diff_sen::text
     from reconciliation r
     join printed_total t on t.id = r.printed_total_id
     join source_document sd on sd.id = r.document_id
     where not r.matches
     order by r.fiscal_year, r.printed_total_id
   `;
+  const columns = ["original", "supplementary", "virement", "revised", "actual"] as const;
+  return rows.map((r) => ({
+    fiscal_year: r.fiscal_year,
+    scope: r.scope,
+    vote_code: r.vote_code,
+    programme_code: r.programme_code,
+    activity_code: r.activity_code,
+    object_code: r.object_code,
+    pdf_page: r.pdf_page,
+    book_page: r.book_page,
+    doc_url: r.doc_url,
+    diffs: columns
+      .map((column) => ({ column, sen: r[`${column}_diff_sen`] }))
+      .filter((d): d is { column: (typeof columns)[number]; sen: string } => d.sen !== null && d.sen !== "0"),
+  }));
 }
 
 export interface BudgetCheck {
