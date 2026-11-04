@@ -73,7 +73,7 @@ def _norm(name: str) -> str:
     return " ".join(_SAMB.sub("", name).split()).casefold()
 
 
-def _trailing_values(line: str, limit: int) -> tuple[str, list[Value], list[int]]:
+def trailing_values(line: str, limit: int) -> tuple[str, list[Value], list[int]]:
     """Split a layout line into its label, up to `limit` trailing amounts, and where each amount ends."""
     line = re.sub(r"\s+\)", ")", line)  # "(846,800,930.00 )" prints a space before the bracket
     tokens = list(re.finditer(r"\S+", line))
@@ -130,7 +130,7 @@ def _raw_labels(raw: str) -> dict[str, list[str]]:
     for line in raw.split("\n"):
         m = _PROJECT.fullmatch(line.strip())
         if m is not None and m["name"]:
-            label, _, _ = _trailing_values(m["name"], 2)
+            label, _, _ = trailing_values(m["name"], 2)
             labels.setdefault(m["code"], []).append(label)
     return labels
 
@@ -288,7 +288,7 @@ class _Parser:
             at = Citation(right.pdf_page, right_book, line_no, text)
             if not text or _FOOTER.fullmatch(text):
                 continue
-            label, values, ends = _trailing_values(line, 7)
+            label, values, ends = trailing_values(line, 7)
             if label == "" and len(values) in (5, 6, 7):
                 if trailing_text:
                     raise self.fail("text between amount rows on the right page", trailing_text[0])
@@ -332,7 +332,7 @@ class _Parser:
     # left page
 
     def feed_left(self, text: str) -> _Project | _Total | None:
-        label, values, _ = _trailing_values(text, 2)
+        label, values, _ = trailing_values(text, 2)
         if len(values) == 1:
             raise self.fail("left-page row with one amount, expected 2")
         if values:

@@ -41,10 +41,12 @@ function sections({ groups, projects }: DevelopmentVoteDetail): Section[] {
 export default function DevelopmentVote({
   detail,
   year,
+  plan,
   operatingVoteCode,
 }: {
   detail: DevelopmentVoteDetail;
   year: number;
+  plan: string;
   operatingVoteCode: string | null;
 }) {
   const { vote } = detail;
@@ -76,7 +78,7 @@ export default function DevelopmentVote({
           <HeadStat label={`Estimate ${year}`} value={formatSen(vote.estimate_sen)} />
           <HeadStat label={`Actual ${year}`} value={formatSen(vote.actual_sen)} over={over} />
           <HeadStat label="Total cost of projects" value={formatSen(vote.total_cost_sen)} />
-          <HeadStat label="RMKe-12 spent to date" value={formatSen(vote.plan_actual_to_date_sen)} />
+          <HeadStat label={`${plan} spent to date`} value={formatSen(vote.plan_actual_to_date_sen)} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
           <UtilBar revised={vote.estimate_sen} actual={vote.actual_sen} />
@@ -93,7 +95,7 @@ export default function DevelopmentVote({
         s.kind === "parent" ? (
           <ParentTotal key={i} year={year} group={s.group} members={s.members} />
         ) : (
-          <GroupSection key={i} year={year} group={s.group} projects={s.projects} labelUngrouped={detail.groups.length > 0} />
+          <GroupSection key={i} year={year} plan={plan} group={s.group} projects={s.projects} labelUngrouped={detail.groups.length > 0} />
         ),
       )}
     </>
@@ -102,11 +104,13 @@ export default function DevelopmentVote({
 
 function GroupSection({
   year,
+  plan,
   group,
   projects,
   labelUngrouped,
 }: {
   year: number;
+  plan: string;
   group: DevelopmentGroupTotal | null;
   projects: DevelopmentProjectRow[];
   labelUngrouped: boolean;
@@ -138,7 +142,7 @@ function GroupSection({
               <th className="text-right">Estimate (RM)</th>
               <th className="text-right">Actual (RM)</th>
               <th>Spent</th>
-              <th className="text-right">RMKe-12 to date (RM)</th>
+              <th className="text-right">{plan} to date (RM)</th>
               <th>Source</th>
             </tr>
           </thead>

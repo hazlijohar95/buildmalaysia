@@ -43,3 +43,20 @@ Observed, not yet explained by a source: data.gov.my `revenue` for 2025 (336,069
 | 2023 | Development, actual | RM96,089,737,122.54 | 96,091 (`spending_de_gross`) | **Differs by about RM1.26m.** Not explained by any source read so far. |
 
 As in 2025, data.gov.my `revenue` equals Lampiran 1's operating total including the transfer, to the million, in both years (314,959; 324,618).
+
+## FY2021 and FY2022: JANM vs data.gov.my
+
+`federal_finance_year`, fetched 2026-11-04, RM million.
+
+| Year | Item | JANM | data.gov.my | Result |
+|---|---|---|---|---|
+| 2022 | Operating less Development Fund transfer | RM292,693,212,509.94 | 292,693 (`spending_oe`) | Match after rounding |
+| 2022 | Development | RM71,573,961,425.79 | 71,574 (`spending_de_gross`) | Match after rounding |
+| 2022 | COVID-19 Fund (Lampiran 3) | RM30,979,119,546.53 | 30,979 (`spending_covid19`) | Match after rounding |
+| 2021 | Operating less Development Fund transfer | RM231,516,358,812.41 | 231,516 (`spending_oe`) | Match after rounding |
+| 2021 | Development | RM64,256,665,754.57 | 64,257 (`spending_de_gross`) | Match after rounding |
+| 2021 | COVID-19 Fund (Lampiran 3) | RM37,711,016,365.10 | 37,711 (`spending_covid19`) | Match after rounding |
+
+data.gov.my's balance identity treats the COVID-19 Fund as spending on top of operating and development: 2021 revenue 233,752 − 231,516 − development net 63,265 − 37,711 = −98,740 (`balance`). No operating line transfers money into the fund, so adding it counts nothing twice.
+
+FY2020 is not loaded: its Lampiran 1 tables have no text layer (outlined glyphs, no images), so they need OCR.

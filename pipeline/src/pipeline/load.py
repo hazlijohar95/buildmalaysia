@@ -8,7 +8,7 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from pipeline.model import Amounts, DevelopmentStatement, Statement
+from pipeline.model import Amounts, CovidFundStatement, DevelopmentStatement, Statement
 from pipeline.sources import SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
@@ -70,6 +70,7 @@ class DevelopmentLoadResult:
 class YearLoad:
     operating: LoadResult
     development: DevelopmentLoadResult
+    covid_lines: int  # COVID-19 Fund programmes loaded; zero for a year without Lampiran 3
 
 
 def _amounts(a: Amounts) -> tuple[int, int, int, int, int]:
@@ -83,6 +84,7 @@ def load_year(
     development: DevelopmentStatement,
     page_count: int,
     retrieved_at: datetime,
+    covid: CovidFundStatement | None = None,
 ) -> YearLoad:
     """Replace this document's rows in one transaction; commit only if every printed total reconciles.
 
@@ -113,6 +115,8 @@ def load_year(
         cur.execute("delete from development_printed_total where document_id = %s", (doc,))
         cur.execute("delete from development_project where document_id = %s", (doc,))
         cur.execute("delete from development_statement where document_id = %s", (doc,))
+        cur.execute("delete from covid_fund_line where document_id = %s", (doc,))
+        cur.execute("delete from covid_fund_total where document_id = %s", (doc,))
         for table in ("activity", "programme", "vote"):
             cur.execute(f"delete from {table} where fiscal_year = %s", (year,))
         cur.execute("update development_group set parent_ordinal = null where fiscal_year = %s", (year,))
@@ -121,6 +125,8 @@ def load_year(
 
         _insert_operating(cur, doc, operating)
         _insert_development(cur, doc, development)
+        if covid is not None:
+            _insert_covid(cur, doc, covid)
 
         operating_rows = _mismatches(cur, doc, "reconciliation", OPERATING_COLUMNS, _operating_key)
         development_rows = _mismatches(cur, doc, "development_reconciliation", DEVELOPMENT_COLUMNS, _development_key)
@@ -130,6 +136,7 @@ def load_year(
         if known - found:
             raise SourceError(f"known misprints no longer occur: {sorted(known - found)}; update sources.py")
         unexplained = [m for m in mismatches if (m.key, m.diffs_sen) not in known]
+        unexplained += _covid_mismatches(cur, doc)
         if unexplained:
             raise ReconciliationError(unexplained)
 
@@ -149,6 +156,7 @@ def load_year(
             printed_totals=len(development.totals),
             reconciled=development_rows[0] - len(development_rows[1]),
         ),
+        covid_lines=len(covid.lines) if covid else 0,
     )
 
 
@@ -289,6 +297,79 @@ def _insert_development(cur: psycopg.Cursor, doc: str, statement: DevelopmentSta
             for t in statement.totals
         ],
     )
+
+
+COVID_COLUMNS = (
+    "ceiling", "spent_prior", "allocation", "supplementary", "virement", "revised", "actual", "spent_to_date",
+)  # fmt: skip
+
+
+def _insert_covid(cur: psycopg.Cursor, doc: str, statement: CovidFundStatement) -> None:
+    columns = ", ".join(f"{c}_sen" for c in COVID_COLUMNS)
+    placeholders = ", ".join(["%s"] * len(COVID_COLUMNS))
+    spread = "pdf_page, book_page, amounts_pdf_page, amounts_book_page, source_text, amounts_source_text"
+    cur.executemany(
+        f"""
+        insert into covid_fund_line (fiscal_year, code, name_ms, {columns}, document_id, line_no, {spread})
+        values (%s, %s, %s, {placeholders}, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        [
+            (
+                statement.fiscal_year,
+                line.code,
+                line.name,
+                *astuple(line.amounts),
+                doc,
+                line.citation.left.line_no,
+                line.citation.left.pdf_page,
+                line.citation.left.book_page,
+                line.citation.right.pdf_page,
+                line.citation.right.book_page,
+                line.citation.left.text,
+                line.citation.right.text,
+            )
+            for line in statement.lines
+        ],
+    )
+    c = statement.total_citation
+    cur.execute(
+        f"""
+        insert into covid_fund_total (document_id, fiscal_year, {columns}, {spread})
+        values (%s, %s, {placeholders}, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            doc,
+            statement.fiscal_year,
+            *astuple(statement.total),
+            c.left.pdf_page,
+            c.left.book_page,
+            c.right.pdf_page,
+            c.right.book_page,
+            c.left.text,
+            c.right.text,
+        ),
+    )
+
+
+def _covid_mismatches(cur: psycopg.Cursor, doc: str) -> list[Mismatch]:
+    row = cur.execute(
+        "select matches, pdf_page, line_count, revised_diff_sen, actual_diff_sen, spent_to_date_diff_sen"
+        " from covid_fund_reconciliation where document_id = %s",
+        (doc,),
+    ).fetchone()
+    if row is None or row[0]:
+        return []
+    return [
+        Mismatch(
+            "covid_fund_reconciliation",
+            0,
+            "COVID-19 Fund total",
+            row[1],
+            row[2],
+            ("revised", "actual", "spent_to_date"),
+            (int(row[3]), int(row[4]), int(row[5])),
+        )  # fmt: skip
+    ]
 
 
 def _operating_key(row: dict[str, Any]) -> str:

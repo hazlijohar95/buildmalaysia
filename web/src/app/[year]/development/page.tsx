@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  getDevelopmentPlan,
   getDevelopmentStatementTotal,
   getDevelopmentVotes,
   type DevelopmentSortKey,
@@ -10,6 +11,7 @@ import { voteCodeToSlug } from "@/lib/citations";
 import CitationLink from "@/components/CitationLink";
 import UtilBar from "@/components/UtilBar";
 import { getLoadedYears, requireYear } from "@/lib/years";
+import { planName } from "@/lib/plans";
 import YearNav from "@/components/YearNav";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -29,11 +31,13 @@ function sortParam(raw: string | string[] | undefined): DevelopmentSortKey {
 export default async function DevelopmentPage({ params, searchParams }: Props) {
   const year = await requireYear((await params).year);
   const sort = sortParam((await searchParams).sort);
-  const [votes, total, years] = await Promise.all([
+  const [votes, total, years, plan] = await Promise.all([
     getDevelopmentVotes(year, sort),
     getDevelopmentStatementTotal(year),
     getLoadedYears(),
+    getDevelopmentPlan(year),
   ]);
+  const planCode = plan ?? "Plan";
 
   if (!total) {
     return <p>No development statement has been loaded for {year} yet.</p>;
@@ -45,8 +49,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
         <YearNav year={year} years={years} suffix="/development" />
         <h1 className="text-2xl font-semibold mb-1">Development expenditure {year}</h1>
         <p style={{ color: "var(--muted)" }} className="text-sm max-w-2xl">
-          Perbelanjaan Pembangunan (Lampiran 2): spending on projects under the Twelfth Malaysia Plan (RMKe-12,
-          2021–2025), by vote. <Link href="/methodology">How these numbers are checked.</Link>
+          Perbelanjaan Pembangunan (Lampiran 2): spending on projects under the {plan ? planName(plan) : "current Malaysia Plan"}, by vote. <Link href="/methodology">How these numbers are checked.</Link>
         </p>
       </div>
 
@@ -57,7 +60,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
         <Stat label={`Estimate ${year}`} value={formatSenCompact(total.estimate_sen)} />
         <Stat label={`Actual ${year}`} value={formatSenCompact(total.actual_sen)} />
         <Stat label="Spent of estimate" value={`${utilisation(total.estimate_sen, total.actual_sen).toFixed(1)}%`} />
-        <Stat label="RMKe-12 spent to date" value={formatSenCompact(total.plan_actual_to_date_sen)} />
+        <Stat label={`${planCode} spent to date`} value={formatSenCompact(total.plan_actual_to_date_sen)} />
       </div>
       <p className="text-xs mb-8 max-w-3xl" style={{ color: "var(--muted)" }}>
         Totals as printed (JUMLAH PERBELANJAAN PEMBANGUNAN),{" "}
@@ -88,7 +91,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
               <th className="text-right">Estimate {year} (RM)</th>
               <th className="text-right">Actual {year} (RM)</th>
               <th>Spent</th>
-              <th className="text-right">RMKe-12 to date (RM)</th>
+              <th className="text-right">{planCode} to date (RM)</th>
               <th>Source</th>
             </tr>
           </thead>

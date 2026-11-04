@@ -14,7 +14,7 @@ import { formatSen, utilisation, type Sen } from "@/lib/money";
 import { slugToVoteCode, voteCodeToSlug } from "@/lib/citations";
 import CitationLink from "@/components/CitationLink";
 import UtilBar from "@/components/UtilBar";
-import { getDevelopmentVote } from "@/lib/queries/development";
+import { getDevelopmentPlan, getDevelopmentVote } from "@/lib/queries/development";
 import { getPairedVote } from "@/lib/queries/spending";
 import DevelopmentVote from "./DevelopmentVote";
 import { requireYear } from "@/lib/years";
@@ -42,9 +42,13 @@ export default async function VoteDetailPage({ params }: Props) {
   const voteCode = slugToVoteCode(slug);
 
   if (voteCode.startsWith("P.")) {
-    const [detail, paired] = await Promise.all([getDevelopmentVote(year, voteCode), getPairedVote(year, voteCode)]);
+    const [detail, paired, plan] = await Promise.all([
+      getDevelopmentVote(year, voteCode),
+      getPairedVote(year, voteCode),
+      getDevelopmentPlan(year),
+    ]);
     if (!detail) notFound();
-    return <DevelopmentVote detail={detail} year={year} operatingVoteCode={paired} />;
+    return <DevelopmentVote detail={detail} year={year} plan={plan ?? "Plan"} operatingVoteCode={paired} />;
   }
 
   const [header, programmes, activities, lines, paired] = await Promise.all([

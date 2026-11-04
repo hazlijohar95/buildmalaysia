@@ -41,6 +41,9 @@ class SourceDocument:
     operating_pages: tuple[int, int]  # Lampiran 1 (BM), PDF pages, 1-based, inclusive
     development_pages: tuple[int, int]  # Lampiran 2 (BM), whole two-page spreads
     known_misprints: tuple[KnownMisprint, ...] = ()
+    # Lampiran 3 (COVID-19 Fund, FY2020-2023): its spread and the column names on each page.
+    covid_pages: tuple[int, int] | None = None
+    covid_columns: tuple[tuple[str, ...], tuple[str, ...]] = ((), ())
 
 
 SOURCES: dict[int, SourceDocument] = {
@@ -79,6 +82,11 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2023.pdf",
         operating_pages=(95, 194),
         development_pages=(196, 231),
+        covid_pages=(234, 235),
+        covid_columns=(
+            ("ceiling", "spent_prior"),
+            ("allocation", "virement", "revised", "actual", "variance", "percent", "spent_to_date"),
+        ),
     ),
     2022: SourceDocument(
         id="janm-penyata-kewangan-2022",
@@ -91,6 +99,11 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2022.pdf",
         operating_pages=(97, 195),
         development_pages=(198, 229),
+        covid_pages=(232, 233),
+        covid_columns=(
+            ("ceiling", "spent_prior"),
+            ("allocation", "virement", "revised", "actual", "variance", "percent", "spent_to_date"),
+        ),
     ),
     2021: SourceDocument(
         id="janm-penyata-kewangan-2021",
@@ -103,6 +116,11 @@ SOURCES: dict[int, SourceDocument] = {
         raw_path="janm/2021.pdf",
         operating_pages=(89, 199),
         development_pages=(202, 245),
+        covid_pages=(248, 249),
+        covid_columns=(
+            ("ceiling", "spent_prior", "allocation", "supplementary"),
+            ("virement", "revised", "actual", "variance", "spent_to_date", "percent"),
+        ),
         known_misprints=(
             KnownMisprint(
                 key="programme total vote=B.24 programme=060000",

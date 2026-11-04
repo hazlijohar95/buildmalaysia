@@ -8,6 +8,7 @@ from datetime import datetime
 import psycopg
 import pytest
 
+from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.load import ReconciliationError, YearLoad, load_year
 from pipeline.model import DevelopmentStatement, Statement
@@ -172,14 +173,29 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
 
 
 @pytest.mark.parametrize(
-    ("year", "operating_counts", "development_counts", "operating_actual", "development_actual"),
+    ("year", "operating_counts", "development_counts", "operating_actual", "development_actual", "covid_actual"),
     [
         # (votes, programmes, activities, leaf lines, printed totals); (votes, groups, projects, printed totals)
-        (2024, (53, 237, 1068, 2206, 2280), (31, 57, 923, 89), 32_461_764_924_833, 8_401_159_546_378),
-        (2023, (51, 231, 1037, 2094, 2201), (30, 58, 856, 89), 31_495_948_173_121, 9_608_973_712_254),
-        (2022, (52, 226, 1009, 2057, 2162), (29, 56, 746, 86), 29_435_676_061_497, 7_157_396_142_579),
+        # covid_actual: COVID-19 Fund (Lampiran 3) spending, None where the statement has no Lampiran 3.
+        (2024, (53, 237, 1068, 2206, 2280), (31, 57, 923, 89), 32_461_764_924_833, 8_401_159_546_378, None),
+        (2023, (51, 231, 1037, 2094, 2201), (30, 58, 856, 89), 31_495_948_173_121, 9_608_973_712_254, 0),
+        (
+            2022,
+            (52, 226, 1009, 2057, 2162),
+            (29, 56, 746, 86),
+            29_435_676_061_497,
+            7_157_396_142_579,
+            3_097_911_954_653,
+        ),
         # FY2021 prints one programme total RM1,000,000 short of its rows (sources.KnownMisprint).
-        (2021, (52, 229, 1032, 2089, 2210), (31, 69, 1051, 101), 23_375_205_502_913, 6_425_666_575_457),
+        (
+            2021,
+            (52, 229, 1032, 2089, 2210),
+            (31, 69, 1051, 101),
+            23_375_205_502_913,
+            6_425_666_575_457,
+            3_771_101_636_510,
+        ),
     ],
 )
 def test_earlier_years_load_and_reconcile(
@@ -188,20 +204,28 @@ def test_earlier_years_load_and_reconcile(
     development_counts: tuple[int, ...],
     operating_actual: int,
     development_actual: int,
+    covid_actual: int | None,
 ) -> None:
     source = SOURCES[year]
     pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
     operating = parse_statement(extract_pages(pdf, source.operating_pages), year)
     development = parse_development(extract_pages(pdf, source.development_pages), year)
+    covid = (
+        parse_covid(extract_pages(pdf, source.covid_pages), year, source.covid_columns) if source.covid_pages else None
+    )
     with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
-        result = load_year(conn, source, operating, development, page_count(pdf), retrieved_at(pdf))
+        result = load_year(conn, source, operating, development, page_count(pdf), retrieved_at(pdf), covid)
         o, d = result.operating, result.development
         assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
         assert o.reconciled == o.printed_totals - len(source.known_misprints)
         assert d.reconciled == d.printed_totals
         row = conn.execute(
-            "select operating_actual_sen, development_actual_sen from federal_spending where fiscal_year = %s",
+            "select operating_actual_sen, development_actual_sen, covid_fund_actual_sen"
+            " from federal_spending where fiscal_year = %s",
             (year,),
         ).fetchone()
-        assert row == (operating_actual, development_actual)
+        assert row == (operating_actual, development_actual, covid_actual)
+        if covid is not None:
+            sql = "select matches, line_count from covid_fund_reconciliation where fiscal_year = %s"
+            assert conn.execute(sql, (year,)).fetchone() == (True, 31)

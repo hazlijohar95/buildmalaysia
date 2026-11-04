@@ -129,3 +129,11 @@ export async function getDevelopmentVote(year: number, code: string): Promise<De
     projects: projects.map((p) => ({ ...p, ...amounts(p) })),
   };
 }
+
+/** The Malaysia Plan the statement's spending-to-date column counts against, e.g. "RMKe-12". */
+export async function getDevelopmentPlan(year: number): Promise<string | null> {
+  const [row] = await sql<{ plan: string }[]>`
+    select plan from development_statement where fiscal_year = ${year}
+  `;
+  return row?.plan ?? null;
+}

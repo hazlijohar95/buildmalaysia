@@ -24,6 +24,8 @@ export default async function YearOverview({ year }: { year: number }) {
   if (!spending || !operating) {
     return <p>No statements have been loaded for {year} yet.</p>;
   }
+  const covid = spending.covid_fund_actual_sen;
+  const showCovid = covid !== null && covid > 0;
 
   const largest = ministries[0]?.actual_sen ?? 0;
 
@@ -40,7 +42,7 @@ export default async function YearOverview({ year }: { year: number }) {
       </div>
 
       <div
-        className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3 p-4 rounded-lg border"
+        className={`grid grid-cols-1 ${showCovid ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-4 mb-3 p-4 rounded-lg border`}
         style={{ borderColor: "var(--border)" }}
       >
         <Stat label="Total spending" value={formatSenCompact(spending.total_actual_sen)} />
@@ -54,6 +56,7 @@ export default async function YearOverview({ year }: { year: number }) {
           value={formatSenCompact(spending.development_actual_sen)}
           href={`/${year}/development`}
         />
+        {showCovid && <Stat label="COVID-19 Fund" value={formatSenCompact(covid)} href={`/${year}/covid`} />}
       </div>
       <p className="text-xs mb-10 max-w-3xl" style={{ color: "var(--muted)" }}>
         Operating is the printed operating total of {formatSen(spending.operating_actual_sen)} (
@@ -78,7 +81,22 @@ export default async function YearOverview({ year }: { year: number }) {
           pdfPage={spending.development_pdf_page}
           bookPage={spending.development_book_page}
         />
-        ). Both are checked against data.gov.my&apos;s published figures; see the methodology.
+        ).
+        {showCovid && spending.covid_fund_pdf_page !== null && spending.covid_fund_book_page !== null && (
+          <>
+            {" "}
+            The COVID-19 Fund (Kumpulan Wang COVID-19) was financed outside the operating account, so its spending
+            adds to the other two (
+            <CitationLink
+              year={year}
+              docUrl={spending.doc_url}
+              pdfPage={spending.covid_fund_pdf_page}
+              bookPage={spending.covid_fund_book_page}
+            />
+            ).
+          </>
+        )}{" "}
+        Each part is checked against data.gov.my&apos;s published figures; see the methodology.
       </p>
 
       {byYear.length > 1 && <YearTable years={byYear} current={year} />}
@@ -146,6 +164,7 @@ function VoteAmount({ year, code, amount }: { year: number; code: string | null;
 }
 
 function YearTable({ years, current }: { years: YearSpending[]; current: number }) {
+  const hasCovid = years.some((y) => y.covid_fund_actual_sen > 0);
   return (
     <section className="mb-10">
       <h2 className="text-lg font-semibold mb-3">Year by year</h2>
@@ -156,6 +175,7 @@ function YearTable({ years, current }: { years: YearSpending[]; current: number 
               <th>Year</th>
               <th className="text-right">Operating (RM)</th>
               <th className="text-right">Development (RM)</th>
+              {hasCovid && <th className="text-right">COVID-19 Fund (RM)</th>}
               <th className="text-right">Total (RM)</th>
               <th className="text-right">Change</th>
             </tr>
@@ -171,6 +191,9 @@ function YearTable({ years, current }: { years: YearSpending[]; current: number 
                   </td>
                   <td className="num">{formatSen(y.operating_net_actual_sen)}</td>
                   <td className="num">{formatSen(y.development_actual_sen)}</td>
+                  {hasCovid && (
+                    <td className="num">{y.covid_fund_actual_sen > 0 ? formatSen(y.covid_fund_actual_sen) : "–"}</td>
+                  )}
                   <td className="num">{formatSen(y.total_actual_sen)}</td>
                   <td className="num">{change === null ? "–" : `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`}</td>
                 </tr>

@@ -188,3 +188,34 @@ class DevelopmentStatement:
     projects: tuple[DevelopmentProject, ...]
     totals: tuple[DevelopmentTotal, ...]
     corrections: tuple[Correction, ...]
+
+
+# --- Lampiran 3 (Penyata Perbelanjaan Kumpulan Wang COVID-19) ---------------------------
+
+
+@dataclass(frozen=True)
+class CovidAmounts:
+    ceiling: int  # Siling Keseluruhan
+    spent_prior: int  # spent to the end of the prior year
+    allocation: int  # Peruntukan
+    supplementary: int  # Tambahan; zero where the statement has no such column
+    virement: int  # Viremen
+    revised: int  # Peruntukan Dipinda
+    actual: int  # Perbelanjaan Sebenar
+    spent_to_date: int  # Perbelanjaan Terkumpul
+
+
+@dataclass(frozen=True)
+class CovidFundLine:
+    code: str
+    name: str
+    amounts: CovidAmounts
+    citation: SpreadCitation
+
+
+@dataclass(frozen=True)
+class CovidFundStatement:
+    fiscal_year: int
+    lines: tuple[CovidFundLine, ...]
+    total: CovidAmounts
+    total_citation: SpreadCitation
