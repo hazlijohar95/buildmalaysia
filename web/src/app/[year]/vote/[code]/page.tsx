@@ -6,18 +6,22 @@ import {
   getProgrammeTotals,
   getActivityTotals,
   getLeafLines,
-  type ProgrammeTotal,
   type ActivityTotal,
   type LeafLine,
 } from "@/lib/queries/vote-detail";
 import { formatSen, utilisation, type Sen } from "@/lib/money";
 import { slugToVoteCode, voteCodeToSlug } from "@/lib/citations";
+import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import { Money, Term, money } from "@/components/Figures";
 import UtilBar from "@/components/UtilBar";
+import { VoteCrumbs, VoteYears } from "@/components/VoteNav";
 import { getDevelopmentPlan, getDevelopmentVote } from "@/lib/queries/development";
 import { getPairedVote } from "@/lib/queries/spending";
+import { titleCase } from "@/lib/queries/sankey";
+import { getMinistryLink, getVoteYears } from "@/lib/queries/vote-nav";
 import DevelopmentVote from "./DevelopmentVote";
-import { requireYear } from "@/lib/years";
+import { getLoadedYears, requireYear } from "@/lib/years";
 import { getBudgetVotes, getBudgetYears } from "@/lib/queries/budget";
 
 interface Props {
@@ -30,25 +34,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const voteCode = slugToVoteCode(slug);
   if (voteCode.startsWith("P.")) {
     const detail = await getDevelopmentVote(year, voteCode);
-    return { title: detail ? `${voteCode} ${detail.vote.name_ms}` : "Vote not found" };
+    return { title: detail ? `${voteCode} ${titleCase(detail.vote.name_ms)} (${year})` : "Vote not found" };
   }
   const header = await getVoteHeader(year, voteCode);
   if (!header) return { title: "Vote not found" };
-  return { title: `${header.code} ${header.name_ms} (${year})` };
+  return { title: `${header.code} ${titleCase(header.name_ms)} (${year})` };
 }
 
 export default async function VoteDetailPage({ params }: Props) {
   const { year: yearSegment, code: slug } = await params;
   const year = await requireYear(yearSegment);
   const voteCode = slugToVoteCode(slug);
+  const [paired, budget, ministry, voteYears, [latestYear]] = await Promise.all([
+    getPairedVote(year, voteCode),
+    budgetFor(voteCode),
+    getMinistryLink(voteCode, year),
+    getVoteYears(voteCode),
+    getLoadedYears(),
+  ]);
+  const crumbs = (
+    <VoteCrumbs
+      section={{ label: "By year", href: `/${latestYear}` }}
+      year={{ label: year, href: `/${year}` }}
+      ministry={ministry}
+      code={voteCode}
+    />
+  );
+  const hrefFor = (y: number) => `/${y}/vote/${slug}`;
 
   if (voteCode.startsWith("P.")) {
-    const [detail, paired, plan, budgetYear] = await Promise.all([
-      getDevelopmentVote(year, voteCode),
-      getPairedVote(year, voteCode),
-      getDevelopmentPlan(year),
-      budgetFor(voteCode),
-    ]);
+    const [detail, plan] = await Promise.all([getDevelopmentVote(year, voteCode), getDevelopmentPlan(year)]);
     if (!detail) notFound();
     return (
       <DevelopmentVote
@@ -56,103 +71,209 @@ export default async function VoteDetailPage({ params }: Props) {
         year={year}
         plan={plan ?? "Plan"}
         operatingVoteCode={paired}
-        budgetYear={budgetYear}
+        budgetYear={budget}
+        crumbs={crumbs}
+        years={<VoteYears year={year} years={voteYears} name={detail.vote.name_ms} hrefFor={hrefFor} />}
       />
     );
   }
 
-  const [header, programmes, activities, lines, paired, budget] = await Promise.all([
+  const [header, programmes, activities, lines] = await Promise.all([
     getVoteHeader(year, voteCode),
     getProgrammeTotals(year, voteCode),
     getActivityTotals(year, voteCode),
     getLeafLines(year, voteCode),
-    getPairedVote(year, voteCode),
-    budgetFor(voteCode),
   ]);
-
   if (!header) notFound();
 
+  const charged = header.section === "charged";
   const varian = (header.revised_sen - header.actual_sen) as Sen;
   const pct = utilisation(header.revised_sen, header.actual_sen);
   const over = header.actual_sen > header.revised_sen;
-
+  const spent = money(header.actual_sen);
   const actsByProg = groupBy(activities, (a) => a.programme_code);
   const linesByActivity = groupBy(lines, (l) => l.activity_code);
 
   return (
     <>
-      {/* Back + breadcrumb */}
-      <div className="mb-6 text-sm" style={{ color: "var(--muted)" }}>
-        <Link href={`/${year}/operating`}>← All operating votes</Link>
-      </div>
-
-      {/* Vote header */}
-      <div className="mb-8">
-        <div className="font-mono text-xs mb-1" style={{ color: "var(--muted)" }}>
-          {header.code} · {header.section === "charged" ? "Tanggungan (charged)" : "Bekalan (supply)"}
+      <PageHeader
+        wide
+        eyebrow={crumbs}
+        title={<span lang="ms">{titleCase(header.name_ms)}</span>}
+        intro={
+          <p>
+            {charged ? (
+              <>
+                A <Term id="vote-codes">charged expenditure (T) vote</Term>: spending charged on the Consolidated Fund
+                by law, not voted each year.
+              </>
+            ) : (
+              <>
+                A <Term id="vote-codes">supply (B) vote</Term>: the <Term id="operating-development">operating</Term>{" "}
+                spending Parliament voted for this ministry.
+              </>
+            )}{" "}
+            What it was given and what it spent in {year}, by{" "}
+            <Term id="programme-activity">programme and activity</Term>, from the audited Statement of Operating
+            Expenditure.
+          </p>
+        }
+      >
+        <VoteYears year={year} years={voteYears} name={header.name_ms} hrefFor={hrefFor} />
+        <p className="mt-4 text-sm text-charcoal-700">
+          <Link href={`/${year}/operating`}>All operating votes in {year}</Link>
           {paired && (
             <>
               {" · "}
-              <Link href={`/${year}/vote/${voteCodeToSlug(paired)}`}>development vote {paired}</Link>
+              <Link href={`/${year}/vote/${voteCodeToSlug(paired)}`}>Development vote {paired}</Link>
             </>
           )}
           {budget && (
             <>
               {" · "}
-              <Link href={`/budget/${budget}/vote/${voteCodeToSlug(voteCode)}`}>Budget {budget}</Link>
+              <Link href={`/budget/${budget}/vote/${voteCodeToSlug(voteCode)}`}>
+                {voteCode} in Budget {budget}
+              </Link>
             </>
           )}
-        </div>
-        <h1 className="text-2xl font-semibold mb-4">{header.name_ms}</h1>
+        </p>
+      </PageHeader>
 
-        <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg border"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <HeadStat label="Asal" value={formatSen(header.original_sen)} />
-          <HeadStat label="Jumlah (Semak)" value={formatSen(header.revised_sen)} />
-          <HeadStat
-            label="Sebenar"
-            value={formatSen(header.actual_sen)}
-            className={over ? "over-budget" : ""}
-          />
-          <HeadStat label="Prestasi" value={`${pct.toFixed(2)}%`} />
-        </div>
-
-        <div className="mt-2 flex items-center gap-4">
-          <UtilBar revised={header.revised_sen} actual={header.actual_sen} />
-          <span className={`text-sm tabnum ${over ? "over-budget" : ""}`}>
-            Varian: {formatSen(varian)}
-          </span>
-          <CitationLink
-            year={year}
-            docUrl={header.doc_url}
-            pdfPage={header.pdf_page}
-            bookPage={header.book_page}
-          />
-        </div>
-      </div>
-
-      {/* Programmes */}
-      {programmes.map((prog) => {
-        const progActivities = actsByProg[prog.programme_code] ?? [];
-        return (
-          <section key={prog.programme_code} className="mb-10">
-            <ProgrammeHeader year={year} prog={prog} />
-            {progActivities.map((act) => {
-              const actLines = linesByActivity[act.activity_code] ?? [];
-              return (
-                <ActivitySection
+      <StatRow
+        stats={[
+          { label: <BiLabel en="Original budget" ms="Asal" />, ...money(header.original_sen) },
+          {
+            label: <BiLabel en="Revised budget" ms="Jumlah" />,
+            ...money(header.revised_sen),
+            sub: <Term id="original-revised">after changes during the year</Term>,
+          },
+          {
+            label: <BiLabel en="Spent" ms="Sebenar" />,
+            value: <span className={over ? "over-budget" : undefined}>{spent.value}</span>,
+            title: spent.title,
+            sub: `${pct.toFixed(1)}% of the revised budget`,
+          },
+          {
+            label: <BiLabel en="Unspent" ms="Varian" />,
+            ...money(varian),
+            sub: (
+              <>
+                Totals as printed,{" "}
+                <CitationLink
                   year={year}
-                  key={act.activity_code}
-                  act={act}
-                  lines={actLines}
+                  docUrl={header.doc_url}
+                  pdfPage={header.pdf_page}
+                  bookPage={header.book_page}
                 />
-              );
-            })}
+              </>
+            ),
+          },
+        ]}
+      />
+
+      <Band wide>
+        <H2>By programme</H2>
+        <p className="mt-3 max-w-3xl text-charcoal-800">
+          Each programme&apos;s totals as the statement prints them. Hover a figure for the exact amount, or open an
+          activity below for every line to the sen.
+        </p>
+        <div className="table-scroll mt-8">
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  <BiLabel en="Code" ms="Kod" />
+                </th>
+                <th>
+                  <BiLabel en="Programme" ms="Program" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Original budget" ms="Asal" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Revised budget" ms="Jumlah" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Spent" ms="Sebenar" />
+                </th>
+                <th>
+                  <BiLabel en="% used" ms="Prestasi" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Unspent" ms="Varian" />
+                </th>
+                <th>
+                  <BiLabel en="Source" ms="Sumber" />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {programmes.map((p) => {
+                const pOver = p.actual_sen > p.revised_sen;
+                return (
+                  <tr key={p.programme_code}>
+                    <td className="font-mono text-xs">{p.programme_code}</td>
+                    <td lang="ms">
+                      <a href={`#p${p.programme_code}`}>{titleCase(p.programme_name_ms)}</a>
+                    </td>
+                    <td className="num">
+                      <Money sen={p.original_sen} />
+                    </td>
+                    <td className="num">
+                      <Money sen={p.revised_sen} />
+                    </td>
+                    <td className={`num ${pOver ? "over-budget" : ""}`}>
+                      <Money sen={p.actual_sen} />
+                    </td>
+                    <td>
+                      <UtilBar revised={p.revised_sen} actual={p.actual_sen} />
+                    </td>
+                    <td className={`num ${pOver ? "over-budget" : ""}`}>
+                      <Money sen={(p.revised_sen - p.actual_sen) as Sen} />
+                    </td>
+                    <td>
+                      <CitationLink year={year} docUrl={p.doc_url} pdfPage={p.pdf_page} bookPage={p.book_page} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Band>
+
+      <Band wide className="group/cols">
+        <H2>Every activity, line by line</H2>
+        <p className="mt-3 max-w-3xl text-charcoal-800">
+          Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the sen, each
+          with the page it was read from.
+        </p>
+        <label className="mt-6 inline-flex items-center gap-3 text-sm cursor-pointer">
+          <input type="checkbox" className="h-4 w-4 accent-foreground" />
+          Show the supplementary (Tambahan) and virement (Viremen) columns
+        </label>
+        {programmes.map((prog) => (
+          <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12 scroll-mt-4">
+            <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
+              <span className="font-mono text-sm font-normal text-charcoal-700 mr-3">{prog.programme_code}</span>
+              <span lang="ms">{titleCase(prog.programme_name_ms)}</span>
+            </h3>
+            <ActivityHead />
+            {(actsByProg[prog.programme_code] ?? []).map((act) => (
+              <Activity
+                key={act.activity_code}
+                year={year}
+                act={act}
+                lines={linesByActivity[act.activity_code] ?? []}
+              />
+            ))}
           </section>
-        );
-      })}
+        ))}
+        <p className="mt-12 text-sm text-charcoal-700 max-w-3xl">
+          Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
+          Operating Expenditure (Lampiran 1). % used and unspent are worked out from the printed columns.
+        </p>
+      </Band>
     </>
   );
 }
@@ -164,141 +285,138 @@ async function budgetFor(voteCode: string): Promise<number | null> {
   return (await getBudgetVotes(latest)).some((v) => v.vote_code === voteCode) ? latest : null;
 }
 
-function ProgrammeHeader({ year, prog }: { year: number; prog: ProgrammeTotal }) {
-  const over = prog.actual_sen > prog.revised_sen;
+// Activity rows share one grid so their figures line up like a table's columns.
+const ROW = "grid grid-cols-[1.25rem_minmax(0,1fr)] md:grid-cols-[1.25rem_minmax(0,1fr)_10rem_10rem_9rem] gap-x-4";
+
+function ActivityHead() {
   return (
     <div
-      className="flex flex-wrap items-baseline gap-4 py-2 px-3 mb-2 rounded"
-      style={{ background: "var(--table-stripe)", borderLeft: "3px solid var(--accent)" }}
+      className={`${ROW} mt-4 pb-2 border-b-2 border-foreground font-display text-xs uppercase tracking-[0.04em] text-charcoal-600 max-md:hidden`}
     >
-      <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>
-        {prog.programme_code}
+      <span />
+      <BiLabel en="Activity" ms="Aktiviti" />
+      <span className="text-right">
+        <BiLabel en="Revised budget" ms="Jumlah" />
       </span>
-      <span className="font-semibold flex-1">{prog.programme_name_ms}</span>
-      <span className="tabnum text-sm" style={{ color: "var(--muted)" }}>
-        Semak: {formatSen(prog.revised_sen)}
+      <span className="text-right">
+        <BiLabel en="Spent" ms="Sebenar" />
       </span>
-      <span className={`tabnum text-sm ${over ? "over-budget" : ""}`}>
-        Sebenar: {formatSen(prog.actual_sen)}
-      </span>
-      <CitationLink
-        year={year}
-        docUrl={prog.doc_url}
-        pdfPage={prog.pdf_page}
-        bookPage={prog.book_page}
-      />
+      <BiLabel en="% used" ms="Prestasi" />
     </div>
   );
 }
 
-function ActivitySection({
-  year,
-  act,
-  lines,
-}: {
-  year: number;
-  act: ActivityTotal;
-  lines: LeafLine[];
-}) {
+function Activity({ year, act, lines }: { year: number; act: ActivityTotal; lines: LeafLine[] }) {
   const over = act.actual_sen > act.revised_sen;
   return (
-    <div className="mb-6 ml-4">
-      <div
-        className="flex flex-wrap items-baseline gap-3 py-1 px-2 mb-1"
-        style={{ borderLeft: "2px solid var(--border)" }}
+    <details className="group/act border-b border-border">
+      <summary
+        className={`${ROW} items-center py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100`}
       >
-        <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>
-          {act.activity_code}
+        <span aria-hidden="true" className="font-mono text-charcoal-700 group-open/act:rotate-90 transition-transform">
+          ›
         </span>
-        <span className="font-medium">{act.activity_name_ms}</span>
-        <span className="tabnum text-xs" style={{ color: "var(--muted)" }}>
-          Jumlah: {formatSen(act.revised_sen)} | Sebenar:{" "}
-          <span className={over ? "over-budget" : ""}>{formatSen(act.actual_sen)}</span>
+        <span>
+          <span className="font-mono text-xs text-charcoal-700 mr-2">{act.activity_code}</span>
+          <span lang="ms">{titleCase(act.activity_name_ms)}</span>
         </span>
-        <CitationLink
-          year={year}
-          docUrl={act.doc_url}
-          pdfPage={act.pdf_page}
-          bookPage={act.book_page}
-        />
+        <span className="col-start-2 md:col-start-auto flex flex-wrap gap-x-4 text-sm md:contents">
+          <span className="md:text-right">
+            <span className="md:hidden text-charcoal-700">Revised </span>
+            <Money sen={act.revised_sen} />
+          </span>
+          <span className={`md:text-right ${over ? "over-budget" : ""}`}>
+            <span className="md:hidden text-charcoal-700">Spent </span>
+            <Money sen={act.actual_sen} />
+          </span>
+          <span className="max-md:w-28">
+            <UtilBar revised={act.revised_sen} actual={act.actual_sen} />
+          </span>
+        </span>
+      </summary>
+      <div className="pb-8 pt-2">
+        <p className="text-sm text-charcoal-700">
+          Activity total as printed: revised {formatSen(act.revised_sen)}, spent {formatSen(act.actual_sen)} (
+          <CitationLink year={year} docUrl={act.doc_url} pdfPage={act.pdf_page} bookPage={act.book_page} />
+          ).
+        </p>
+        <Lines year={year} lines={lines} />
       </div>
-
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Objek</th>
-              <th>Nama (EN)</th>
-              <th className="text-right">Asal (RM)</th>
-              <th className="text-right">Tambahan (RM)</th>
-              <th className="text-right">Viremen (RM)</th>
-              <th className="text-right">Jumlah (RM)</th>
-              <th className="text-right">Sebenar (RM)</th>
-              <th>Prestasi</th>
-              <th className="text-right">Varian (RM)</th>
-              <th>Sumber</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l) => {
-              const varian = (l.revised_sen - l.actual_sen) as Sen;
-              const lineOver = l.actual_sen > l.revised_sen;
-              return (
-                <tr key={l.object_code} className={lineOver ? "over-budget" : ""}>
-                  <td className="font-mono text-xs">{l.object_code}</td>
-                  <td>
-                    <span>{l.object_name_en}</span>
-                    <br />
-                    <span className="text-xs" style={{ color: "var(--muted)" }}>
-                      {l.object_name_ms}
-                    </span>
-                  </td>
-                  <td className="num">{formatSen(l.original_sen)}</td>
-                  <td className="num">{formatSen(l.supplementary_sen)}</td>
-                  <td className="num">{formatSen(l.virement_sen)}</td>
-                  <td className="num">{formatSen(l.revised_sen)}</td>
-                  <td className={`num ${lineOver ? "over-budget" : ""}`}>
-                    {formatSen(l.actual_sen)}
-                  </td>
-                  <td>
-                    <UtilBar revised={l.revised_sen} actual={l.actual_sen} />
-                  </td>
-                  <td className={`num ${lineOver ? "over-budget" : ""}`}>
-                    {formatSen(varian)}
-                  </td>
-                  <td>
-                    <CitationLink
-                      year={year}
-                      docUrl={l.doc_url}
-                      pdfPage={l.pdf_page}
-                      bookPage={l.book_page}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </details>
   );
 }
 
-function HeadStat({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) {
+const EXTRA = "hidden group-has-checked/cols:table-cell";
+
+function Lines({ year, lines }: { year: number; lines: LeafLine[] }) {
   return (
-    <div>
-      <div className="text-xs mb-1" style={{ color: "var(--muted)" }}>
-        {label}
-      </div>
-      <div className={`text-sm font-semibold tabnum ${className ?? ""}`}>{value}</div>
+    <div className="table-scroll mt-4">
+      <table>
+        <thead>
+          <tr>
+            <th>
+              <BiLabel en="Code" ms="Kod" />
+            </th>
+            <th>
+              <BiLabel en="Spending category" ms="Maksud Perbelanjaan" />
+            </th>
+            <th className="!text-right">
+              <BiLabel en="Original budget" ms="Asal" />
+            </th>
+            <th className={`!text-right ${EXTRA}`}>
+              <BiLabel en="Supplementary" ms="Tambahan/(Kurangan)" />
+            </th>
+            <th className={`!text-right ${EXTRA}`}>
+              <BiLabel en="Virement" ms="Viremen" />
+            </th>
+            <th className="!text-right">
+              <BiLabel en="Revised budget" ms="Jumlah" />
+            </th>
+            <th className="!text-right">
+              <BiLabel en="Spent" ms="Sebenar" />
+            </th>
+            <th>
+              <BiLabel en="% used" ms="Prestasi" />
+            </th>
+            <th className="!text-right">
+              <BiLabel en="Unspent" ms="Varian" />
+            </th>
+            <th>
+              <BiLabel en="Source" ms="Sumber" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((l) => {
+            const over = l.actual_sen > l.revised_sen;
+            return (
+              <tr key={l.object_code}>
+                <td className="font-mono text-xs">{l.object_code}</td>
+                <td>
+                  {l.object_name_en}
+                  <span lang="ms" className="block text-xs text-charcoal-600">
+                    {l.object_name_ms}
+                  </span>
+                </td>
+                <td className="num">{formatSen(l.original_sen)}</td>
+                <td className={`num ${EXTRA}`}>{formatSen(l.supplementary_sen)}</td>
+                <td className={`num ${EXTRA}`}>{formatSen(l.virement_sen)}</td>
+                <td className="num">{formatSen(l.revised_sen)}</td>
+                <td className={`num ${over ? "over-budget" : ""}`}>{formatSen(l.actual_sen)}</td>
+                <td>
+                  <UtilBar revised={l.revised_sen} actual={l.actual_sen} />
+                </td>
+                <td className={`num ${over ? "over-budget" : ""}`}>
+                  {formatSen((l.revised_sen - l.actual_sen) as Sen)}
+                </td>
+                <td>
+                  <CitationLink year={year} docUrl={l.doc_url} pdfPage={l.pdf_page} bookPage={l.book_page} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
