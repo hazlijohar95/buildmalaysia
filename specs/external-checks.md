@@ -103,13 +103,14 @@ Each statement's revenue note was checked against two figures in the same set of
 
 ## FY2016-FY2019 statements
 
-FY2019 is not loaded: its PDF omits one page of Lampiran 1 (see `pipeline/README.md`, "FY2016-2019 statements"). Its Note 5(a) is read only for the check below.
+FY2019 is loaded with a registered gap: its PDF omits one page of Lampiran 1 (see `pipeline/README.md`, "FY2019's missing page"). Lampiran 1's totals above the gap are checked against the statement's English Attachment 1: 49 votes' totals equal it in every object line and column, B.05's (on the missing page) come from it, and every section and statement total equals the sum of the vote totals below it.
 
 ### Revenue (Note 5(a))
 
 | Year | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
 |---|---|---|---|
 | 2018 | 232,882,562,288 | 232,882,562,287.80 | +20 sen |
+| 2019 | 264,414,755,876 | 264,414,755,876.41 | -41 sen |
 
 **Previous statement.** The FY2019 note's 2018 Sebenar column (PDF pp. 60-61) equals FY2018's Sebenar for all 7 categories and all 26 items, matched by value. FY2019 adds one item printed with a dash for 2018 ("Terimaan ... Kerajaan Lain", 12,697 in 2019).
 
@@ -136,3 +137,7 @@ FY2016 (loaded):
 **Lampiran 2.** FY2016 is the first year of RMKe-11: its left page reports RMKe-10 spending to 2015 and its to-date column RMKe-11 (equal to the year's actual, RM41,995,037,696.86). FY2017's statement total for RMKe-11 spending to 31.12.2016 equals it. By project, 708 of 709 (vote, code) pairs agree; P.06 17300 (Pusat Rukun Tetangga) differs: FY2017 prints 3,634,391.97, FY2016 3,563,158.97. Not explained by any source read.
 
 **Transfer to the Development Fund.** FY2016's Lampiran 1 footnote (*) (PDF p223) says RM2,248,437,460.02, but the B.12 'Kumpulan Wang Pembangunan' line it refers to (PDF p126) prints Sebenar RM2,248,437,560.02, and Note 5's Consolidated Revenue Account (PDF p63) and a later note (PDF p66) both print RM2,248,437,560. The footnote is off by RM100; the line, which reconciles with every total above it, is what is loaded and what `federal_spending` subtracts. The footnote text is stored as printed.
+
+**FY2019 transfer to the Development Fund.** B.12 'Kumpulan Wang Pembangunan' actual RM1,071,831,232.82; Note 5 (PDF p60) prints the surplus transferred as RM1,071,831,233.
+
+**FY2019 Lampiran 2 against FY2018.** FY2019's statement total for RMKe-11 spending to 31.12.2018 (RM142,974,332,190.61) equals FY2018's to-date column. By project, 648 of 747 (vote, code) pairs agree. FY2019 restates the others in its own ministry structure: the 99 that differ (16 votes, 90 of them under the same name) are net RM22.76 bn higher in FY2019, offset by projects FY2019 no longer lists under those votes; the largest are P.10 97000 Dana Fasilitasi (RM8.23 bn against RM1.61 bn) and P.10 00113 Pembangunan Lima Koridor (RM3.98 bn against RM0.35 bn). The statement totals agree, so nothing is lost; per-project history across 2018-2019 must not be read as one series.

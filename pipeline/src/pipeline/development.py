@@ -71,7 +71,7 @@ _VOTE_TOTAL = re.compile(r"JUMLAH (?P<name>.+)")
 _GROUP_TOTAL = re.compile(r"Jumlah (?P<name>.+)")
 _NOTE = re.compile(r"Nota:\s*(?:!\s*)?(?P<text>.*)")  # FY2018 p218: "Nota: !*P.06–", the "!" not drawn
 _PROJECT_NOTE = re.compile(
-    r"\*(?P<vote>P\.\d{2})\s*(?:[–-]\s*)?Butiran\s+(?P<codes>[\dA-Z\s,&dan]+?)\s*-\s*(?P<text>.+)"
+    r"\*(?P<vote>P\.\d{2})\s*(?:[–-]\s*)?Butiran\s+(?P<codes>[\dA-Z\s,&dan]+?)(?:\s*-\s*|(?P<comma>,)(?=[a-z]))(?P<text>.+)"
 )
 _STATEMENT_NOTE = re.compile(r"\*\s+(?P<text>.+)")
 _PARENT_NAME = re.compile(r"(?P<stem>.+?) (?P<first>\S+), (?P<middle>.+?) dan (?P<last>.+)")
@@ -365,6 +365,12 @@ class _Parser:
             if self.slug_pages and label == "" and len(values) == 1 and values[0].is_dash:
                 # STRAY_MARK_IGNORED: a lone dash drawn in a column with no row (FY2016 p256).
                 self.corrections.append(Correction("STRAY_MARK_IGNORED", "dropped a lone '-'", at))
+                continue
+            if self.slug_pages and self.finished and candidates and label == "" and len(values) == 1:
+                # Named rule UNDRAWN_TEXT_IGNORED: FY2019 p211 carries, under the statement
+                # total's row, a working figure (197,147,567,507.48) and a difference (0.10) in
+                # its text layer that the rendered page does not show.
+                self.corrections.append(Correction("UNDRAWN_TEXT_IGNORED", f"dropped {text!r}", at))
                 continue
             if label == "" and len(values) in (5, 6, 7):
                 if trailing_text:
@@ -740,6 +746,10 @@ class _Parser:
             codes = re.findall(r"\d{5}", m["codes"])
             if not codes or re.sub(r"\d{5}|\s|,|&|dan", "", m["codes"]) not in ("", "P"):
                 raise self.fail("note names no butiran, or names one in an unknown form")
+            if m["comma"]:
+                # Named rule NOTE_SEPARATOR_MISPRINTED: FY2019 p198 prints "Butiran 04000 dan
+                # 04001,eruntukan ..." (so drawn); the codes end at the comma.
+                self.corrections.append(Correction("NOTE_SEPARATOR_MISPRINTED", f"codes {codes}", self.where))
             if "P" in m["codes"]:
                 self.corrections.append(
                     Correction(

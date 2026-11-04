@@ -10,6 +10,7 @@ import pytest
 
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
+from pipeline.gap import fill_gap, parse_english_vote_totals
 from pipeline.load import ReconciliationError, YearLoad, load_year
 from pipeline.model import DevelopmentStatement, RevenueCategory, RevenueStatement, Statement
 from pipeline.parse import ParseError, parse_statement
@@ -238,6 +239,18 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
         ),
         # FY2018 prints four columns in Lampiran 1 (no Tambahan or Viremen) and 18 totals that
         # disagree with their rows (sources.KnownMisprint): 17 in Lampiran 1, one in Lampiran 2.
+        # FY2019: a page of Lampiran 1 is missing (sources.KnownGap); B.05's vote totals come from
+        # Attachment 1. Six totals disagree with their rows (sources.KnownMisprint).
+        (
+            2019,
+            (50, 202, 943, 1938, 1999),
+            (28, 66, 819, 95),
+            27,
+            26_441_475_587_641,
+            5_417_323_531_697,
+            None,
+            26_441_475_587_600,
+        ),
         (
             2018,
             (52, 267, 1307, 2604, 2596),
@@ -285,8 +298,15 @@ def test_earlier_years_load_and_reconcile(
     source = SOURCES[year]
     pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
     operating = parse_statement(
-        extract_pages(pdf, source.operating_pages, source.operating_crop), year, source.operating_columns
+        extract_pages(pdf, source.operating_pages, source.operating_crop),
+        year,
+        source.operating_columns,
+        tuple(g.after_pdf_page for g in source.known_gaps),
     )
+    if source.known_gaps:
+        assert source.english_operating_pages is not None
+        english = parse_english_vote_totals(extract_pages(pdf, source.english_operating_pages, source.operating_crop))
+        operating, _ = fill_gap(operating, english, {s.vote_code for g in source.known_gaps for s in g.scopes})
     development = parse_development(
         extract_pages(pdf, source.development_pages, source.development_crop), year, source.slug_pages
     )
@@ -301,7 +321,9 @@ def test_earlier_years_load_and_reconcile(
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
         # Every printed total reconciles except the registered misprints, in either appendix.
         unreconciled = (o.printed_totals - o.reconciled) + (d.printed_totals - d.reconciled)
-        assert unreconciled == len(source.known_misprints)
+        assert unreconciled == len(source.known_misprints) + o.over_gaps
+        # FY2019's missing page leaves 29 totals that cannot be recomputed from their rows.
+        assert o.over_gaps == (29 if year == 2019 else 0)
         r = result.revenue
         # FY2017 prints Cukai Langsung and Cukai Tak Langsung without amounts, FY2016 not at all: 5 printed totals.
         printed = 5 if year in (2016, 2017) else 7

@@ -34,6 +34,35 @@ class KnownMisprint:
 
 
 @dataclass(frozen=True)
+class GapScope:
+    """A programme whose rows are partly on a missing page: the last activity printed before
+    the gap and the first printed after it (None where the gap runs to the programme's end
+    or start)."""
+
+    vote_code: str
+    programme_code: str
+    printed_before: str | None
+    printed_after: str | None
+
+
+@dataclass(frozen=True)
+class KnownGap:
+    """A Lampiran 1 page missing from the published PDF.
+
+    Every printed total whose rows are all present must reconcile as usual. The totals over
+    `scopes` (those programmes, their votes, sections and the statement) are reported with
+    result 'missing_page' and checked against the totals printed below them instead
+    (gap.fill_gap). A gap the parser does not reach fails the parse.
+    """
+
+    id: str
+    after_pdf_page: int  # the last page printed before the gap
+    before_pdf_page: int  # the first page printed after it
+    scopes: tuple[GapScope, ...]
+    evidence: str
+
+
+@dataclass(frozen=True)
 class SourceDocument:
     id: str
     publisher: str
@@ -59,10 +88,13 @@ class SourceDocument:
     # -layout would interleave with them; their tables lie inside x 83-575.
     operating_crop: tuple[int, int, int, int] | None = None
     development_crop: tuple[int, int, int, int] | None = None
+    known_gaps: tuple[KnownGap, ...] = ()
+    # Attachment 1 (English, vote totals only): read where Lampiran 1 has a known gap.
+    english_operating_pages: tuple[int, int] | None = None
 
 
-# FY2016-2019 print Lampiran 1 in four columns, with the book page in a side tab. FY2019 is
-# not registered: its PDF omits a page of Lampiran 1 (README, "FY2016-2019 statements").
+# FY2016-2019 print Lampiran 1 in four columns, with the book page in a side tab. FY2019's PDF
+# omits a page of Lampiran 1 (KnownGap below).
 # Lampiran 1 is also read from y 124: its units line is never above y 149, and FY2017 p199
 # holds a copy of a page shrunk to 6 x 9 points at x 86-92, y 114-123, which -layout would
 # spread over the table.
@@ -130,6 +162,98 @@ SOURCES: dict[int, SourceDocument] = {
         covid_columns=(
             ("ceiling", "spent_prior"),
             ("allocation", "virement", "revised", "actual", "variance", "percent", "spent_to_date"),
+        ),
+    ),
+    2019: SourceDocument(
+        id="janm-penyata-kewangan-2019",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2019",
+        fiscal_year=2019,
+        url="https://www.anm.gov.my/images/dokumen/arkib/penyata-kewangan/2019_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="b69e78c0f0a31f14b0e48f1f83716c578ab09330dbef65cbb408d5c4c8495c36",
+        page_count=396,
+        raw_path="janm/2019.pdf",
+        operating_pages=(77, 173),
+        development_pages=(176, 211),
+        revenue_pages=(60, 61),
+        operating_columns=4,
+        slug_pages=True,
+        operating_crop=_OPERATING_CROP,
+        development_crop=_DEVELOPMENT_CROP,
+        english_operating_pages=(333, 339),
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=B.03 programme=010000",
+                diffs_sen=(0, 0, 0, -4_000_000, -2_929_445),
+                evidence=(
+                    "PDF p87: 'Jumlah 010000' (PENGURUSAN KORPORAT) prints Dipinda 36,973,440 and Amaun "
+                    "33,127,669.46; its activities 010100 (30,362,180; 27,085,284.70) and 010200 (6,651,260; "
+                    "6,071,679.21) and its per-object lines sum to 37,013,440 and 33,156,963.91"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.10 programme=040000",
+                diffs_sen=(0, 0, 0, -486_340_000, -490_164_058),
+                evidence=(
+                    "PDF p101: 'Jumlah 040000' prints Dipinda 209,559,750 and Amaun 209,511,375.44; its seven "
+                    "activities and its per-object lines sum to 214,423,150 and 214,413,016.02; the vote total "
+                    "agrees with the rows"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.23 programme=050000",
+                diffs_sen=(0, 0, 0, 0, -23_432_045_763),
+                evidence=(
+                    "PDF p122: 'Jumlah 050000' prints Amaun 22,207,912.22 (10.16%), leaving out activity 050500's "
+                    "234,320,457.63; its per-object lines include it"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.43 programme=030000",
+                diffs_sen=(0, 0, 0, 923_442_000, 923_425_388),
+                evidence=(
+                    "PDF p152: 'Jumlah 030000' prints Dipinda 939,528,207 and Amaun 939,527,194.19; its eight "
+                    "activities and its per-object lines sum to 930,293,787 and 930,292,940.31. The difference is "
+                    "activity 030800 (9,234,420; 9,234,253.88), counted twice"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.47 programme=010000 object=30000",
+                diffs_sen=(0, 0, 0, -28_710_000, 0),
+                evidence=(
+                    "PDF p157: programme 010000's 'Aset' line prints Dipinda 364,460 (the first leaf's); its three "
+                    "30000 leaves print 364,460, 242,000 and 45,100. Its Amaun, 341,633.00, is their sum"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.47 programme=020000 object=30000",
+                diffs_sen=(0, 0, 0, -677_237_400, 0),
+                evidence=(
+                    "PDF p158: programme 020000's 'Aset' line prints Dipinda '–'; its two 30000 leaves print "
+                    "2,279,570 and 4,492,804. Its Amaun, 6,054,688.50, is their sum"
+                ),
+            ),
+        ),
+        known_gaps=(
+            KnownGap(
+                id="janm-2019-lampiran-1-book-p77-78",
+                after_pdf_page=89,
+                before_pdf_page=90,
+                scopes=(
+                    GapScope("B.05", "030000", printed_before="030100", printed_after=None),
+                    GapScope("B.06", "010000", printed_before=None, printed_after="010600"),
+                ),
+                evidence=(
+                    "PDF p89 (book p.77) ends inside B.05 programme 030000 after 'Jumlah 030100' and "
+                    "'(disambung...)'; PDF p90 (book p.78) opens 'B.06 JABATAN PERDANA MENTERI – (SAMB.)' and "
+                    "programme 010000 '(SAMB.)' at activity 010600. The appendix's own page counter, printed "
+                    "beside the book page, goes from 41 to 43: one page of Lampiran 1 is not in the file. "
+                    "Missing: the rest of B.05 programme 030000, its programme and vote totals, B.06's heading "
+                    "and programme 010000's activities before 010600. B.05's vote totals are taken from "
+                    "Attachment 1 (English), PDF p335. Searched without finding a complete copy: JANM's current "
+                    "file and penyata-kewangan-2019.pdf, the 2022 Wayback capture, and CMD.28.2020"
+                ),
+            ),
         ),
     ),
     2018: SourceDocument(

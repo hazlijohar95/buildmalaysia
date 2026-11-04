@@ -8,6 +8,7 @@ import psycopg
 
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
+from pipeline.gap import fill_gap, parse_english_vote_totals
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_word import parse_budget_summary_word
 from pipeline.budget_detail import parse_operating_estimates
@@ -43,7 +44,17 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
             extract_pages(pdf, source.operating_pages, source.operating_crop),
             source.fiscal_year,
             source.operating_columns,
+            tuple(g.after_pdf_page for g in source.known_gaps),
         )
+        gap_log: list[str] = []
+        if source.known_gaps:
+            if source.english_operating_pages is None:
+                raise SourceError("a known gap needs Attachment 1's pages to check the totals above it")
+            english = parse_english_vote_totals(
+                extract_pages(pdf, source.english_operating_pages, source.operating_crop)
+            )
+            gap_votes = {s.vote_code for g in source.known_gaps for s in g.scopes}
+            operating, gap_log = fill_gap(operating, english, gap_votes)
         development = parse_development(
             extract_pages(pdf, source.development_pages, source.development_crop), source.fiscal_year, source.slug_pages
         )
@@ -76,6 +87,10 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
     )
     if covid is not None:
         print(f"  COVID-19 Fund (Lampiran 3): programmes {result.covid_lines}, total reconciled")
+    for gap in source.known_gaps:
+        print(f"  known gap {gap.id}: {o.over_gaps} printed totals have rows on the missing page")
+    for line in gap_log:
+        print(f"  gap check: {line}")
     _print_corrections(operating.corrections + development.corrections + revenue.corrections)
     for misprint in source.known_misprints:
         print(f"  known misprint accepted: {misprint.key}: {misprint.evidence}")

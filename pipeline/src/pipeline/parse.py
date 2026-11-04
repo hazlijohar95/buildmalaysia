@@ -486,9 +486,13 @@ class _Pending:
 
 
 class _Parser:
-    def __init__(self, fiscal_year: int, layout: Layout) -> None:
+    def __init__(self, fiscal_year: int, layout: Layout, gaps_after: tuple[int, ...] = ()) -> None:
         self.fiscal_year = fiscal_year
         self.layout = layout
+        self.gaps_after = gaps_after  # PDF pages after which the document is known to lack a page
+        self.in_gap = False  # the first lines after a known gap, until the first row
+        self.gaps_seen: set[int] = set()  # gaps where a vote was found to resume
+        self.gap_after = 0
         self.phase = Phase.START
         self.section: Section | None = None
         self.vote: Vote | None = None
@@ -526,6 +530,12 @@ class _Parser:
     # pages
 
     def feed_page(self, page: PageText) -> None:
+        if page.pdf_page - 1 in self.gaps_after:
+            # A registered KnownGap: the page that belongs here is missing from the PDF. The
+            # open vote and programme end without their totals; the headings that follow may
+            # continue a vote and programme never opened (handled in open_vote, open_programme).
+            self.in_gap = True
+            self.gap_after = page.pdf_page - 1
         width = len(self.layout.columns)
         # FY2016-2018 end column heads and some lines with a "!" the page does not draw.
         lines = [_TRAILING_BANG.sub("", line) for line in page.layout.split("\n")]
@@ -749,6 +759,7 @@ class _Parser:
 
     def feed_row(self, label: str, values: list[Value]) -> None:
         self.note_keys = []
+        self.in_gap = False
         marks = "".join(v.marks for v in values) + label[: len(label) - len(label.lstrip("*"))]
         label = label.lstrip("*").strip()
         amounts, error, percent_off = _check_row(values)
@@ -987,7 +998,14 @@ class _Parser:
         if repeated:
             return  # the open vote's heading repeated at the top of a page; FY2021 omits "(SAMB.)"
         opened = any(v.code == pending.code for v in self.votes)
-        if pending.samb and self.phase is Phase.VOTE_DONE and not opened:
+        if pending.samb and self.in_gap and not opened and self.vote is not None and pending.code != self.vote.code:
+            closed = self.vote.code
+            self.gaps_seen.add(self.gap_after)
+            self.phase = Phase.VOTE_DONE  # the open vote's remaining rows and totals are on the missing page
+            self.corrections.append(
+                Correction("KNOWN_GAP", f"{closed} ends on the missing page; {pending.code} resumes after it", at)
+            )
+        elif pending.samb and self.phase is Phase.VOTE_DONE and not opened:
             # Named rule SAMB_HEADING_OPENS (votes): FY2017 p200 prints "B.60 KEMENTERIAN
             # PERTAHANAN – (SAMB.)" on its first page, after B.48's total; it opens B.60.
             self.corrections.append(
@@ -1016,6 +1034,11 @@ class _Parser:
 
     def open_programme(self, pending: _Pending, at: Citation) -> None:
         assert self.vote is not None
+        if pending.samb and self.in_gap and self.phase is Phase.VOTE_OPEN and self.programme is None:
+            self.corrections.append(
+                Correction("KNOWN_GAP", f"programme {pending.code} resumes after the missing page", at)
+            )
+            pending = replace(pending, samb=False)
         if pending.samb:
             current = self.programme
             if current is not None and current.name is None and current.code == pending.code:
@@ -1064,6 +1087,13 @@ class _Parser:
             # continues the programme.
             self.corrections.append(Correction("PROGRAMME_HEADING_REPEATED", f"{pending.code} printed again", at))
             return
+        if self.phase is Phase.PROGRAMME_OPEN and self.programme is not None:
+            # Named rule EMPTY_PROGRAMME: a programme heading followed straight by the next
+            # programme's heading, with no activity and no total (FY2019 p107, B.12 120000).
+            # It is kept as a programme with no rows.
+            detail = f"programme {self.programme.code} has no rows and no total"
+            self.corrections.append(Correction("EMPTY_PROGRAMME", detail, self.programme.citation))
+            self.phase = Phase.PROGRAMME_DONE
         self.transition(Event.NEW_PROGRAMME, at)
         if any(p.vote_code == self.vote.code and p.code == pending.code for p in self.programmes):
             raise self.fail(f"duplicate programme {pending.code} in vote {self.vote.code}", at)
@@ -1124,6 +1154,12 @@ class _Parser:
         used: set[str] = set()
         for total, marks in self.totals:
             if marks:
+                if marks not in self.notes and self.layout is FOUR_COLUMNS:
+                    # Named rule MARK_WITHOUT_NOTE: FY2019 p173 marks the statement's 40000 actual
+                    # "*149,848,688,957.22" and prints no note. No footnote is stored.
+                    self.corrections.append(Correction("MARK_WITHOUT_NOTE", f"{marks!r} has no note", total.citation))
+                    totals.append(total)
+                    continue
                 if marks not in self.notes:
                     raise self.fail(f"footnote marker {marks!r} has no note", total.citation)
                 used.add(marks)
@@ -1158,8 +1194,12 @@ class _Parser:
         )
 
 
-def parse_statement(pages: Sequence[PageText], fiscal_year: int, columns: int = 7) -> Statement:
-    parser = _Parser(fiscal_year, LAYOUTS[columns])
+def parse_statement(
+    pages: Sequence[PageText], fiscal_year: int, columns: int = 7, gaps_after: tuple[int, ...] = ()
+) -> Statement:
+    parser = _Parser(fiscal_year, LAYOUTS[columns], gaps_after)
     for page in pages:
         parser.feed_page(page)
+    if set(gaps_after) - parser.gaps_seen:
+        raise ParseError(pages[0].pdf_page, 1, "", f"registered gaps after pages {gaps_after} were not found")
     return parser.finish()

@@ -105,3 +105,14 @@ def test_fy2018_revenue_drops_the_doubled_text_layer() -> None:
     names = {i.name for i in revenue.items}
     assert {"Terimaan daripada Agensi-agensi Kerajaan", "Hasil Bukan Cukai Wilayah Persekutuan"} <= names
     assert [c.rule for c in revenue.corrections] == ["DOUBLED_TEXT_LAYER"] * 3
+
+
+def test_a_gap_registered_where_the_pages_run_on_fails() -> None:
+    source = SOURCES[2019]
+    pages = extract_pages(ensure_pdf(source, DEFAULT_RAW_DIR), source.operating_pages, source.operating_crop)
+    statement = parse_statement(pages, 2019, 4, (89,))
+    assert [c.rule for c in statement.corrections if c.rule == "KNOWN_GAP"] == ["KNOWN_GAP", "KNOWN_GAP"]
+    with pytest.raises(ParseError, match="is not the open vote"):
+        parse_statement(pages, 2019, 4, ())  # without the registered gap, p90 cannot follow p89
+    with pytest.raises(ParseError, match="is not the open vote"):
+        parse_statement(pages, 2019, 4, (88,))  # registered at the wrong page, the real gap still fails

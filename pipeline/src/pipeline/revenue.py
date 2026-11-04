@@ -45,7 +45,7 @@ _START = re.compile(
 _RESUME = re.compile(r"\(sambungan\)")
 _BREAK = re.compile(r"\(disambung\)")
 _END = re.compile(r"\(b\) Perbelanjaan Mengurus")
-_SIDE_TAB = re.compile(r"NOTA KEPADA PENYATA KEWANGAN")
+_SIDE_TAB = re.compile(r"NOTA KEPADA PENYATA KEWANGAN|PENYATA KEWANGAN KERAJAAN PERSEKUTUAN")
 _JUMLAH = re.compile(r"(?i:jumlah) (?P<name>.+)")
 _HEADER_WORDS = {"Anggaran", "Asal", "Disemak", "Sebenar", "RM", "%"}
 _AMOUNT_COLUMNS = (0, 1, 2, 4)  # the other two are % Anggaran, neither stored nor checked
@@ -98,6 +98,7 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
         )
 
         open_row: _Row | None = None
+        name_above: tuple[str, int] | None = None
         page_rows = 0
         for i in range(start + 1, stop):
             raw, text, line_no = lines[i], lines[i].strip(), i + 1
@@ -126,6 +127,9 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
                 open_row = None
                 page_rows += 1
                 continue
+            if not values and slug_pages and name_above is None and open_row is not None and indent <= open_row.indent:
+                name_above = (text, line_no)  # may be a name whose row the next line completes (below)
+                continue
             if not values:
                 if open_row is None or indent <= open_row.indent:
                     raise ParseError(page.pdf_page, line_no, text, "text line that does not continue the row above")
@@ -134,8 +138,22 @@ def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list
                 continue
             if len(values) != 6 or not label:
                 raise ParseError(page.pdf_page, line_no, text, f"expected a name and 6 columns, got {len(values)}")
+            doubled: list[str] = []
+            if name_above is not None:
+                # DOUBLED_TEXT_LAYER, overlapped (FY2019 p61): the row above wraps "Kerajaan",
+                # and the text layer holds that word again on this row's baseline, over the
+                # name the page draws ("Terimaan Lain"). -layout splits it into "Terimaan" and
+                # "Kerajaan Lain ..."; the repeated word is dropped.
+                above, above_no = name_above
+                repeated = rows[-1].parts[-1] if rows and len(rows[-1].parts) > 1 else None
+                if repeated is None or not label.startswith(repeated + " "):
+                    raise ParseError(page.pdf_page, above_no, above, "text line that does not continue the row above")
+                label = f"{above} {label.removeprefix(repeated + ' ')}"
+                text = f"{above}\n{text}"
+                doubled.append(repeated)
+                name_above = None
             at = Citation(page.pdf_page, book_pages[-1], line_no, text)
-            open_row = _Row(indent, [label], [text], at, _amounts(values, page, line_no, text))
+            open_row = _Row(indent, [label], [text], at, _amounts(values, page, line_no, text), doubled)
             rows.append(open_row)
             page_rows += 1
         if page_rows == 0:

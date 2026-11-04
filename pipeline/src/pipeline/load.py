@@ -39,6 +39,7 @@ class Mismatch:
     leaf_count: int
     columns: tuple[str, ...]
     diffs_sen: tuple[int, ...]  # printed minus leaf sum, one per column
+    gap_id: str | None = None  # set when the total's rows are partly on a registered missing page
 
     def __str__(self) -> str:
         diffs = " ".join(f"{n}{d:+d}" for n, d in zip(self.columns, self.diffs_sen, strict=True) if d)
@@ -60,6 +61,7 @@ class LoadResult:
     lines: int
     printed_totals: int
     reconciled: int
+    over_gaps: int = 0  # totals with rows on a missing page (reconciliation result 'missing_page')
 
 
 @dataclass(frozen=True)
@@ -135,6 +137,7 @@ def load_year(
         cur.execute("delete from covid_fund_total where document_id = %s", (doc,))
         cur.execute("delete from revenue_line where document_id = %s", (doc,))
         cur.execute("delete from revenue_total where document_id = %s", (doc,))
+        cur.execute("delete from known_gap where document_id = %s", (doc,))
         for table in ("activity", "programme", "vote"):
             cur.execute(f"delete from {table} where fiscal_year = %s", (year,))
         cur.execute("update development_group set parent_ordinal = null where fiscal_year = %s", (year,))
@@ -142,6 +145,7 @@ def load_year(
             cur.execute(f"delete from {table} where fiscal_year = %s", (year,))
 
         _insert_operating(cur, doc, operating)
+        _insert_gaps(cur, doc, source)
         _insert_development(cur, doc, development)
         if covid is not None:
             _insert_covid(cur, doc, covid)
@@ -150,6 +154,13 @@ def load_year(
         operating_rows = _mismatches(cur, doc, "reconciliation", OPERATING_COLUMNS, _operating_key)
         development_rows = _mismatches(cur, doc, "development_reconciliation", DEVELOPMENT_COLUMNS, _development_key)
         revenue_rows = _revenue_mismatches(cur, doc)
+        gap_rows = [m for m in operating_rows[1] if m.gap_id is not None]
+        operating_rows = (operating_rows[0], [m for m in operating_rows[1] if m.gap_id is None])
+        registered_gaps = {g.id for g in source.known_gaps}
+        if {m.gap_id for m in gap_rows} != registered_gaps:
+            raise SourceError(
+                f"totals over known gaps {sorted({m.gap_id or '' for m in gap_rows})}, registered {sorted(registered_gaps)}"
+            )
         mismatches = operating_rows[1] + development_rows[1] + revenue_rows[1]
         known = {(m.key, m.diffs_sen) for m in source.known_misprints}
         found = {(m.key, m.diffs_sen) for m in mismatches}
@@ -170,7 +181,8 @@ def load_year(
             activities=len(operating.activities),
             lines=len(operating.lines),
             printed_totals=len(operating.totals),
-            reconciled=operating_rows[0] - len(operating_rows[1]),
+            reconciled=operating_rows[0] - len(operating_rows[1]) - len(gap_rows),
+            over_gaps=len(gap_rows),
         ),
         DevelopmentLoadResult(
             votes=len(development.votes),
@@ -251,6 +263,20 @@ def _insert_operating(cur: psycopg.Cursor, doc: str, statement: Statement) -> No
             for t in statement.totals
         ],
     )
+
+
+def _insert_gaps(cur: psycopg.Cursor, doc: str, source: SourceDocument) -> None:
+    for gap in source.known_gaps:
+        cur.execute(
+            "insert into known_gap (id, document_id, fiscal_year, after_pdf_page, before_pdf_page, evidence)"
+            " values (%s, %s, %s, %s, %s, %s)",
+            (gap.id, doc, source.fiscal_year, gap.after_pdf_page, gap.before_pdf_page, gap.evidence),
+        )
+        cur.executemany(
+            "insert into known_gap_scope (gap_id, vote_code, programme_code, printed_before, printed_after)"
+            " values (%s, %s, %s, %s, %s)",
+            [(gap.id, g.vote_code, g.programme_code, g.printed_before, g.printed_after) for g in gap.scopes],
+        )
 
 
 def _insert_development(cur: psycopg.Cursor, doc: str, statement: DevelopmentStatement) -> None:
@@ -530,6 +556,7 @@ def _mismatches(
             # The diffs are numeric (bigint minus sum(bigint)); they are whole sen. A column
             # the statement does not print (Tambahan and Viremen before FY2020) has no diff.
             diffs_sen=tuple(_sen(row[f"{c}_diff_sen"]) for c in columns),
+            gap_id=row.get("gap_id"),
         )
         for row in rows
         if not row["matches"]
