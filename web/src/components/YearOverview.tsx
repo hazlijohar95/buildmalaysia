@@ -1,5 +1,6 @@
 import GapNote from "@/components/GapNote";
-import { getOperatingGaps } from "@/lib/queries/gaps";
+import OcrNote from "@/components/OcrNote";
+import { getOcrEngine, getOperatingGaps } from "@/lib/queries/gaps";
 import Link from "next/link";
 import {
   getFederalSpending,
@@ -19,12 +20,13 @@ import YearNav from "@/components/YearNav";
 
 /** Federal spending for one fiscal year: the total, its parts, the trend and each ministry. */
 export default async function YearOverview({ year }: { year: number }) {
-  const [spending, ministries, operating, byYear, gaps] = await Promise.all([
+  const [spending, ministries, operating, byYear, gaps, ocrEngine] = await Promise.all([
     getFederalSpending(year),
     getMinistrySpending(year),
     getFiscalTotals(year),
     getSpendingByYear(),
     getOperatingGaps(year),
+    getOcrEngine(year),
   ]);
 
   if (!spending || !operating) {
@@ -55,6 +57,7 @@ export default async function YearOverview({ year }: { year: number }) {
         <YearNav year={year} years={byYear.map((y) => y.fiscal_year)} />
       </PageHeader>
       <GapNote gaps={gaps} />
+      <OcrNote year={year} engine={ocrEngine} />
 
       <StatRow
         stats={[

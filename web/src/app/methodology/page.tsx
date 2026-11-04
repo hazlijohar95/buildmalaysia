@@ -230,6 +230,39 @@ export default async function MethodologyPage() {
         </Band>
       ))}
 
+      {sources.some((s) => s.operating_ocr_engine) && (
+        <Band wide id="ocr">
+          <H2>Statements read by OCR</H2>
+          <div className="mt-3 max-w-3xl space-y-4 text-charcoal-800">
+            <p>
+              The published{" "}
+              {sources
+                .filter((s) => s.operating_ocr_engine)
+                .map((s) => s.fiscal_year)
+                .join(", ")}{" "}
+              Statement of Operating Expenditure (Lampiran 1) has no text layer, so its figures were read from the page.
+              The PDF still draws every character as a vector outline, so the position of each character, and the
+              pattern of digits, commas, periods and dashes in each cell, come from the PDF itself rather than from OCR.
+            </p>
+            <p>
+              Each amount cell is read by OCR at 15 settings. A reading counts only if it fits the cell&apos;s drawn
+              pattern character for character, and the cell takes a reading that at least 8 settings agree on, with no
+              rival reading held by more than half as many. Where no reading clears that bar, the cell is read by eye
+              from the page image and registered with an image of the cell. Every printed total is then recomputed from
+              its rows exactly as in other years: it either matches or is a misprint confirmed on the page and listed
+              below. Programme and activity names are OCR readings; the totals check does not cover them.
+            </p>
+            {sources
+              .filter((s) => s.operating_ocr_engine)
+              .map((s) => (
+                <p key={s.fiscal_year} className="text-sm text-charcoal-700">
+                  {s.fiscal_year}: {s.operating_ocr_engine}.
+                </p>
+              ))}
+          </div>
+        </Band>
+      )}
+
       {gaps.length > 0 && (
         <Band wide id="gaps">
           <H2>Pages missing from a published statement</H2>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCovidFund, type CovidFundRow } from "@/lib/queries/covid";
-import { formatSen, utilisation } from "@/lib/money";
+import { formatSen, parseSen, utilisation } from "@/lib/money";
 import { requireYear } from "@/lib/years";
 import { Band, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
@@ -21,6 +21,7 @@ export default async function CovidFundPage({ params }: Props) {
   const year = await requireYear((await params).year);
   const { lines, total } = await getCovidFund(year);
   if (!total) notFound();
+  const withdrawals = total.withdrawal_sen !== 0;
 
   return (
     <>
@@ -40,7 +41,17 @@ export default async function CovidFundPage({ params }: Props) {
 
       <StatRow
         stats={[
-          { label: `Allocation ${year} (revised)`, ...money(total.revised_sen) },
+          {
+            label: `Allocation ${year} (revised)`,
+            ...money(total.revised_sen),
+            ...(withdrawals && {
+              sub: (
+                <>
+                  after <Money sen={parseSen(-total.withdrawal_sen)} /> withdrawn (<span lang="ms">Tarik</span>)
+                </>
+              ),
+            }),
+          },
           { label: `Spent ${year}`, ...money(total.actual_sen) },
           { label: "% used", value: `${utilisation(total.revised_sen, total.actual_sen).toFixed(1)}%` },
           {
@@ -73,8 +84,13 @@ export default async function CovidFundPage({ params }: Props) {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Programme</th>
+                <th className="min-w-60">Programme</th>
                 <th className="text-right">Ceiling</th>
+                {withdrawals && (
+                  <th className="text-right">
+                    Withdrawn (<span lang="ms">Tarik</span>)
+                  </th>
+                )}
                 <th className="text-right">Allocation {year}</th>
                 <th className="text-right">Spent {year}</th>
                 <th>% used</th>
@@ -84,7 +100,7 @@ export default async function CovidFundPage({ params }: Props) {
             </thead>
             <tbody>
               {lines.map((l) => (
-                <Row key={l.code} year={year} line={l} />
+                <Row key={l.code} year={year} line={l} withdrawals={withdrawals} />
               ))}
             </tbody>
           </table>
@@ -94,13 +110,14 @@ export default async function CovidFundPage({ params }: Props) {
   );
 }
 
-function Row({ year, line }: { year: number; line: CovidFundRow }) {
+function Row({ year, line, withdrawals }: { year: number; line: CovidFundRow; withdrawals: boolean }) {
   const over = line.actual_sen > line.revised_sen;
   return (
     <tr>
       <td className="font-mono text-xs">{line.code}</td>
       <td lang="ms">{line.name_ms}</td>
       <td className="num">{formatSen(line.ceiling_sen)}</td>
+      {withdrawals && <td className="num">{line.withdrawal_sen === 0 ? "–" : formatSen(line.withdrawal_sen)}</td>}
       <td className="num">{formatSen(line.revised_sen)}</td>
       <td className={`num ${over ? "over-budget" : ""}`}>{formatSen(line.actual_sen)}</td>
       <td>{line.revised_sen > 0 ? <UtilBar revised={line.revised_sen} actual={line.actual_sen} /> : null}</td>

@@ -22,7 +22,7 @@ const cachedChecks = unstable_cache(
     ]);
     return { version, sources, misprints, budgets };
   },
-  ["methodology-checks-v3"], // bump when the cached shape changes
+  ["methodology-checks-v4"], // bump when the cached shape changes
 );
 
 /** Every check the methodology page reports, recomputed only after the data changes. */
@@ -39,6 +39,7 @@ export interface SourceCheck {
   title: string;
   url: string;
   sha256: string;
+  operating_ocr_engine: string | null; // set when Lampiran 1 has no text layer and was read by OCR
   operating_total: number;
   operating_matched: number;
   operating_misprinted: number; // registered misprints: the load accepts exactly these differences
@@ -56,6 +57,7 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
       title: string;
       url: string;
       sha256: string;
+      operating_ocr_engine: string | null;
       operating_total: string;
       operating_matched: string;
       operating_misprinted: string;
@@ -65,7 +67,7 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
       covid_matches: boolean | null;
     }[]
   >`
-    select d.fiscal_year, d.title, d.url, d.sha256,
+    select d.fiscal_year, d.title, d.url, d.sha256, d.operating_ocr_engine,
            (select count(*) from reconciliation r where r.document_id = d.id) as operating_total,
            (select count(*) from reconciliation r where r.document_id = d.id and r.matches) as operating_matched,
            (select count(*) from reconciliation r where r.document_id = d.id and r.result = 'differs')

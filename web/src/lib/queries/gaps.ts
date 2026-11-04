@@ -30,3 +30,12 @@ export function gapExtent(g: OperatingGap): string {
   if (g.first_activity_after_gap) return `activities before ${g.first_activity_after_gap}`;
   return "part of its detail";
 }
+
+/** The OCR engine that read the year's Lampiran 1, or null when it was read from the PDF's text layer. */
+export async function getOcrEngine(year: number): Promise<string | null> {
+  const [row] = await sql<{ engine: string | null }[]>`
+    select operating_ocr_engine as engine from source_document
+    where fiscal_year = ${year} and not exists (select 1 from budget_document b where b.document_id = source_document.id)
+  `;
+  return row?.engine ?? null;
+}
