@@ -11,7 +11,8 @@ import { titleCase } from "@/lib/queries/sankey";
 import { getLoadedYears, requireYear } from "@/lib/years";
 import YearNav from "@/components/YearNav";
 import UtilBar from "@/components/UtilBar";
-import OcrNote from "@/components/OcrNote";
+import SourceNotes from "@/components/SourceNotes";
+import { getSourceNotes } from "@/lib/queries/gaps";
 import { cn } from "@/lib/cn";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -46,11 +47,12 @@ function SortLink({ year, col, current, label }: { year: number; col: SortKey; c
 export default async function OperatingPage({ params, searchParams }: Props) {
   const year = await requireYear((await params).year);
   const sort = sortParam((await searchParams).sort);
-  const [votes, totals, spending, years] = await Promise.all([
+  const [votes, totals, spending, years, notes] = await Promise.all([
     getVoteSummaries(year, sort),
     getFiscalTotals(year),
     getFederalSpending(year),
     getLoadedYears(),
+    getSourceNotes(year),
   ]);
 
   if (!totals || !spending) {
@@ -80,7 +82,7 @@ export default async function OperatingPage({ params, searchParams }: Props) {
       >
         <YearNav year={year} years={years} suffix="/operating" />
       </PageHeader>
-      <OcrNote year={year} />
+      <SourceNotes notes={notes} />
 
       <StatRow
         stats={[

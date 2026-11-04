@@ -5,8 +5,7 @@ import { getLoadedYears } from "@/lib/years";
 export interface Coverage {
   statements: number;
   budgetBooks: number;
-  firstYear: number;
-  lastYear: number;
+  years: { first: number; last: number } | null; // null before any statement is loaded
   lineItems: number; // operating lines and development projects read from the statements
   totalsChecked: number; // printed totals recomputed from their rows, in the statements and the budget books
 }
@@ -23,8 +22,7 @@ export async function getCoverage(): Promise<Coverage> {
   return {
     statements: checks.sources.length,
     budgetBooks: checks.budgets.length,
-    firstYear: years.at(-1) ?? 0,
-    lastYear: years[0] ?? 0,
+    years: years.length > 0 ? { first: years[years.length - 1], last: years[0] } : null,
     lineItems: Number(counts.line_items),
     totalsChecked:
       checks.sources.reduce((n, s) => n + s.operating_total + s.development_total, 0) +

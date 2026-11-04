@@ -6,7 +6,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Band, H2, PageHeader, StatRow, kicker } from "@/components/Boxed";
 import StackedBars from "@/components/StackedBars";
 import YearNav from "@/components/YearNav";
-import OcrNote from "@/components/OcrNote";
+import SourceNotes from "@/components/SourceNotes";
+import { getSourceNotes } from "@/lib/queries/gaps";
 import { cn } from "@/lib/cn";
 import { voteCodeToSlug } from "@/lib/citations";
 import { formatSen, formatSenCompact, parseSen, type Sen } from "@/lib/money";
@@ -67,13 +68,15 @@ export default async function MinistryPage({ params, searchParams }: Props) {
     (c): c is string => c !== null,
   );
 
-  const [spending, programmes, groups, budget, peers, slugs] = await Promise.all([
+  const [spending, programmes, groups, budget, peers, slugs, notes] = await Promise.all([
     getFederalSpending(year),
     current.operating_vote_code ? getProgrammeSpending(year, current.operating_vote_code) : [],
     devCode ? getDevelopmentGroups(year, devCode) : [],
     getBudgetForVotes(latestCodes),
     getMinistriesForYear(year),
     getMinistrySlugs(),
+    // Only its operating figures come from the statement the caveats are about.
+    current.operating_vote_code ? getSourceNotes(year, current.operating_vote_code) : null,
   ]);
   if (!spending) notFound();
   const ungrouped = groups.length === 1 && groups[0].name === "Other projects";
@@ -122,7 +125,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
           hrefFor={(y) => `/ministries/${ministry.canonical}?year=${y}`}
         />
       </PageHeader>
-      <OcrNote year={year} />
+      {notes && <SourceNotes notes={notes} />}
 
       <StatRow
         stats={[

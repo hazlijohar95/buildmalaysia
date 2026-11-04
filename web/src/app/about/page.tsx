@@ -116,7 +116,7 @@ export default async function AboutPage() {
         <>
           Two sets of official documents: Jabatan Akauntan Negara&apos;s{" "}
           <em lang="ms">Penyata Kewangan Kerajaan Persekutuan</em>, the audited federal statements, for what was raised
-          and spent from {c.firstYear} to {c.lastYear}; and Kementerian Kewangan&apos;s{" "}
+          and spent{c.years && ` from ${c.years.first} to ${c.years.last}`}; and Kementerian Kewangan&apos;s{" "}
           <em lang="ms">Anggaran Perbelanjaan Persekutuan</em>, the budget books, for what the government plans to
           spend. Each document is listed on the <Link href="/methodology">methodology page</Link> with a link to the
           original and its SHA-256 fingerprint.
@@ -262,7 +262,11 @@ export default async function AboutPage() {
       </Band>
       <StatRow
         stats={[
-          { label: "Audited statements", value: c.statements, sub: `FY${c.firstYear} to FY${c.lastYear}` },
+          {
+            label: "Audited statements",
+            value: c.statements,
+            sub: c.years ? `FY${c.years.first} to FY${c.years.last}` : "None loaded yet",
+          },
           { label: "Budget books", value: c.budgetBooks, sub: "As tabled in Parliament" },
           {
             label: "Line items",

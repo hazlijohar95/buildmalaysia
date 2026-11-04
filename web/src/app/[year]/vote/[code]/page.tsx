@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GapNote from "@/components/GapNote";
-import OcrNote from "@/components/OcrNote";
-import { getOperatingGaps } from "@/lib/queries/gaps";
+import SourceNotes from "@/components/SourceNotes";
+import { getSourceNotes } from "@/lib/queries/gaps";
 import { notFound } from "next/navigation";
 import {
   getVoteHeader,
@@ -81,12 +80,12 @@ export default async function VoteDetailPage({ params }: Props) {
     );
   }
 
-  const [header, programmes, activities, lines, gaps] = await Promise.all([
+  const [header, programmes, activities, lines, notes] = await Promise.all([
     getVoteHeader(year, voteCode),
     getProgrammeTotals(year, voteCode),
     getActivityTotals(year, voteCode),
     getLeafLines(year, voteCode),
-    getOperatingGaps(year).then((g) => g.filter((x) => x.vote_code === voteCode)),
+    getSourceNotes(year, voteCode),
   ]);
   if (!header) notFound();
 
@@ -144,8 +143,7 @@ export default async function VoteDetailPage({ params }: Props) {
           )}
         </p>
       </PageHeader>
-      <GapNote gaps={gaps} />
-      <OcrNote year={year} />
+      <SourceNotes notes={notes} />
 
       <StatRow
         stats={[

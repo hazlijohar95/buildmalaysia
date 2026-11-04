@@ -39,3 +39,16 @@ export async function getOcrEngine(year: number): Promise<string | null> {
   `;
   return row?.engine ?? null;
 }
+
+/** Caveats on a year's operating figures: pages missing from its statement, and whether it was read by OCR. */
+export interface SourceNotes {
+  year: number;
+  gaps: OperatingGap[];
+  ocrEngine: string | null;
+}
+
+/** The caveats for a year's operating figures, or for one vote's when `voteCode` is given. */
+export async function getSourceNotes(year: number, voteCode?: string): Promise<SourceNotes> {
+  const [gaps, ocrEngine] = await Promise.all([getOperatingGaps(year), getOcrEngine(year)]);
+  return { year, gaps: voteCode ? gaps.filter((g) => g.vote_code === voteCode) : gaps, ocrEngine };
+}

@@ -34,7 +34,8 @@ const cell =
 const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
 const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
 
-const panelId = (label: string) => `nav-panel-${label.toLowerCase()}`;
+// Slugged so any label makes a valid id, and a safe attribute selector for restoring focus on Escape.
+const panelId = (label: string) => `nav-panel-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -82,6 +83,14 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openMenu, mobileOpen]);
+
+  // Each menu mounts its own panel, so without this the panel would replay its entrance when moving between
+  // menus. It animates in only when a menu opens from closed.
+  const wasOpen = useRef(false);
+  const entering = openMenu !== null && !wasOpen.current;
+  useEffect(() => {
+    wasOpen.current = openMenu !== null;
+  }, [openMenu]);
 
   return (
     <>
@@ -160,7 +169,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                       className={cn("h-3 w-3 transition-transform duration-150", open && "rotate-180")}
                     />
                   </button>
-                  {open && <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} />}
+                  {open && <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} entering={entering} />}
                 </div>
               );
             })}
@@ -200,10 +209,12 @@ function MenuPanel({
   id,
   item,
   isActive,
+  entering,
 }: {
   id: string;
   item: Extract<NavItem, { kind: "menu" }>;
   isActive: (link: NavLink) => boolean;
+  entering: boolean;
 }) {
   const count = item.links.length;
   return (
@@ -213,7 +224,7 @@ function MenuPanel({
       id={id}
       className={cn(
         "absolute inset-x-0 top-full -mt-[2px] border-y-2 border-foreground bg-linen-50 shadow-[0_28px_56px_-28px_rgb(39_39_39/0.45)]",
-        "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
+        entering && "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
       )}
     >
       <div
