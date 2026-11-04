@@ -9,6 +9,7 @@ import psycopg
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.budget import parse_budget_summary
+from pipeline.budget_detail import parse_operating_estimates
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
@@ -87,11 +88,12 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
         statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year)
+        operating = parse_operating_estimates(extract_pages(pdf, (source.summary_pages[1] + 1, pages)), year)
         with psycopg.connect(database_url, autocommit=True) as conn:
-            result = load_budget(conn, source, statement, pages, retrieved_at(pdf))
+            result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating)
             differs = conn.execute(
                 "select fiscal_year, vote_code, line, mof_sen, janm_sen, diff_sen from budget_actual_check"
-                " where document_id = %s and result <> 'matches' order by 1, 2, 3",
+                " where document_id = %s and result not in ('matches', 'rounding') order by 1, 2, 3",
                 (source.id,),
             ).fetchall()
     except (SourceError, ParseError) as error:
@@ -99,6 +101,10 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         return 1
     print(f"ingested {source.id} from {pdf}")
     print(f"  votes {result.votes}, printed totals checked {result.printed_checks}")
+    print(
+        f"  operating estimates: {len(operating.votes)} votes, activity lines {result.operating_lines},"
+        f" printed totals reconciled {result.operating_totals_reconciled}"
+    )
     print(f"  actuals against the audited statements: {result.actual_checks}")
     for row in differs:
         print(f"  {row[0]} {row[1]} {row[2]}: MOF {row[3]} sen, JANM {row[4]} sen, difference {row[5]} sen")

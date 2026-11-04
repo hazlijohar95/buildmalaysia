@@ -7,6 +7,7 @@ import psycopg
 import pytest
 
 from pipeline.budget import parse_budget_summary
+from pipeline.budget_detail import parse_operating_estimates
 from pipeline.development import parse_development
 from pipeline.load import load_budget, load_year
 from pipeline.parse import PageText, ParseError, parse_statement
@@ -14,6 +15,7 @@ from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
     SOURCES,
+    SourceError,
     ensure_pdf,
     extract_pages,
     page_count,
@@ -69,3 +71,39 @@ def test_mof_actuals_agree_with_the_audited_statements(pages: list[PageText]) ->
             "select max(abs(diff_sen)) from budget_actual_check where document_id = %s", (SOURCE.id,)
         ).fetchone()
         assert worst is not None and worst[0] <= 1000
+
+
+@pytest.fixture(scope="module")
+def book() -> list[PageText]:
+    pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
+    return extract_pages(pdf, (SOURCE.summary_pages[1] + 1, SOURCE.page_count))
+
+
+def test_operating_estimates_reconcile_and_agree_with_the_summary(pages: list[PageText], book: list[PageText]) -> None:
+    pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
+    operating = parse_operating_estimates(book, 2027)
+    assert len(operating.votes) == 53
+    assert sum(len(v.headings) for v in operating.votes) == 1336  # 245 programmes, 1,091 activities
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        result = load_budget(
+            conn, SOURCE, parse_budget_summary(pages, 2027), page_count(pdf), retrieved_at(pdf), operating
+        )
+        assert (result.operating_lines, result.operating_totals_reconciled) == (2231, 2354)
+
+
+def test_a_one_ringgit_edit_to_an_activity_line_is_rejected(pages: list[PageText], book: list[PageText]) -> None:
+    pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
+    # B.3 (book p.87): 010100 Pengurusan Am, 10000 Emolumen, 2027 estimate 18,777,100.
+    index = next(i for i, p in enumerate(book) if "18,956,800      18,777,100" in p.layout)
+    edited = book[index].layout.replace("18,956,800      18,777,100", "18,956,800      18,777,101", 1)
+    altered = [*book[:index], replace(book[index], layout=edited), *book[index + 1 :]]
+    operating = parse_operating_estimates(altered, 2027)
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        with pytest.raises(SourceError, match="do not reconcile"):
+            load_budget(conn, SOURCE, parse_budget_summary(pages, 2027), page_count(pdf), retrieved_at(pdf), operating)
+        stored = conn.execute(
+            "select estimate_sen from budget_operating_line where document_id = %s"
+            " and (vote_code, activity_code, object_code) = ('B.03', '010100', '10000')",
+            (SOURCE.id,),
+        ).fetchone()
+        assert stored == (1_877_710_000,)

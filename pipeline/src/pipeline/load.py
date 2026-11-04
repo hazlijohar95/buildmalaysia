@@ -8,8 +8,9 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from pipeline.model import Amounts, CovidFundStatement, DevelopmentStatement, Statement
+from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, Statement
 from pipeline.budget import BudgetStatement
+from pipeline.budget_detail import Estimate, OperatingEstimates
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
@@ -424,14 +425,24 @@ class BudgetLoadResult:
     votes: int
     printed_checks: int
     actual_checks: dict[str, int]  # result of budget_actual_check -> count
+    operating_lines: int
+    operating_totals_reconciled: int
 
 
 def load_budget(
-    conn: psycopg.Connection, source: BudgetSource, statement: BudgetStatement, page_count: int, retrieved_at: datetime
+    conn: psycopg.Connection,
+    source: BudgetSource,
+    statement: BudgetStatement,
+    page_count: int,
+    retrieved_at: datetime,
+    operating: OperatingEstimates | None = None,
 ) -> BudgetLoadResult:
-    """Replace this budget book's rows in one transaction. The parser has already checked
-    every printed total; the comparison with the audited statements is reported, not gated,
-    because a difference there is a finding about the sources, not a parse error."""
+    """Replace this budget book's rows in one transaction.
+
+    The book must agree with itself: every printed operating total must equal the sum of
+    its activity lines, and every vote's detail total its line in the summary pages, or the
+    transaction rolls back. The comparison of MOF's actuals with the audited statements is
+    reported, not gated: a difference there is a finding about two sources, not a parse error."""
     if not conn.autocommit:
         raise ValueError("load_budget needs an autocommit connection")
     doc = source.id
@@ -456,6 +467,9 @@ def load_budget(
                 retrieved_at,
             ),
         )
+        cur.execute("delete from budget_operating_total where document_id = %s", (doc,))
+        cur.execute("delete from budget_operating_line where document_id = %s", (doc,))
+        cur.execute("delete from budget_heading where document_id = %s", (doc,))
         cur.execute("delete from budget_vote_figure where document_id = %s", (doc,))
         cur.execute("delete from budget_total where document_id = %s", (doc,))
         cur.execute(
@@ -512,9 +526,112 @@ def load_budget(
                 for i, (year, basis) in enumerate(statement.columns)
             ],
         )
+        lines, reconciled = _insert_operating_estimates(cur, doc, operating) if operating else (0, 0)
         counts = dict(
             cur.execute(
                 "select result, count(*) from budget_actual_check where document_id = %s group by result", (doc,)
             ).fetchall()
         )
-    return BudgetLoadResult(len(statement.votes), statement.checks, {str(k): int(v) for k, v in counts.items()})
+    return BudgetLoadResult(
+        len(statement.votes), statement.checks, {str(k): int(v) for k, v in counts.items()}, lines, reconciled
+    )
+
+
+def _insert_operating_estimates(cur: psycopg.Cursor, doc: str, estimates: OperatingEstimates) -> tuple[int, int]:
+    headings, lines, totals = [], [], []
+
+    def total(
+        scope: str, vote: str, programme: str | None, activity: str | None, obj: str | None, e: Estimate, c: Citation
+    ) -> None:
+        totals.append(
+            (
+                doc,
+                scope,
+                vote,
+                programme,
+                activity,
+                obj,
+                e.prior,
+                e.estimate,
+                e.prior_posts,
+                e.posts,
+                c.pdf_page,
+                c.book_page,
+                c.text,
+            )
+        )
+
+    for vote in estimates.votes:
+        assert vote.total is not None and vote.object_page_total is not None
+        total("vote", vote.code, None, None, None, *vote.total)
+        total("vote", vote.code, None, None, None, *vote.object_page_total)
+        for obj, (e, c) in vote.by_object.items():
+            total("vote", vote.code, None, None, obj, e, c)
+        for h in vote.headings:
+            programme = h.code[:2] + "0000"
+            c = h.citation
+            headings.append((doc, vote.code, h.code, programme, h.name, c.pdf_page, c.book_page))
+            assert h.total is not None
+            if h.is_programme:
+                total("programme", vote.code, programme, None, None, h.total, c)
+                for obj, (e, oc) in h.objects.items():
+                    total("programme", vote.code, programme, None, obj, e, oc)
+            else:
+                total("activity", vote.code, programme, h.code, None, h.total, c)
+                for obj, (e, oc) in h.objects.items():
+                    lines.append(
+                        (
+                            doc,
+                            vote.code,
+                            programme,
+                            h.code,
+                            obj,
+                            e.prior,
+                            e.estimate,
+                            e.prior_posts,
+                            e.posts,
+                            oc.pdf_page,
+                            oc.book_page,
+                            oc.text,
+                        )
+                    )
+    cur.executemany(
+        "insert into budget_heading (document_id, vote_code, code, programme_code, name_ms, pdf_page, book_page)"
+        " values (%s, %s, %s, %s, %s, %s, %s)",
+        headings,
+    )
+    cur.executemany(
+        """
+        insert into budget_operating_line (document_id, vote_code, programme_code, activity_code, object_code,
+          prior_estimate_sen, estimate_sen, prior_posts, posts, pdf_page, book_page, source_text)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        lines,
+    )
+    cur.executemany(
+        """
+        insert into budget_operating_total (document_id, scope, vote_code, programme_code, activity_code, object_code,
+          prior_estimate_sen, estimate_sen, prior_posts, posts, pdf_page, book_page, source_text)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        totals,
+    )
+    rows = cur.execute(
+        "select matches, scope, vote_code, programme_code, activity_code, object_code, pdf_page,"
+        " prior_estimate_diff_sen, estimate_diff_sen, prior_posts_diff, posts_diff"
+        " from budget_operating_reconciliation where document_id = %s",
+        (doc,),
+    ).fetchall()
+    bad = [r for r in rows if not r[0]]
+    inconsistent = cur.execute(
+        "select vote_code, prior_estimate_sen, summary_prior_estimate_sen, estimate_sen, summary_estimate_sen"
+        " from budget_vote_consistency where document_id = %s and not matches",
+        (doc,),
+    ).fetchall()
+    if bad or inconsistent:
+        detail = [
+            f"{r[1]} total {r[2]} {r[3] or ''} {r[4] or ''} {r[5] or ''} (pdf page {r[6]}): diffs {r[7:]}" for r in bad
+        ]
+        detail += [f"{r[0]} detail total {r[1]}/{r[3]} sen, summary pages {r[2]}/{r[4]} sen" for r in inconsistent]
+        raise SourceError(f"{len(detail)} budget totals do not reconcile; load rolled back\n  " + "\n  ".join(detail))
+    return len(lines), len(rows)

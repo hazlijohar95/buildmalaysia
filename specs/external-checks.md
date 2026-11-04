@@ -60,3 +60,12 @@ As in 2025, data.gov.my `revenue` equals Lampiran 1's operating total including 
 data.gov.my's balance identity treats the COVID-19 Fund as spending on top of operating and development: 2021 revenue 233,752 − 231,516 − development net 63,265 − 37,711 = −98,740 (`balance`). No operating line transfers money into the fund, so adding it counts nothing twice.
 
 FY2020 is not loaded: its Lampiran 1 tables have no text layer (outlined glyphs, no images), so they need OCR.
+
+## Budget 2027 (MOF) against the audited statements
+
+Source: MOF, *Anggaran Perbelanjaan Persekutuan 2027* (586 pp, sha256 5caf1cc1…). The summary on book pp. 21-33 prints each vote's 2024 and 2025 actuals. `budget_actual_check` compares them with JANM FY2024 and FY2025:
+
+- 272 figures (every vote total, and every operating vote's emoluments) agree. 254 match the statement rounded to the ringgit; 18 differ by 51 to 145 sen in either direction (largest: T.04 emoluments 2024, MOF 480,589, JANM 480,587.55), consistent with MOF adding parts already rounded to the ringgit.
+- The summary's JUMLAH BESAR adds operating (which includes the transfer to the Development Fund) and development: 2025 RM417,989,789,082 = 336,069,262,969 + 81,920,526,113. Net of the transfer it is the site's RM412.70 bn.
+
+**Activity codes are not stable across years.** Of the 1,091 activities in the 2027 book, 1,024 reuse a code that JANM FY2025 also has, but only 765 under the same name; many of the rest are different activities (B.64 020400 is Universiti Putra Malaysia in FY2025 and Universiti Sains Malaysia in Budget 2027; B.64 020100 is Universiti Malaya, then Jabatan Pendidikan Tinggi). The site therefore compares budget and spending at vote level, where MOF restates past actuals itself and they agree with JANM, and never joins activities across documents by code.
