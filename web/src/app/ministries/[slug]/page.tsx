@@ -5,7 +5,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChartContainer, H1, H2, InternalLink, Intro, P, Page, PageContent, Section } from "@/components/Layout";
 import { StatCard, StatCardContainer } from "@/components/StatCard";
-import YearBars from "@/components/YearBars";
+import StackedBars from "@/components/StackedBars";
+import { colours } from "@/styles/colours";
 import {
   getBudgetForVotes,
   getDevelopmentGroups,
@@ -103,12 +104,16 @@ export default async function MinistryPage({ params }: Props) {
             </P>
           )}
           <ChartContainer>
-            <YearBars
+            <StackedBars
+              label={`${name} spending by year`}
+              series={[
+                { label: "Operating", color: colours.auburn[800] },
+                { label: "Development", color: colours.lake[700] },
+              ]}
               rows={history.map((h) => ({
                 year: h.fiscal_year,
-                operating: h.operating_actual_sen,
-                development: h.development_actual_sen,
-                name: titleCase(h.name_ms),
+                values: [h.operating_actual_sen, h.development_actual_sen],
+                title: `${h.fiscal_year}: ${titleCase(h.name_ms)}`,
               }))}
             />
           </ChartContainer>

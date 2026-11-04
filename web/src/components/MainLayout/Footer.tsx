@@ -35,6 +35,9 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                 </li>
               )}
               <li>
+                <FooterLink href="/revenue">Federal revenue</FooterLink>
+              </li>
+              <li>
                 <FooterLink href="/ministries">Ministries</FooterLink>
               </li>
               <li>

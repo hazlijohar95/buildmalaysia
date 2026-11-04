@@ -1,7 +1,7 @@
 "use client";
 
 // Boxed navigation in the style of buildcanada.com: a solid wordmark cell, bordered link cells and a
-// dark call-to-action cell, collapsing to a menu below the lg breakpoint.
+// dark call-to-action cell, collapsing to a menu below the xl breakpoint.
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ export interface NavItem {
 }
 
 const cell =
-  "flex items-center px-6 xl:px-8 font-mono text-[13px] uppercase tracking-[0.22em] no-underline transition-colors";
+  "flex items-center whitespace-nowrap px-5 2xl:px-8 font-mono text-[13px] uppercase tracking-[0.22em] no-underline transition-colors";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -43,7 +43,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem 
         >
           <Wordmark className="text-[26px] lg:text-[30px]" />
         </Link>
-        <nav className="hidden lg:flex items-stretch" aria-label="Main navigation">
+        <nav className="hidden xl:flex items-stretch" aria-label="Main navigation">
           {items.map((item) => (
             <Link
               key={item.href}
@@ -62,13 +62,13 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem 
         <div className="flex-1" />
         <Link
           href={cta.href}
-          className={cn(cell, "hidden lg:flex bg-foreground text-background hover:bg-charcoal-800")}
+          className={cn(cell, "hidden xl:flex bg-foreground text-background hover:bg-charcoal-800")}
         >
           {cta.label}
         </Link>
         <button
           type="button"
-          className="lg:hidden flex items-center border-l-2 border-foreground px-5 text-foreground"
+          className="xl:hidden flex items-center border-l-2 border-foreground px-5 text-foreground"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
         >
@@ -77,7 +77,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavItem 
         </button>
       </div>
       {open && (
-        <nav className="lg:hidden border-t-2 border-foreground" aria-label="Mobile navigation">
+        <nav className="xl:hidden border-t-2 border-foreground" aria-label="Mobile navigation">
           {[...items, cta].map((item) => (
             <Link
               key={item.href}
