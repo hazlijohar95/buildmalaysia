@@ -1,15 +1,15 @@
 /*
  * Theme, colours and chart styles ported from Build Canada's CanadaSpends
  * (MIT License, Copyright (c) 2025 Build Canada); see THIRD_PARTY_NOTICES.md.
- * Fonts are free substitutes: CanadaSpends' Klim faces are not covered by the MIT licence.
+ * Fonts: Geist, Cal Sans and Paper Mono (SIL OFL 1.1); CanadaSpends' Klim faces are not covered by the MIT licence.
  */
 @import "tailwindcss";
 @import "../styles/main.css";
 
 :root {
-  --font-sans: var(--font-source-serif), ui-serif, Georgia, serif;
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cal-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-paper-mono), ui-monospace, monospace;
 
   /* Names the data pages use, mapped onto the CanadaSpends theme. */
   --bg: var(--color-background);
