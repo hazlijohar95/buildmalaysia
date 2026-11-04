@@ -65,8 +65,8 @@ const photo = (src: string, alt: string) => (
 const TEAM: Member[] = [
   { name: "Hazli Johar", role: "Chief Designer & Maintainer", portrait: photo("/team/hazli-johar.jpg", "Hazli Johar") },
   {
-    name: "Claude Code",
-    role: "Principal Engineer",
+    name: "Claude Code Ultra",
+    role: "Principal Engineer ($200, 10x usage)",
     portrait: (
       <span className="flex h-full w-full items-center justify-center bg-linen-50">
         <SiClaude aria-hidden="true" className="h-14 w-14 text-[#D97757]" />
