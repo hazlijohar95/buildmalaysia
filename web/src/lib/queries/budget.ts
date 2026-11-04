@@ -95,7 +95,7 @@ export async function getBudgetVotes(budgetYear: number): Promise<BudgetVoteRow[
     }[]
   >`
     select f.vote_code, min(f.heading) as heading, min(f.note) as note,
-           array_agg(f.total_sen::text order by f.fiscal_year) as amounts,
+           json_agg(f.total_sen::text order by f.fiscal_year) as amounts,
            min(f.pdf_page) as pdf_page, min(f.book_page) as book_page
     from budget_vote_figure f join budget_document d on d.document_id = f.document_id
     where d.budget_year = ${budgetYear}

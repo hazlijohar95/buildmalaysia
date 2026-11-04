@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "buildmalaysia",
+  "account_id": "f06c6a7080a4bddf940c20024561d41c",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // The memory queue revalidates ISR pages by calling the worker itself.
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "buildmalaysia" }],
+  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "buildmalaysia-opennext-cache" }],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "f91da185cf3d46c6a4c940de152e7db8",
+      // Local runs and the build use this instead. Override it with
+      // CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE if your Postgres differs.
+      "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/buildmalaysia",
+    },
+  ],
+  "observability": { "enabled": true },
+}

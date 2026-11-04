@@ -54,7 +54,19 @@ DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:/
 
 Prerendered pages refresh hourly; restart or rebuild the site to see a new ingest at once.
 
-Deploying to Supabase: `supabase link` then `supabase db push`.
+## Hosting
+
+The site runs on Cloudflare Workers through the [OpenNext adapter](https://opennext.js.org/cloudflare) and reads Supabase Postgres through Hyperdrive. Supabase holds a copy of the local database; the pipeline never writes to it.
+
+```bash
+supabase link --project-ref <ref> && supabase db push    # schema
+SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, checked row for row
+psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # once: the site's read-only role
+cd web && pnpm run deploy                                  # build and deploy the Worker
+pnpm preview                                               # or run the Worker locally first
+```
+
+Hyperdrive connects as `web_reader` through the session pooler, which allows 15 clients, so its origin connection limit is set to 10. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
 
 ## Contributing
 
