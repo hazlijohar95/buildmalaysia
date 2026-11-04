@@ -8,10 +8,20 @@ import psycopg
 
 from pipeline.covid import parse_covid
 from pipeline.development import parse_development
-from pipeline.load import ReconciliationError, load_year
+from pipeline.budget import parse_budget_summary
+from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
-from pipeline.sources import DEFAULT_RAW_DIR, SOURCES, SourceError, ensure_pdf, extract_pages, page_count, retrieved_at
+from pipeline.sources import (
+    BUDGET_SOURCES,
+    DEFAULT_RAW_DIR,
+    SOURCES,
+    SourceError,
+    ensure_pdf,
+    extract_pages,
+    page_count,
+    retrieved_at,
+)
 
 
 def ingest(year: int, database_url: str, raw_dir: Path) -> int:
@@ -66,6 +76,35 @@ def _print_corrections(corrections: tuple[Correction, ...]) -> None:
         )
 
 
+def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
+    source = BUDGET_SOURCES.get(year)
+    if source is None:
+        print(f"no budget registered for {year}; known: {sorted(BUDGET_SOURCES)}", file=sys.stderr)
+        return 2
+    try:
+        pdf = ensure_pdf(source, raw_dir)
+        pages = page_count(pdf)
+        if pages != source.page_count:
+            raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
+        statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year)
+        with psycopg.connect(database_url, autocommit=True) as conn:
+            result = load_budget(conn, source, statement, pages, retrieved_at(pdf))
+            differs = conn.execute(
+                "select fiscal_year, vote_code, line, mof_sen, janm_sen, diff_sen from budget_actual_check"
+                " where document_id = %s and result <> 'matches' order by 1, 2, 3",
+                (source.id,),
+            ).fetchall()
+    except (SourceError, ParseError) as error:
+        print(f"ingest-budget {year} failed: {error}", file=sys.stderr)
+        return 1
+    print(f"ingested {source.id} from {pdf}")
+    print(f"  votes {result.votes}, printed totals checked {result.printed_checks}")
+    print(f"  actuals against the audited statements: {result.actual_checks}")
+    for row in differs:
+        print(f"  {row[0]} {row[1]} {row[2]}: MOF {row[3]} sen, JANM {row[4]} sen, difference {row[5]} sen")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -73,7 +112,13 @@ def main() -> int:
     ingest_cmd.add_argument("--year", type=int, required=True)
     ingest_cmd.add_argument("--database-url", required=True)
     ingest_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR, help="where source PDFs are kept")
+    budget_cmd = commands.add_parser("ingest-budget", help="fetch, parse and load one MOF budget book")
+    budget_cmd.add_argument("--year", type=int, required=True, help="the budget year, e.g. 2027")
+    budget_cmd.add_argument("--database-url", required=True)
+    budget_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     args = parser.parse_args()
+    if args.command == "ingest-budget":
+        return ingest_budget(args.year, args.database_url, args.raw_dir)
     return ingest(args.year, args.database_url, args.raw_dir)
 
 

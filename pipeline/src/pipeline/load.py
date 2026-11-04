@@ -9,7 +9,8 @@ import psycopg
 from psycopg.rows import dict_row
 
 from pipeline.model import Amounts, CovidFundStatement, DevelopmentStatement, Statement
-from pipeline.sources import SourceDocument, SourceError
+from pipeline.budget import BudgetStatement
+from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
 DEVELOPMENT_COLUMNS = (
@@ -416,3 +417,104 @@ def _mismatches(
         if not row["matches"]
     ]
     return len(rows), mismatches
+
+
+@dataclass(frozen=True)
+class BudgetLoadResult:
+    votes: int
+    printed_checks: int
+    actual_checks: dict[str, int]  # result of budget_actual_check -> count
+
+
+def load_budget(
+    conn: psycopg.Connection, source: BudgetSource, statement: BudgetStatement, page_count: int, retrieved_at: datetime
+) -> BudgetLoadResult:
+    """Replace this budget book's rows in one transaction. The parser has already checked
+    every printed total; the comparison with the audited statements is reported, not gated,
+    because a difference there is a finding about the sources, not a parse error."""
+    if not conn.autocommit:
+        raise ValueError("load_budget needs an autocommit connection")
+    doc = source.id
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute(
+            """
+            insert into source_document (id, publisher, title, fiscal_year, url, sha256, page_count, retrieved_at)
+            values (%s, %s, %s, %s, %s, %s, %s, %s)
+            on conflict (id) do update set
+              publisher = excluded.publisher, title = excluded.title, fiscal_year = excluded.fiscal_year,
+              url = excluded.url, sha256 = excluded.sha256, page_count = excluded.page_count,
+              retrieved_at = excluded.retrieved_at
+            """,
+            (
+                doc,
+                source.publisher,
+                source.title,
+                source.budget_year,
+                source.url,
+                source.sha256,
+                page_count,
+                retrieved_at,
+            ),
+        )
+        cur.execute("delete from budget_vote_figure where document_id = %s", (doc,))
+        cur.execute("delete from budget_total where document_id = %s", (doc,))
+        cur.execute(
+            "insert into budget_document (document_id, budget_year) values (%s, %s)"
+            " on conflict (document_id) do update set budget_year = excluded.budget_year",
+            (doc, source.budget_year),
+        )
+        rows = []
+        for vote in statement.votes:
+            for i, (year, basis) in enumerate(statement.columns):
+                part = {name: figure.amounts[i] for name, figure in vote.parts.items()}
+                rows.append(
+                    (
+                        doc,
+                        vote.code,
+                        vote.heading,
+                        year,
+                        basis,
+                        vote.total.amounts[i],
+                        part.get("emoluments"),
+                        part.get("other"),
+                        part.get("direct"),
+                        part.get("loan"),
+                        vote.total.citation.pdf_page,
+                        vote.total.citation.book_page,
+                        vote.total.citation.text,
+                    )
+                )
+        cur.executemany(
+            """
+            insert into budget_vote_figure (document_id, vote_code, heading, fiscal_year, basis, total_sen,
+              emoluments_sen, other_sen, direct_sen, loan_sen, pdf_page, book_page, source_text)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            rows,
+        )
+        s = statement.summary.lines
+        names = ("operating", "emoluments", "other", "development", "direct", "loan", "contingency", "grand_total")
+        cur.executemany(
+            f"""
+            insert into budget_total (document_id, fiscal_year, basis, {", ".join(f"{n}_sen" for n in names)},
+              pdf_page, book_page)
+            values (%s, %s, %s, {", ".join(["%s"] * len(names))}, %s, %s)
+            """,
+            [
+                (
+                    doc,
+                    year,
+                    basis,
+                    *(s[n].amounts[i] for n in names),
+                    s["grand_total"].citation.pdf_page,
+                    s["grand_total"].citation.book_page,
+                )
+                for i, (year, basis) in enumerate(statement.columns)
+            ],
+        )
+        counts = dict(
+            cur.execute(
+                "select result, count(*) from budget_actual_check where document_id = %s group by result", (doc,)
+            ).fetchall()
+        )
+    return BudgetLoadResult(len(statement.votes), statement.checks, {str(k): int(v) for k, v in counts.items()})

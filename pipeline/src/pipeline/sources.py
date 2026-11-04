@@ -2,11 +2,16 @@
 
 import hashlib
 import shutil
+import ssl
 import subprocess
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from typing import Protocol
 from datetime import UTC, datetime
 from pathlib import Path
+
+import certifi
 
 from pipeline.parse import PageText
 
@@ -148,14 +153,60 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def ensure_pdf(source: SourceDocument, raw_dir: Path) -> Path:
+class Fetchable(Protocol):
+    @property
+    def url(self) -> str: ...
+    @property
+    def sha256(self) -> str: ...
+    @property
+    def raw_path(self) -> str: ...
+
+
+@dataclass(frozen=True)
+class BudgetSource:
+    """A MOF budget book (Anggaran Perbelanjaan Persekutuan)."""
+
+    id: str
+    publisher: str
+    title: str
+    budget_year: int
+    url: str
+    sha256: str
+    page_count: int
+    raw_path: str
+    summary_pages: tuple[int, int]  # "Ringkasan Perbelanjaan Sebenar dan Anggaran ...", PDF pages
+
+
+BUDGET_SOURCES: dict[int, BudgetSource] = {
+    2027: BudgetSource(
+        id="mof-anggaran-perbelanjaan-2027",
+        publisher="Kementerian Kewangan Malaysia",
+        title="Anggaran Perbelanjaan Persekutuan 2027",
+        budget_year=2027,
+        url="https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf",
+        sha256="5caf1cc1a4416e21912e4a450f66add2e7d34ee684d8e10de4e5717be42457a9",
+        page_count=586,
+        raw_path="mof/2027/Anggaran_Perbelanjaan_Persekutuan_2027.pdf",
+        summary_pages=(32, 44),
+    ),
+}
+
+
+def ensure_pdf(source: Fetchable, raw_dir: Path) -> Path:
     """Return the local PDF, downloading it if absent. Refuses any file whose hash differs."""
     path = raw_dir / source.raw_path
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         partial = path.with_name(path.name + ".part")
-        with urllib.request.urlopen(source.url) as response, partial.open("wb") as out:
-            shutil.copyfileobj(response, out)
+        request = urllib.request.Request(source.url, headers={"User-Agent": "buildmalaysia-pipeline"})
+        # certifi's CA bundle: some Python installs (python.org on macOS) ship without one.
+        context = ssl.create_default_context(cafile=certifi.where())
+        try:
+            with urllib.request.urlopen(request, context=context) as response, partial.open("wb") as out:
+                shutil.copyfileobj(response, out)
+        except (urllib.error.URLError, OSError) as error:
+            partial.unlink(missing_ok=True)
+            raise SourceError(f"could not download {source.url}: {error}") from error
         actual = _sha256(partial)
         if actual != source.sha256:
             partial.unlink()
