@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getVoteSummaries, getFiscalTotals, type SortKey } from "@/lib/queries/overview";
-import { formatSen, formatSenCompact, utilisation } from "@/lib/money";
+import { utilisation, type Sen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
+import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import { Money, Term, money } from "@/components/Figures";
 import { getFederalSpending } from "@/lib/queries/spending";
+import { titleCase } from "@/lib/queries/sankey";
 import { getLoadedYears, requireYear } from "@/lib/years";
 import YearNav from "@/components/YearNav";
 import UtilBar from "@/components/UtilBar";
+import { cn } from "@/lib/cn";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `Operating expenditure ${(await params).year}` };
@@ -24,26 +28,13 @@ function sortParam(raw: string | string[] | undefined): SortKey {
   return "code";
 }
 
-function SortLink({
-  year,
-  col,
-  current,
-  label,
-}: {
-  year: number;
-  col: SortKey;
-  current: SortKey;
-  label: string;
-}) {
+function SortLink({ year, col, current, label }: { year: number; col: SortKey; current: SortKey; label: string }) {
   const active = col === current;
   return (
     <Link
       href={`/${year}/operating?sort=${col}`}
-      style={{
-        color: active ? "var(--fg)" : "var(--muted)",
-        fontWeight: active ? 600 : 400,
-        textDecoration: "none",
-      }}
+      aria-current={active ? "true" : undefined}
+      className={cn("no-underline hover:underline", active ? "text-foreground font-semibold" : "text-charcoal-700")}
     >
       {label}
       {active && " ↓"}
@@ -62,166 +53,170 @@ export default async function OperatingPage({ params, searchParams }: Props) {
   ]);
 
   if (!totals || !spending) {
-    return <p>No statement has been loaded for {year} yet.</p>;
+    return (
+      <Band wide>
+        <p>No statement has been loaded for {year} yet.</p>
+      </Band>
+    );
   }
 
   const pct = utilisation(totals.total_revised_sen, totals.total_actual_sen);
 
   return (
     <>
-      <div className="mb-8">
-        <YearNav year={year} years={years} suffix="/operating" />
-        <h1 className="text-2xl font-semibold mb-1">
-          Operating expenditure {year}
-        </h1>
-        <p style={{ color: "var(--muted)" }} className="text-sm">
-          Perbelanjaan Mengurus (Lampiran 1): budget vs actual for every vote.{" "}
-          <Link href="/methodology">How these numbers are sourced.</Link>
-        </p>
-      </div>
-
-      {/* Headline stats */}
-      <div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 p-4 rounded-lg border"
-        style={{ borderColor: "var(--border)" }}
+      <PageHeader
+        wide
+        eyebrow={`Operating expenditure · ${year}`}
+        title={`Operating spending ${year}`}
+        intro={
+          <p>
+            What it cost to run the government in {year}, <Term id="vote">vote</Term> by vote: the budget Parliament
+            approved, the budget as revised during the year, and what was spent. From the audited Statement of Operating
+            Expenditure (<span lang="ms">Perbelanjaan Mengurus</span>, Lampiran 1).{" "}
+            <Link href="/methodology">How these numbers are checked.</Link>
+          </p>
+        }
       >
-        <Stat label="Anggaran Asal" value={formatSenCompact(totals.total_original_sen)} />
-        <Stat label="Anggaran Semak" value={formatSenCompact(totals.total_revised_sen)} />
-        <Stat label="Sebenar" value={formatSenCompact(totals.total_actual_sen)} />
-        <Stat
-          label="Prestasi"
-          value={`${pct.toFixed(1)}%`}
-        />
-      </div>
-      <p className="text-xs -mt-6 mb-8" style={{ color: "var(--muted)" }}>
-        Totals as printed in the statement (JUMLAH KESELURUHAN MENGURUS),{" "}
-        <CitationLink year={year} docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
-        Actual spending includes the {formatSen(spending.development_fund_transfer_sen)} transfer to the
-        Development Fund (Kumpulan Wang Pembangunan,{" "}
-        <CitationLink
-          year={year}
-          docUrl={spending.doc_url}
-          pdfPage={spending.transfer_pdf_page}
-          bookPage={spending.transfer_book_page}
-        />
-        ). data.gov.my reports operating expenditure without it.
-      </p>
+        <YearNav year={year} years={years} suffix="/operating" />
+      </PageHeader>
 
-      {/* Charged vs Supply split */}
+      <StatRow
+        stats={[
+          { label: <BiLabel en="Original budget" ms="Anggaran Asal" />, ...money(totals.total_original_sen) },
+          {
+            label: <BiLabel en="Revised budget" ms="Jumlah" />,
+            ...money(totals.total_revised_sen),
+            sub: <Term id="original-revised">after changes during the year</Term>,
+          },
+          { label: <BiLabel en="Spent" ms="Sebenar" />, ...money(totals.total_actual_sen) },
+          { label: <BiLabel en="% used" ms="Prestasi" />, value: `${pct.toFixed(1)}%`, sub: "of the revised budget" },
+        ]}
+      />
+
       {(totals.charged_revised_sen > 0 || totals.supply_revised_sen > 0) && (
-        <div
-          className="grid grid-cols-2 gap-4 mb-8 p-4 rounded-lg border"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <SectionStat
-            label="Tanggungan (Charged)"
-            revised={formatSenCompact(totals.charged_revised_sen)}
-            actual={formatSenCompact(totals.charged_actual_sen)}
-          />
-          <SectionStat
-            label="Bekalan (Supply)"
-            revised={formatSenCompact(totals.supply_revised_sen)}
-            actual={formatSenCompact(totals.supply_actual_sen)}
-          />
-        </div>
+        <StatRow
+          stats={[
+            {
+              label: <BiLabel en="Supply votes (B), spent" ms="Bekalan" />,
+              ...money(totals.supply_actual_sen),
+              sub: (
+                <>
+                  of a revised <Money sen={totals.supply_revised_sen} />; voted by Parliament each year
+                </>
+              ),
+            },
+            {
+              label: <BiLabel en="Charged votes (T), spent" ms="Tanggungan" />,
+              ...money(totals.charged_actual_sen),
+              sub: (
+                <>
+                  of a revised <Money sen={totals.charged_revised_sen} />; charged by law, such as debt service and
+                  pensions
+                </>
+              ),
+            },
+          ]}
+        />
       )}
 
-      {/* Vote table */}
-      <div className="mb-3 flex flex-wrap gap-4 text-xs" style={{ color: "var(--muted)" }}>
-        <span>Sort by:</span>
-        <SortLink year={year} col="code" current={sort} label="Vote code" />
-        <SortLink year={year} col="revised_sen" current={sort} label="Revised" />
-        <SortLink year={year} col="actual_sen" current={sort} label="Actual" />
-      </div>
+      <Band wide>
+        <p className="max-w-3xl text-charcoal-800">
+          Totals as printed in the statement (<span lang="ms">Jumlah Keseluruhan Mengurus</span>),{" "}
+          <CitationLink year={year} docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
+          Spending here includes the <Money sen={spending.development_fund_transfer_sen} /> transfer to the Development
+          Fund (<span lang="ms">Kumpulan Wang Pembangunan</span>,{" "}
+          <CitationLink
+            year={year}
+            docUrl={spending.doc_url}
+            pdfPage={spending.transfer_pdf_page}
+            bookPage={spending.transfer_book_page}
+          />
+          ), which pays for <Term id="operating-development">development</Term> spending; the{" "}
+          <Link href={`/${year}`}>year&apos;s total</Link> counts that money once. data.gov.my reports operating
+          expenditure without it.
+        </p>
+      </Band>
 
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Kod</th>
-              <th>Maksud Perbelanjaan</th>
-              <th className="text-right">Asal (RM)</th>
-              <th className="text-right">Jumlah (RM)</th>
-              <th className="text-right">Sebenar (RM)</th>
-              <th>Prestasi</th>
-              <th className="text-right">Varian (RM)</th>
-              <th>Sumber</th>
-            </tr>
-          </thead>
-          <tbody>
-            {votes.map((v) => {
-              const varian = v.revised_sen - v.actual_sen;
-              const over = v.actual_sen > v.revised_sen;
-              return (
-                <tr key={v.code}>
-                  <td className="font-mono text-xs whitespace-nowrap">
-                    <Link href={`/${year}/vote/${voteCodeToSlug(v.code)}`}>
-                      {v.code}
-                    </Link>
-                  </td>
-                  <td className="max-w-xs">
-                    <Link href={`/${year}/vote/${voteCodeToSlug(v.code)}`}>
-                      {v.name_ms}
-                    </Link>
-                  </td>
-                  <td className="num">{formatSen(v.original_sen)}</td>
-                  <td className="num">{formatSen(v.revised_sen)}</td>
-                  <td className={`num ${over ? "over-budget" : ""}`}>
-                    {formatSen(v.actual_sen)}
-                  </td>
-                  <td>
-                    <UtilBar revised={v.revised_sen} actual={v.actual_sen} />
-                  </td>
-                  <td className={`num ${over ? "over-budget" : ""}`}>
-                    {formatSen(varian as Parameters<typeof formatSen>[0])}
-                  </td>
-                  <td>
-                    <CitationLink
-                      year={year}
-                      docUrl={v.doc_url}
-                      pdfPage={v.pdf_page}
-                      bookPage={v.book_page}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <Band wide>
+        <H2>Every operating vote</H2>
+        <p className="mt-3 max-w-3xl text-charcoal-800">
+          <Term id="vote-codes">B votes</Term> are ministries&apos; supply votes; T votes are charged expenditure. Hover
+          a figure for the exact amount, or open a vote for every line to the sen.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <span className="text-charcoal-700">Sort by:</span>
+          <SortLink year={year} col="code" current={sort} label="Vote code" />
+          <SortLink year={year} col="revised_sen" current={sort} label="Revised budget" />
+          <SortLink year={year} col="actual_sen" current={sort} label="Spent" />
+        </div>
+
+        <div className="table-scroll mt-6">
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  <BiLabel en="Code" ms="Kod" />
+                </th>
+                <th>
+                  <BiLabel en="Vote" ms="Maksud Perbelanjaan" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Original budget" ms="Asal" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Revised budget" ms="Jumlah" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Spent" ms="Sebenar" />
+                </th>
+                <th>
+                  <BiLabel en="% used" ms="Prestasi" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Unspent" ms="Varian" />
+                </th>
+                <th>
+                  <BiLabel en="Source" ms="Sumber" />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {votes.map((v) => {
+                const over = v.actual_sen > v.revised_sen;
+                const href = `/${year}/vote/${voteCodeToSlug(v.code)}`;
+                return (
+                  <tr key={v.code}>
+                    <td className="font-mono text-xs whitespace-nowrap">
+                      <Link href={href}>{v.code}</Link>
+                    </td>
+                    <td lang="ms">
+                      <Link href={href}>{titleCase(v.name_ms)}</Link>
+                    </td>
+                    <td className="num">
+                      <Money sen={v.original_sen} />
+                    </td>
+                    <td className="num">
+                      <Money sen={v.revised_sen} />
+                    </td>
+                    <td className={`num ${over ? "over-budget" : ""}`}>
+                      <Money sen={v.actual_sen} />
+                    </td>
+                    <td>
+                      <UtilBar revised={v.revised_sen} actual={v.actual_sen} />
+                    </td>
+                    <td className={`num ${over ? "over-budget" : ""}`}>
+                      <Money sen={(v.revised_sen - v.actual_sen) as Sen} />
+                    </td>
+                    <td>
+                      <CitationLink year={year} docUrl={v.doc_url} pdfPage={v.pdf_page} bookPage={v.book_page} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Band>
     </>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs mb-1" style={{ color: "var(--muted)" }}>
-        {label}
-      </div>
-      <div className="text-lg font-semibold tabnum">{value}</div>
-    </div>
-  );
-}
-
-function SectionStat({
-  label,
-  revised,
-  actual,
-}: {
-  label: string;
-  revised: string;
-  actual: string;
-}) {
-  return (
-    <div>
-      <div className="font-medium mb-1">{label}</div>
-      <div className="text-xs" style={{ color: "var(--muted)" }}>
-        Semak: <span className="tabnum">{revised}</span>
-      </div>
-      <div className="text-xs" style={{ color: "var(--muted)" }}>
-        Sebenar: <span className="tabnum">{actual}</span>
-      </div>
-    </div>
   );
 }

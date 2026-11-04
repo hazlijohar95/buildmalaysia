@@ -7,9 +7,12 @@ import {
   type YearSpending,
 } from "@/lib/queries/spending";
 import { getFiscalTotals } from "@/lib/queries/overview";
-import { formatSen, formatSenCompact, type Sen } from "@/lib/money";
+import { titleCase } from "@/lib/queries/sankey";
+import type { Sen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
+import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import { Money, Term, change, money } from "@/components/Figures";
 import YearNav from "@/components/YearNav";
 
 /** Federal spending for one fiscal year: the total, its parts, the trend and each ministry. */
@@ -22,110 +25,139 @@ export default async function YearOverview({ year }: { year: number }) {
   ]);
 
   if (!spending || !operating) {
-    return <p>No statements have been loaded for {year} yet.</p>;
+    return (
+      <Band wide>
+        <p>No statements have been loaded for {year} yet.</p>
+      </Band>
+    );
   }
   const covid = spending.covid_fund_actual_sen;
   const showCovid = covid !== null && covid > 0;
-
   const largest = ministries[0]?.actual_sen ?? 0;
 
   return (
     <>
-      <div className="mb-8">
-        <YearNav year={year} years={byYear.map((y) => y.fiscal_year)} />
-        <h1 className="text-2xl font-semibold mb-1">Federal spending {year}</h1>
-        <p style={{ color: "var(--muted)" }} className="text-sm max-w-2xl">
-          What the Malaysian federal government actually spent in {year}, from the audited federal financial
-          statements. Every figure links to the page it was read from.{" "}
-          <Link href="/methodology">How these numbers are checked.</Link>
-        </p>
-      </div>
-
-      <div
-        className={`grid grid-cols-1 ${showCovid ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-4 mb-3 p-4 rounded-lg border`}
-        style={{ borderColor: "var(--border)" }}
+      <PageHeader
+        wide
+        eyebrow="Federal spending · audited statements"
+        title={`Federal spending ${year}`}
+        intro={
+          <p>
+            What the Malaysian federal government actually spent in {year}, from the audited federal financial
+            statements. Every figure links to the page it was read from.{" "}
+            <Link href="/methodology">How these numbers are checked.</Link>
+          </p>
+        }
       >
-        <Stat label="Total spending" value={formatSenCompact(spending.total_actual_sen)} />
-        <Stat
-          label="Operating (Mengurus)"
-          value={formatSenCompact(spending.operating_net_actual_sen)}
-          href={`/${year}/operating`}
-        />
-        <Stat
-          label="Development (Pembangunan)"
-          value={formatSenCompact(spending.development_actual_sen)}
-          href={`/${year}/development`}
-        />
-        {showCovid && <Stat label="COVID-19 Fund" value={formatSenCompact(covid)} href={`/${year}/covid`} />}
-      </div>
-      <p className="text-xs mb-10 max-w-3xl" style={{ color: "var(--muted)" }}>
-        Operating is the printed operating total of {formatSen(spending.operating_actual_sen)} (
-        <CitationLink
-          year={year}
-          docUrl={spending.doc_url}
-          pdfPage={spending.operating_pdf_page}
-          bookPage={spending.operating_book_page}
-        />
-        ) less the {formatSen(spending.development_fund_transfer_sen)} transfer to the Development Fund (
-        <CitationLink
-          year={year}
-          docUrl={spending.doc_url}
-          pdfPage={spending.transfer_pdf_page}
-          bookPage={spending.transfer_book_page}
-        />
-        ). That fund pays for development spending, so counting the transfer as well would count the same money
-        twice. Development is the printed development total (
-        <CitationLink
-          year={year}
-          docUrl={spending.doc_url}
-          pdfPage={spending.development_pdf_page}
-          bookPage={spending.development_book_page}
-        />
-        ).
-        {showCovid && spending.covid_fund_pdf_page !== null && spending.covid_fund_book_page !== null && (
-          <>
-            {" "}
-            The COVID-19 Fund (Kumpulan Wang COVID-19) was financed outside the operating account, so its spending
-            adds to the other two (
-            <CitationLink
-              year={year}
-              docUrl={spending.doc_url}
-              pdfPage={spending.covid_fund_pdf_page}
-              bookPage={spending.covid_fund_book_page}
-            />
-            ).
-          </>
-        )}{" "}
-        Each part is checked against data.gov.my&apos;s published figures; see the methodology.
-      </p>
+        <YearNav year={year} years={byYear.map((y) => y.fiscal_year)} />
+      </PageHeader>
+
+      <StatRow
+        stats={[
+          { label: "Total spending", ...money(spending.total_actual_sen) },
+          {
+            label: "Operating",
+            ...money(spending.operating_net_actual_sen),
+            sub: <Link href={`/${year}/operating`}>Every operating vote</Link>,
+          },
+          {
+            label: "Development",
+            ...money(spending.development_actual_sen),
+            sub: <Link href={`/${year}/development`}>Every development vote</Link>,
+          },
+          ...(showCovid
+            ? [
+                {
+                  label: "COVID-19 Fund",
+                  ...money(covid),
+                  sub: <Link href={`/${year}/covid`}>Every programme</Link>,
+                },
+              ]
+            : []),
+        ]}
+      />
+
+      <Band wide>
+        <p className="max-w-3xl text-charcoal-800">
+          <Term id="operating-development">Operating</Term> is the printed operating total of{" "}
+          <Money sen={spending.operating_actual_sen} /> (
+          <CitationLink
+            year={year}
+            docUrl={spending.doc_url}
+            pdfPage={spending.operating_pdf_page}
+            bookPage={spending.operating_book_page}
+          />
+          ) less the <Money sen={spending.development_fund_transfer_sen} /> transfer to the Development Fund (
+          <CitationLink
+            year={year}
+            docUrl={spending.doc_url}
+            pdfPage={spending.transfer_pdf_page}
+            bookPage={spending.transfer_book_page}
+          />
+          ). That fund pays for development spending, so counting the transfer as well would count the same money twice.
+          Development is the printed development total (
+          <CitationLink
+            year={year}
+            docUrl={spending.doc_url}
+            pdfPage={spending.development_pdf_page}
+            bookPage={spending.development_book_page}
+          />
+          ).
+          {showCovid && spending.covid_fund_pdf_page !== null && spending.covid_fund_book_page !== null && (
+            <>
+              {" "}
+              The COVID-19 Fund (<span lang="ms">Kumpulan Wang COVID-19</span>) was financed outside the operating
+              account, so its spending adds to the other two (
+              <CitationLink
+                year={year}
+                docUrl={spending.doc_url}
+                pdfPage={spending.covid_fund_pdf_page}
+                bookPage={spending.covid_fund_book_page}
+              />
+              ).
+            </>
+          )}{" "}
+          Each part is checked against data.gov.my&apos;s published figures; see the{" "}
+          <Link href="/methodology">methodology</Link>.
+        </p>
+      </Band>
 
       {byYear.length > 1 && <YearTable years={byYear} current={year} />}
 
-      <h2 className="text-lg font-semibold mb-1">By ministry</h2>
-      <p className="text-xs mb-3 max-w-3xl" style={{ color: "var(--muted)" }}>
-        Each ministry&apos;s supply vote (B) and development vote (P), actual spending as printed. Charged expenditure
-        (T votes, such as debt service and pensions, {formatSenCompact(operating.charged_actual_sen)}) is not
-        voted to a ministry and is listed under <Link href={`/${year}/operating`}>operating expenditure</Link>. B.12 is
-        transfers into statutory funds, including the Development Fund transfer above.
-      </p>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Ministry or department</th>
-              <th className="text-right">Operating (RM)</th>
-              <th className="text-right">Development (RM)</th>
-              <th className="text-right">Total (RM)</th>
-              <th style={{ minWidth: 120 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {ministries.map((m) => (
-              <MinistryRow key={m.number} year={year} m={m} largest={largest} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Band wide>
+        <H2>By ministry</H2>
+        <p className="mt-3 max-w-3xl text-charcoal-800">
+          Each ministry&apos;s <Term id="vote-codes">supply vote (B) and development vote (P)</Term>, actual spending as
+          printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
+          <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
+          <Link href={`/${year}/operating`}>operating expenditure</Link>. B.12 is transfers into statutory funds,
+          including the Development Fund transfer above. Hover a figure for the exact amount.
+        </p>
+        <div className="table-scroll mt-8">
+          <table>
+            <thead>
+              <tr>
+                <th>Ministry or department</th>
+                <th className="!text-right">
+                  <BiLabel en="Operating" ms="Mengurus" />
+                </th>
+                <th className="!text-right">
+                  <BiLabel en="Development" ms="Pembangunan" />
+                </th>
+                <th className="!text-right">Total</th>
+                <th className="relative min-w-[120px]">
+                  <span className="sr-only">Share of the largest</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {ministries.map((m) => (
+                <MinistryRow key={m.number} year={year} m={m} largest={largest} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Band>
     </>
   );
 }
@@ -134,17 +166,19 @@ function MinistryRow({ year, m, largest }: { year: number; m: MinistrySpending; 
   const width = largest > 0 ? (m.actual_sen / largest) * 100 : 0;
   return (
     <tr>
-      <td className="max-w-sm">{m.name_ms}</td>
+      <td lang="ms">{titleCase(m.name_ms)}</td>
       <td className="num">
         <VoteAmount year={year} code={m.operating_vote_code} amount={m.operating_actual_sen} />
       </td>
       <td className="num">
         <VoteAmount year={year} code={m.development_vote_code} amount={m.development_actual_sen} />
       </td>
-      <td className="num font-medium">{formatSen(m.actual_sen)}</td>
+      <td className="num font-medium">
+        <Money sen={m.actual_sen} />
+      </td>
       <td>
-        <div className="h-1.5 rounded-full" style={{ background: "var(--border)" }}>
-          <div className="h-full rounded-full" style={{ width: `${width}%`, background: "var(--accent)" }} />
+        <div className="h-2 bg-linen-200">
+          <div className="h-full bg-foreground" style={{ width: `${width}%` }} />
         </div>
       </td>
     </tr>
@@ -152,13 +186,11 @@ function MinistryRow({ year, m, largest }: { year: number; m: MinistrySpending; 
 }
 
 function VoteAmount({ year, code, amount }: { year: number; code: string | null; amount: Sen | null }) {
-  if (code === null || amount === null) return <span style={{ color: "var(--muted)" }}>–</span>;
+  if (code === null || amount === null) return <span className="text-charcoal-600">–</span>;
   return (
-    <Link href={`/${year}/vote/${voteCodeToSlug(code)}`} title={code}>
-      {formatSen(amount)}
-      <span className="font-mono text-xs ml-1" style={{ color: "var(--muted)" }}>
-        {code}
-      </span>
+    <Link href={`/${year}/vote/${voteCodeToSlug(code)}`}>
+      <Money sen={amount} />
+      <span className="font-mono text-xs ml-2 text-charcoal-600">{code}</span>
     </Link>
   );
 }
@@ -166,53 +198,57 @@ function VoteAmount({ year, code, amount }: { year: number; code: string | null;
 function YearTable({ years, current }: { years: YearSpending[]; current: number }) {
   const hasCovid = years.some((y) => y.covid_fund_actual_sen > 0);
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold mb-3">Year by year</h2>
-      <div className="table-scroll">
+    <Band wide>
+      <H2>Year by year</H2>
+      <div className="table-scroll mt-8">
         <table>
           <thead>
             <tr>
               <th>Year</th>
-              <th className="text-right">Operating (RM)</th>
-              <th className="text-right">Development (RM)</th>
-              {hasCovid && <th className="text-right">COVID-19 Fund (RM)</th>}
-              <th className="text-right">Total (RM)</th>
-              <th className="text-right">Change</th>
+              <th className="!text-right">
+                <BiLabel en="Operating" ms="Mengurus" />
+              </th>
+              <th className="!text-right">
+                <BiLabel en="Development" ms="Pembangunan" />
+              </th>
+              {hasCovid && <th className="!text-right">COVID-19 Fund</th>}
+              <th className="!text-right">Total</th>
+              <th className="!text-right">Change</th>
             </tr>
           </thead>
           <tbody>
             {years.map((y, i) => {
               const prior = years[i - 1];
-              const change = prior ? ((y.total_actual_sen - prior.total_actual_sen) / prior.total_actual_sen) * 100 : null;
               return (
-                <tr key={y.fiscal_year} className={y.fiscal_year === current ? "font-medium" : ""}>
+                <tr key={y.fiscal_year} className={y.fiscal_year === current ? "font-semibold" : ""}>
                   <td>
-                    <Link href={`/${y.fiscal_year}`}>{y.fiscal_year}</Link>
+                    {y.fiscal_year === current ? (
+                      <span aria-current="page">{y.fiscal_year}</span>
+                    ) : (
+                      <Link href={`/${y.fiscal_year}`}>{y.fiscal_year}</Link>
+                    )}
                   </td>
-                  <td className="num">{formatSen(y.operating_net_actual_sen)}</td>
-                  <td className="num">{formatSen(y.development_actual_sen)}</td>
+                  <td className="num">
+                    <Money sen={y.operating_net_actual_sen} />
+                  </td>
+                  <td className="num">
+                    <Money sen={y.development_actual_sen} />
+                  </td>
                   {hasCovid && (
-                    <td className="num">{y.covid_fund_actual_sen > 0 ? formatSen(y.covid_fund_actual_sen) : "–"}</td>
+                    <td className="num">
+                      {y.covid_fund_actual_sen > 0 ? <Money sen={y.covid_fund_actual_sen} /> : "–"}
+                    </td>
                   )}
-                  <td className="num">{formatSen(y.total_actual_sen)}</td>
-                  <td className="num">{change === null ? "–" : `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`}</td>
+                  <td className="num">
+                    <Money sen={y.total_actual_sen} />
+                  </td>
+                  <td className="num">{prior ? change(y.total_actual_sen, prior.total_actual_sen) : "–"}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-    </section>
-  );
-}
-
-function Stat({ label, value, href }: { label: string; value: string; href?: string }) {
-  return (
-    <div>
-      <div className="text-xs mb-1" style={{ color: "var(--muted)" }}>
-        {href ? <Link href={href}>{label}</Link> : label}
-      </div>
-      <div className="text-xl font-semibold tabnum">{value}</div>
-    </div>
+    </Band>
   );
 }
