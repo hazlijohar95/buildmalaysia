@@ -1,6 +1,7 @@
 // Laid out after buildcanada.com/about: a split hero, an anchor row, numbered principles and a two-column FAQ.
 // The coverage figures are counted live from the database.
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
@@ -50,14 +51,19 @@ interface Member {
   linkedin?: string;
 }
 
-const initials = (text: string) => (
-  <span className="flex h-full w-full items-center justify-center bg-auburn-800 font-display text-3xl font-semibold text-linen-50">
-    {text}
-  </span>
+// Portraits are cropped square and graded warm and slightly muted, so they sit together on the linen page.
+const photo = (src: string, alt: string) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={224}
+    height={224}
+    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+  />
 );
 
 const TEAM: Member[] = [
-  { name: "Hazli Johar", role: "Chief Maintainer", portrait: initials("HJ") },
+  { name: "Hazli Johar", role: "Chief Designer & Maintainer", portrait: photo("/team/hazli-johar.jpg", "Hazli Johar") },
   {
     name: "Claude Code",
     role: "Principal Engineer",
@@ -67,7 +73,7 @@ const TEAM: Member[] = [
       </span>
     ),
   },
-  { name: "Mochi", role: "Chief Morale Officer (cat)", portrait: initials("M") },
+  { name: "Mochi", role: "Chief Morale Officer", portrait: photo("/team/mochi.jpg", "Mochi the cat, asleep") },
 ];
 
 const sections = [
@@ -198,7 +204,7 @@ export default async function AboutPage() {
         <H2>Core team</H2>
         <ul className="m-0 mt-10 grid list-none gap-6 p-0 md:grid-cols-2 lg:grid-cols-3">
           {TEAM.map((m) => (
-            <li key={m.name} className="flex border border-foreground/40">
+            <li key={m.name} className="group flex border border-foreground/40">
               <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">{m.portrait}</div>
               <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
                 <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
