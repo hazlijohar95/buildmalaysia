@@ -1,0 +1,272 @@
+"""Parse the MOF budget book's development estimates per vote (P votes).
+
+Each P vote prints one table of projects (Butiran, a five-digit code) with five amounts:
+total project cost (Jumlah Anggaran Harga Projek), actual spending in the year before the
+current one (Perbelanjaan Sebenar), the current year's revised estimate (Anggaran Dipinda)
+and the budget year's estimate split into direct (Cara Langsung) and loan-funded
+(Pinjaman). Projects may sit under group headings in title case, each closed by a
+"Jumlah" line; the table closes with "JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN".
+
+A line of text after a project continues its name ("BHEUU", "(MPOB)", "Strategik"); a line
+of text at the start of the table or straight after a group's Jumlah opens a group. The
+reconciliation views check every Jumlah against its projects, so a wrong reading of a
+heading fails the load.
+"""
+
+import re
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+
+from pipeline.budget_detail import trailing_values
+from pipeline.model import Citation
+from pipeline.parse import PageText, ParseError, Value
+
+_BOOK_PAGE = re.compile(r"^(\d+) \| ANGGARAN|ANGGARAN PERBELANJAAN PERSEKUTUAN \d{4} \| (\d+)$")
+_FOOTER = re.compile(r"(?:\d+ \| )?ANGGARAN PERBELANJAAN PERSEKUTUAN \d{4}(?: \| \d+)?")
+_TITLE = re.compile(r"Maksud Pembangunan (?P<num>\d+) [–-] (?P<name>.+?)(?:\s+P\.\d+)?$")
+_VOTE = re.compile(r"(?<![\w./])P\.(?P<num>\d{1,2})(?![\w.])")
+_PROJECT = re.compile(r"(?P<code>\d{5})(?:\s+(?P<name>.*))?")
+
+
+@dataclass(frozen=True)
+class ProjectAmounts:
+    total_cost: int
+    actual_prior: int  # actual spending two years before the budget year (2025 in Budget 2027)
+    revised: int  # the current year's revised estimate (Anggaran Dipinda 2026)
+    estimate_direct: int
+    estimate_loan: int
+
+    def __add__(self, other: "ProjectAmounts") -> "ProjectAmounts":
+        return ProjectAmounts(
+            self.total_cost + other.total_cost,
+            self.actual_prior + other.actual_prior,
+            self.revised + other.revised,
+            self.estimate_direct + other.estimate_direct,
+            self.estimate_loan + other.estimate_loan,
+        )
+
+
+ZERO = ProjectAmounts(0, 0, 0, 0, 0)
+
+
+@dataclass
+class Project:
+    code: str
+    parts: list[str]
+    citation: Citation
+    group: int | None
+    amounts: ProjectAmounts | None = None
+
+    @property
+    def name(self) -> str:
+        return " ".join(" ".join(self.parts).split())
+
+
+@dataclass
+class Group:
+    ordinal: int
+    name: str
+    citation: Citation
+    total: tuple[ProjectAmounts, Citation] | None = None
+
+
+@dataclass
+class DevelopmentVoteEstimate:
+    code: str
+    name: str
+    projects: list[Project] = field(default_factory=list)
+    groups: list[Group] = field(default_factory=list)
+    total: tuple[ProjectAmounts, Citation] | None = None
+
+
+@dataclass(frozen=True)
+class DevelopmentEstimates:
+    budget_year: int
+    votes: tuple[DevelopmentVoteEstimate, ...]
+    contingency: int  # P.70 Simpanan Luar Jangka for the budget year, sen (Lampiran D)
+    appendix_checks: int  # Lampiran D rows checked against the vote tables
+
+
+def _amounts(values: list[Value]) -> ProjectAmounts:
+    if len(values) != 5 or any(v.marks or v.has_decimals for v in values):
+        raise ValueError("expected five whole-ringgit amounts")
+    a = [v.hundredths for v in values]
+    return ProjectAmounts(a[0], a[1], a[2], a[3], a[4])
+
+
+class _Parser:
+    def __init__(self) -> None:
+        self.votes: dict[str, DevelopmentVoteEstimate] = {}
+        self.vote: DevelopmentVoteEstimate | None = None
+        self.last: Project | None = None  # the project a text line would continue
+        self.awaiting_total = False  # "JUMLAH ANGGARAN" printed, amounts on a later line
+        # Lampiran D, "Ringkasan Anggaran Perbelanjaan Pembangunan": per vote, total project
+        # cost and the budget year's direct, loan and total; and the grand total.
+        self.appendix: dict[str, tuple[tuple[int, int, int, int], Citation]] = {}
+        self.where = Citation(0, 0, 0, "")
+
+    def fail(self, message: str) -> ParseError:
+        return ParseError(self.where.pdf_page, self.where.line_no, self.where.text, message)
+
+    def feed_page(self, page: PageText) -> None:
+        lines = page.layout.split("\n")
+        texts = [" ".join(line.split()) for line in lines]
+        if any(t.startswith("RINGKASAN ANGGARAN PERBELANJAAN PEMBANGUNAN TAHUN") for t in texts):
+            self.appendix_page(page, texts)
+            return
+        if not any("Harga Projek" in t for t in texts) or any(t.startswith("LAMPIRAN ") for t in texts[:3]):
+            return
+        book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), None)
+        head = next((i for i, t in enumerate(texts) if _TITLE.search(t)), None)
+        if book_page is None or head is None:
+            raise ParseError(page.pdf_page, 1, texts[0], "development table page without title or page number")
+        title = _TITLE.search(texts[head])
+        assert title is not None
+        code = f"P.{int(title['num']):02d}"
+        labels = {f"P.{int(m['num']):02d}" for t in texts[: head + 1] for m in _VOTE.finditer(t)}
+        if labels - {code}:
+            raise ParseError(page.pdf_page, head + 1, texts[head], f"title {code} beside {sorted(labels)}")
+        self.enter_vote(code, title["name"])
+        units = next((i for i, t in enumerate(texts) if re.fullmatch(r"RM(?: RM){4}", t)), None)
+        if units is None:
+            raise ParseError(page.pdf_page, 1, "", "no units line with five RM columns")
+        for i in range(units + 1, len(lines)):
+            text = texts[i]
+            self.where = Citation(page.pdf_page, book_page, i + 1, text)
+            if not text or _FOOTER.fullmatch(text):
+                continue
+            self.line(lines[i].strip())
+
+    def appendix_page(self, page: PageText, texts: list[str]) -> None:
+        book_page = next((int(m[1] or m[2]) for t in texts if (m := _BOOK_PAGE.search(t))), 0)
+        for i, text in enumerate(texts):
+            self.where = Citation(page.pdf_page, book_page, i + 1, text)
+            label, values, _ = trailing_values(text, 4)
+            if len(values) != 4:
+                continue
+            a = tuple(v.hundredths for v in values)
+            amounts = (a[0], a[1], a[2], a[3])
+            if amounts[1] + amounts[2] != amounts[3] and not label.startswith("P.70"):
+                if not label.startswith("JUMLAH"):
+                    raise self.fail("Lampiran D row: direct + loan != total")
+            if (m := re.match(r"P\.(\d{1,2})\s", label)) is not None:
+                self.appendix[f"P.{int(m[1]):02d}"] = (amounts, self.where)
+            elif label.startswith("JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN"):
+                self.appendix["total"] = (amounts, self.where)
+            else:
+                raise self.fail("unknown Lampiran D row")
+
+    def check_appendix(self) -> int:
+        """Every vote table against its Lampiran D row, and the appendix's grand total."""
+        if "total" not in self.appendix or "P.70" not in self.appendix:
+            raise ParseError(0, 0, "", "Lampiran D not found or incomplete")
+        checks = 0
+        for code, vote in self.votes.items():
+            if code not in self.appendix:
+                raise ParseError(0, 0, "", f"{code} has no Lampiran D row")
+            (cost, direct, loan, total), at = self.appendix[code]
+            assert vote.total is not None
+            t = vote.total[0]
+            printed = (t.total_cost, t.estimate_direct, t.estimate_loan, t.estimate_direct + t.estimate_loan)
+            if code == "P.70":
+                # The contingency reserve's own table prints it as Cara Langsung; Lampiran D and
+                # the summary pages keep it outside direct and loan. Only the totals compare.
+                printed, expected = (printed[0], printed[3]), (cost, total)
+            else:
+                expected = (cost, direct, loan, total)
+            if printed != expected:
+                raise ParseError(at.pdf_page, at.line_no, at.text, f"Lampiran D disagrees with the {code} table")
+            checks += 1
+        extra = set(self.appendix) - set(self.votes) - {"total", "P.70"}
+        if extra:
+            raise ParseError(0, 0, "", f"Lampiran D lists votes with no table: {sorted(extra)}")
+        rows = [a for code, (a, _) in self.appendix.items() if code != "total"]
+        summed = tuple(sum(r[i] for r in rows) for i in range(4))
+        total, at = self.appendix["total"]
+        if summed != total:
+            raise ParseError(at.pdf_page, at.line_no, at.text, f"Lampiran D total {total}, its rows sum to {summed}")
+        return checks + 1
+
+    def enter_vote(self, code: str, name: str) -> None:
+        if self.vote is not None and self.vote.code == code:
+            return
+        if self.vote is not None:
+            self.finish_vote()
+        if code in self.votes:
+            raise self.fail(f"{code} appears again after another vote")
+        self.vote = DevelopmentVoteEstimate(code, " ".join(name.split()))
+        self.votes[code] = self.vote
+        self.last, self.awaiting_total = None, False
+
+    def line(self, line: str) -> None:
+        vote = self.vote
+        assert vote is not None
+        if vote.total is not None:
+            return  # notes under the table
+        label, values, _ = trailing_values(line, 5)
+        if len(values) < 5:
+            label, values = line, []  # a name ending in a number ("Kecemasan Negara 999")
+        label = " ".join(label.split())
+        try:
+            amounts = _amounts(values) if values else None
+        except ValueError as error:
+            raise self.fail(str(error)) from error
+        if label.startswith("JUMLAH ANGGARAN") or (self.awaiting_total and amounts and not label):
+            if amounts is None:
+                self.awaiting_total = True
+                return
+            vote.total = (amounts, self.where)
+            return
+        if label == "Jumlah":
+            group = vote.groups[-1] if vote.groups else None
+            if amounts is None or group is None or group.total is not None:
+                raise self.fail("group Jumlah with no open group or no amounts")
+            group.total = (amounts, self.where)
+            self.last = None
+            return
+        if (m := _PROJECT.fullmatch(label)) is not None:
+            # After a group's Jumlah, projects with no new heading belong to the vote only.
+            group = vote.groups[-1].ordinal if vote.groups and vote.groups[-1].total is None else None
+            self.last = Project(m["code"], [m["name"] or ""], self.where, group, amounts)
+            vote.projects.append(self.last)
+            return
+        if amounts is not None:
+            if self.last is None or self.last.amounts is not None:
+                raise self.fail("amounts with no project waiting for them")
+            self.last.parts.append(label)
+            self.last.amounts = amounts
+            return
+        if label.startswith("PERBELANJAAN PEMBANGUNAN"):
+            return  # the second line of the closing "JUMLAH ANGGARAN PERBELANJAAN PEMBANGUNAN"
+        if self.last is not None:
+            self.last.parts.append(label)
+            return
+        vote.groups.append(Group(len(vote.groups) + 1, label, self.where))
+
+    def finish_vote(self) -> None:
+        vote = self.vote
+        assert vote is not None
+        if vote.total is None:
+            raise self.fail(f"{vote.code} development table has no JUMLAH")
+        for project in vote.projects:
+            if project.amounts is None:
+                c = project.citation
+                raise ParseError(c.pdf_page, c.line_no, c.text, f"project {project.code} has no amounts")
+        for group in vote.groups:
+            if group.total is None:
+                c = group.citation
+                raise ParseError(c.pdf_page, c.line_no, c.text, f"group {group.name!r} has no Jumlah")
+        codes = [p.code for p in vote.projects]
+        if len(codes) != len(set(codes)):
+            raise self.fail(f"{vote.code} repeats a project code")
+
+
+def parse_development_estimates(pages: Sequence[PageText], budget_year: int) -> DevelopmentEstimates:
+    parser = _Parser()
+    for page in pages:
+        parser.feed_page(page)
+    if parser.vote is not None:
+        parser.finish_vote()
+    checks = parser.check_appendix()
+    contingency = parser.appendix["P.70"][0][3]
+    return DevelopmentEstimates(budget_year, tuple(parser.votes.values()), contingency, checks)

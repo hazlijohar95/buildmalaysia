@@ -11,6 +11,7 @@ from psycopg.rows import dict_row
 from pipeline.model import Citation, Amounts, CovidFundStatement, DevelopmentStatement, Statement
 from pipeline.budget import BudgetStatement
 from pipeline.budget_detail import Estimate, OperatingEstimates
+from pipeline.budget_development import DevelopmentEstimates
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
 OPERATING_COLUMNS = ("original", "supplementary", "virement", "revised", "actual")
@@ -427,6 +428,8 @@ class BudgetLoadResult:
     actual_checks: dict[str, int]  # result of budget_actual_check -> count
     operating_lines: int
     operating_totals_reconciled: int
+    development_projects: int
+    development_totals_reconciled: int
 
 
 def load_budget(
@@ -436,6 +439,7 @@ def load_budget(
     page_count: int,
     retrieved_at: datetime,
     operating: OperatingEstimates | None = None,
+    development: DevelopmentEstimates | None = None,
 ) -> BudgetLoadResult:
     """Replace this budget book's rows in one transaction.
 
@@ -467,6 +471,9 @@ def load_budget(
                 retrieved_at,
             ),
         )
+        cur.execute("delete from budget_development_total where document_id = %s", (doc,))
+        cur.execute("delete from budget_development_project where document_id = %s", (doc,))
+        cur.execute("delete from budget_development_group where document_id = %s", (doc,))
         cur.execute("delete from budget_operating_total where document_id = %s", (doc,))
         cur.execute("delete from budget_operating_line where document_id = %s", (doc,))
         cur.execute("delete from budget_heading where document_id = %s", (doc,))
@@ -527,14 +534,85 @@ def load_budget(
             ],
         )
         lines, reconciled = _insert_operating_estimates(cur, doc, operating) if operating else (0, 0)
+        projects, dev_reconciled = _insert_development_estimates(cur, doc, development) if development else (0, 0)
         counts = dict(
             cur.execute(
                 "select result, count(*) from budget_actual_check where document_id = %s group by result", (doc,)
             ).fetchall()
         )
     return BudgetLoadResult(
-        len(statement.votes), statement.checks, {str(k): int(v) for k, v in counts.items()}, lines, reconciled
+        len(statement.votes),
+        statement.checks,
+        {str(k): int(v) for k, v in counts.items()},
+        lines,
+        reconciled,
+        projects,
+        dev_reconciled,
     )
+
+
+def _insert_development_estimates(cur: psycopg.Cursor, doc: str, estimates: DevelopmentEstimates) -> tuple[int, int]:
+    groups, projects, totals = [], [], []
+    for vote in estimates.votes:
+        assert vote.total is not None
+        for g in vote.groups:
+            assert g.total is not None
+            groups.append((doc, vote.code, g.ordinal, g.name, g.citation.pdf_page, g.citation.book_page))
+            a, c = g.total
+            totals.append((doc, vote.code, g.ordinal, *astuple(a), c.pdf_page, c.book_page, c.text))
+        a, c = vote.total
+        totals.append((doc, vote.code, None, *astuple(a), c.pdf_page, c.book_page, c.text))
+        for p in vote.projects:
+            assert p.amounts is not None
+            c = p.citation
+            projects.append(
+                (
+                    doc,
+                    vote.code,
+                    p.code,
+                    p.group,
+                    p.name,
+                    *astuple(p.amounts),
+                    c.line_no,
+                    c.pdf_page,
+                    c.book_page,
+                    c.text,
+                )
+            )
+    amounts = "total_cost_sen, actual_prior_sen, revised_sen, estimate_direct_sen, estimate_loan_sen"
+    cur.executemany(
+        "insert into budget_development_group (document_id, vote_code, ordinal, name_ms, pdf_page, book_page)"
+        " values (%s, %s, %s, %s, %s, %s)",
+        groups,
+    )
+    cur.executemany(
+        f"insert into budget_development_project (document_id, vote_code, code, group_ordinal, name_ms, {amounts},"
+        " line_no, pdf_page, book_page, source_text)"
+        " values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        projects,
+    )
+    cur.executemany(
+        f"insert into budget_development_total (document_id, vote_code, group_ordinal, {amounts},"
+        " pdf_page, book_page, source_text) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        totals,
+    )
+    rows = cur.execute(
+        "select matches, vote_code, group_ordinal, pdf_page from budget_development_reconciliation"
+        " where document_id = %s",
+        (doc,),
+    ).fetchall()
+    bad = [f"{r[1]} {'group ' + str(r[2]) if r[2] else 'total'} (pdf page {r[3]})" for r in rows if not r[0]]
+    bad += [
+        f"{r[0]} 2027 direct/loan {r[1]}/{r[2]} sen, summary pages {r[3]}/{r[4]} sen"
+        for r in cur.execute(
+            "select vote_code, estimate_direct_sen, estimate_loan_sen, summary_direct_sen, summary_loan_sen"
+            " from budget_development_consistency where document_id = %s and not matches",
+            (doc,),
+        ).fetchall()
+    ]
+    if bad:
+        raise SourceError(f"{len(bad)} development estimates do not reconcile; load rolled back\n  " + "\n  ".join(bad))
+    return len(projects), len(rows)
 
 
 def _insert_operating_estimates(cur: psycopg.Cursor, doc: str, estimates: OperatingEstimates) -> tuple[int, int]:

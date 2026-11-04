@@ -10,6 +10,7 @@ from pipeline.covid import parse_covid
 from pipeline.development import parse_development
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
+from pipeline.budget_development import parse_development_estimates
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
@@ -88,9 +89,11 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
         statement = parse_budget_summary(extract_pages(pdf, source.summary_pages), year)
-        operating = parse_operating_estimates(extract_pages(pdf, (source.summary_pages[1] + 1, pages)), year)
+        book = extract_pages(pdf, (source.summary_pages[1] + 1, pages))
+        operating = parse_operating_estimates(book, year)
+        development = parse_development_estimates(book, year)
         with psycopg.connect(database_url, autocommit=True) as conn:
-            result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating)
+            result = load_budget(conn, source, statement, pages, retrieved_at(pdf), operating, development)
             differs = conn.execute(
                 "select fiscal_year, vote_code, line, mof_sen, janm_sen, diff_sen from budget_actual_check"
                 " where document_id = %s and result not in ('matches', 'rounding') order by 1, 2, 3",
@@ -104,6 +107,11 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
     print(
         f"  operating estimates: {len(operating.votes)} votes, activity lines {result.operating_lines},"
         f" printed totals reconciled {result.operating_totals_reconciled}"
+    )
+    print(
+        f"  development estimates: {len(development.votes)} votes, projects {result.development_projects},"
+        f" printed totals reconciled {result.development_totals_reconciled},"
+        f" Lampiran D rows checked {development.appendix_checks}"
     )
     print(f"  actuals against the audited statements: {result.actual_checks}")
     for row in differs:

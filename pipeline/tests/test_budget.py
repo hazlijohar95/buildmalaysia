@@ -8,6 +8,7 @@ import pytest
 
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
+from pipeline.budget_development import parse_development_estimates
 from pipeline.development import parse_development
 from pipeline.load import load_budget, load_year
 from pipeline.parse import PageText, ParseError, parse_statement
@@ -107,3 +108,35 @@ def test_a_one_ringgit_edit_to_an_activity_line_is_rejected(pages: list[PageText
             (SOURCE.id,),
         ).fetchone()
         assert stored == (1_877_710_000,)
+
+
+def test_development_estimates_reconcile_with_tables_appendix_and_summary(
+    pages: list[PageText], book: list[PageText]
+) -> None:
+    pdf = ensure_pdf(SOURCE, DEFAULT_RAW_DIR)
+    development = parse_development_estimates(book, 2027)
+    assert (len(development.votes), sum(len(v.projects) for v in development.votes)) == (30, 645)
+    assert development.appendix_checks == 31  # 30 vote rows of Lampiran D and its total
+    assert development.contingency == 200_000_000_000  # P.70, RM2 bn
+    with psycopg.connect(DATABASE_URL, autocommit=True) as conn:
+        result = load_budget(
+            conn,
+            SOURCE,
+            parse_budget_summary(pages, 2027),
+            page_count(pdf),
+            retrieved_at(pdf),
+            parse_operating_estimates(book, 2027),
+            development,
+        )
+        assert (result.development_projects, result.development_totals_reconciled) == (645, 85)
+
+
+def test_lampiran_d_disagreeing_with_a_vote_table_is_rejected(book: list[PageText]) -> None:
+    index = next(i for i, p in enumerate(book) if "RINGKASAN ANGGARAN PERBELANJAAN PEMBANGUNAN TAHUN" in p.layout)
+    edited = book[index].layout.replace(
+        "5,753,683,900               0    5,753,683,900", "5,753,683,901               0    5,753,683,901", 1
+    )
+    assert edited != book[index].layout
+    altered = [*book[:index], replace(book[index], layout=edited), *book[index + 1 :]]
+    with pytest.raises(ParseError, match="Lampiran D"):
+        parse_development_estimates(altered, 2027)
