@@ -10,8 +10,13 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "buildmalaysia" }],
   "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "buildmalaysia-opennext-cache" }],
   "hyperdrive": [
-    // Local runs read CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE instead.
-    { "binding": "HYPERDRIVE", "id": "HYPERDRIVE_ID" },
+    {
+      "binding": "HYPERDRIVE",
+      "id": "f91da185cf3d46c6a4c940de152e7db8",
+      // Local runs and the build use this instead. Override it with
+      // CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE if your Postgres differs.
+      "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/buildmalaysia",
+    },
   ],
   "observability": { "enabled": true },
 }
