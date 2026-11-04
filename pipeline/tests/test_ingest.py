@@ -236,6 +236,18 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
             3_771_101_636_510,
             23_375_205_502_900,
         ),
+        # FY2018 prints four columns in Lampiran 1 (no Tambahan or Viremen) and 18 totals that
+        # disagree with their rows (sources.KnownMisprint): 17 in Lampiran 1, one in Lampiran 2.
+        (
+            2018,
+            (52, 267, 1307, 2604, 2596),
+            (29, 66, 911, 96),
+            26,
+            23_288_256_228_780,
+            5_609_545_566_174,
+            None,
+            23_288_256_228_800,
+        ),
     ],
 )
 def test_earlier_years_load_and_reconcile(
@@ -250,9 +262,11 @@ def test_earlier_years_load_and_reconcile(
 ) -> None:
     source = SOURCES[year]
     pdf = ensure_pdf(source, DEFAULT_RAW_DIR)
-    operating = parse_statement(extract_pages(pdf, source.operating_pages), year)
-    development = parse_development(extract_pages(pdf, source.development_pages), year)
-    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year)
+    operating = parse_statement(extract_pages(pdf, source.operating_pages, source.crop), year, source.operating_columns)
+    development = parse_development(
+        extract_pages(pdf, source.development_pages, source.crop), year, source.crop is not None
+    )
+    revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), year, source.crop is not None)
     covid = (
         parse_covid(extract_pages(pdf, source.covid_pages), year, source.covid_columns) if source.covid_pages else None
     )
@@ -261,8 +275,9 @@ def test_earlier_years_load_and_reconcile(
         o, d = result.operating, result.development
         assert (o.votes, o.programmes, o.activities, o.lines, o.printed_totals) == operating_counts
         assert (d.votes, d.groups, d.projects, d.printed_totals) == development_counts
-        assert o.reconciled == o.printed_totals - len(source.known_misprints)
-        assert d.reconciled == d.printed_totals
+        # Every printed total reconciles except the registered misprints, in either appendix.
+        unreconciled = (o.printed_totals - o.reconciled) + (d.printed_totals - d.reconciled)
+        assert unreconciled == len(source.known_misprints)
         r = result.revenue
         assert (r.items, r.printed_totals, r.reconciled) == (revenue_items, 7, 7)
         assert (r.actual_sen, r.operating_actual_sen) == (revenue_actual, operating_actual)

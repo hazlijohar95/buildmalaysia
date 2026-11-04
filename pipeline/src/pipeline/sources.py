@@ -50,7 +50,17 @@ class SourceDocument:
     # Lampiran 3 (COVID-19 Fund, FY2020-2023): its spread and the column names on each page.
     covid_pages: tuple[int, int] | None = None
     covid_columns: tuple[tuple[str, ...], tuple[str, ...]] = ((), ())
+    # Lampiran 1's columns: 7 (FY2021 on), or 4 (FY2016-2019: Asal, Dipinda, Amaun, %).
+    operating_columns: int = 7
+    # The part of each Lampiran 1 and 2 page `-layout` reads, (x, y, width, height) in points.
+    # FY2016-2019 print the book page in a side tab level with table rows, which -layout
+    # would interleave with them; their tables lie inside x 83-575.
+    crop: tuple[int, int, int, int] | None = None
 
+
+# FY2016-2019 print Lampiran 1 in four columns, with the book page in a side tab. FY2019 is
+# not registered: its PDF omits a page of Lampiran 1 (README, "FY2016-2019 statements").
+_SIDE_TAB_CROP = (78, 0, 500, 842)
 
 SOURCES: dict[int, SourceDocument] = {
     2025: SourceDocument(
@@ -113,6 +123,99 @@ SOURCES: dict[int, SourceDocument] = {
         covid_columns=(
             ("ceiling", "spent_prior"),
             ("allocation", "virement", "revised", "actual", "variance", "percent", "spent_to_date"),
+        ),
+    ),
+    2018: SourceDocument(
+        id="janm-penyata-kewangan-2018",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2018",
+        fiscal_year=2018,
+        url="https://www.anm.gov.my/images/dokumen/arkib/penyata-kewangan/2018_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="6a3a5936dc682e31a058956cdfc9c23a87fd3d507e415b18701b0c02792c30e7",
+        page_count=422,
+        raw_path="janm/2018.pdf",
+        operating_pages=(80, 216),
+        development_pages=(218, 253),
+        revenue_pages=(64, 65),
+        operating_columns=4,
+        crop=_SIDE_TAB_CROP,
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=B.09 programme=030000 object=40000",
+                diffs_sen=(0, 0, 0, 515_260_000, 0),
+                evidence=(
+                    "PDF p107: programme 030000's line 'Pemberian dan Kenaan Bayaran Tetap' prints Dipinda "
+                    "5,537,000 (and 5.16%), but its two 40000 leaves print 331,687 (030100) and 52,713 (030300), "
+                    "384,400 in all. 'Jumlah 030000' (50,847,805) equals its activities and equals Emolumen "
+                    "31,730,000 + Perkhidmatan 18,633,405 + Aset 100,000 + 384,400; the vote's object totals "
+                    "agree with the leaves"
+                ),
+            ),
+            *(
+                KnownMisprint(
+                    key=f"{total} object={code}",
+                    diffs_sen=(0, 0, 0, sign * 28_000_000, 0),
+                    evidence=(
+                        "PDF p157: B.28 activity 050300's only leaf prints '30000 Aset', Dipinda 280,000, Amaun "
+                        "102,863.15. Every object total above it counts that 280,000 Dipinda under Perkhidmatan dan "
+                        "Bekalan and the 102,863.15 actual under Aset: programme 050000 prints Perkhidmatan Dipinda "
+                        "1,191,080 (its leaves: 911,080) and Aset 1,785,920 (its leaves: 2,065,920), and the vote, "
+                        "supply section and statement object totals (PDF p157, p216) carry the same 280,000 shift"
+                    ),
+                )
+                for total in (
+                    "programme total vote=B.28 programme=050000",
+                    "vote total vote=B.28",
+                    "section total section=supply",
+                    "statement total",
+                )
+                for code, sign in (("20000", 1), ("30000", -1))
+            ),
+            *(
+                KnownMisprint(
+                    key=f"programme total vote=B.63 programme={programme} object={code}",
+                    diffs_sen=(0, 0, 0, diff, 0),
+                    evidence=(
+                        "PDF p212-213: the per-object lines of B.63 programmes 080000, 090000, 100000 and 110000 all "
+                        "print Emolumen Dipinda 41,140,500 (95.38%) and Perkhidmatan dan Bekalan Dipinda 31,402,870 "
+                        "(89.94%), whatever their own leaves and Amaun. Each programme's 'Jumlah' equals its "
+                        "activities, and B.63's 'Jumlah Emolumen' and 'Jumlah Perkhidmatan dan Bekalan' agree with "
+                        "the leaves. Programme 110000's total is printed 'Jumlah 100000' (rule "
+                        "PROGRAMME_TOTAL_CODE_MISPRINTED)"
+                    ),
+                )
+                for programme, code, diff in (
+                    ("080000", "10000", 4_106_960_000),
+                    ("080000", "20000", 3_092_934_000),
+                    ("090000", "10000", 3_347_603_200),
+                    ("090000", "20000", -455_921_200),
+                    ("100000", "10000", 1_590_108_400),
+                    ("100000", "20000", 638_552_400),
+                    ("110000", "10000", 2_452_246_500),
+                    ("110000", "20000", 2_244_660_200),
+                )
+            ),
+            KnownMisprint(
+                key="group total vote=P.23 group=3",
+                diffs_sen=(
+                    0,
+                    0,
+                    8_763_643_300,
+                    3_573_761_400,
+                    12_337_404_700,
+                    8_672_146_850,
+                    3_090_512_848,
+                    11_762_659_698,
+                    11_762_659_698,
+                ),  # fmt: skip
+                evidence=(
+                    "PDF p228-229: 'Jumlah FRIM' prints Kos Keseluruhan 143,970,000.00 and RMKe-11 to 2017 "
+                    "41,384,000.00, the sums of its three projects (08100, 08400, 08510), but on the right page "
+                    "Anggaran 147,011,642.00 and Sebenar 141,000,596.98: its projects (23,637,595.00; "
+                    "23,374,000.00) plus the eight unheaded projects printed above its heading, 06400 to 07800 "
+                    "(123,374,047.00; 117,626,596.98). The P.23 vote total agrees with the projects"
+                ),
+            ),
         ),
     ),
     2021: SourceDocument(
@@ -278,9 +381,16 @@ def page_count(path: Path) -> int:
     raise SourceError(f"pdfinfo reported no page count for {path}")
 
 
-def _pdftotext(path: Path, first: int, last: int, mode: str) -> list[str]:
+def _pdftotext(
+    path: Path, first: int, last: int, mode: str, crop: tuple[int, int, int, int] | None = None
+) -> list[str]:
+    box = (
+        []
+        if crop is None
+        else [arg for flag, value in zip("xyWH", crop, strict=True) for arg in (f"-{flag}", str(value))]
+    )
     out = subprocess.run(
-        ["pdftotext", "-enc", "UTF-8", mode, "-f", str(first), "-l", str(last), str(path), "-"],
+        ["pdftotext", "-enc", "UTF-8", mode, *box, "-f", str(first), "-l", str(last), str(path), "-"],
         capture_output=True,
         text=True,
         check=True,
@@ -292,9 +402,10 @@ def _pdftotext(path: Path, first: int, last: int, mode: str) -> list[str]:
     return pages[:-1]
 
 
-def extract_pages(path: Path, pages: tuple[int, int]) -> list[PageText]:
+def extract_pages(path: Path, pages: tuple[int, int], crop: tuple[int, int, int, int] | None = None) -> list[PageText]:
+    """Each page's -layout text (inside `crop`, if given) and its whole -raw text."""
     first, last = pages
-    layout = _pdftotext(path, first, last, "-layout")
+    layout = _pdftotext(path, first, last, "-layout", crop)
     raw = _pdftotext(path, first, last, "-raw")
     return [
         PageText(pdf_page=first + i, layout=layout_text, raw=raw_text)

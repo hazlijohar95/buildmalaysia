@@ -34,7 +34,7 @@ from pipeline.model import (
     DevelopmentVote,
     SpreadCitation,
 )
-from pipeline.parse import PRINTER_SLUG, PageText, ParseError, Value, parse_value
+from pipeline.parse import PRINTER_SLUG, PageText, ParseError, Value, parse_value, slug_book_page
 
 _RUNNING_HEAD = re.compile(
     r"(?:(?P<left>\d+)\s+(?:\|\s*)?)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN (?P<year>\d{4})(?:\s*(?:\|\s*)?(?P<right>\d+))?"
@@ -46,7 +46,13 @@ _HEAD_WORDS = {
     "Maksud", "Kos", "Keseluruhan", "Sebenar", "Hingga", "Anggaran", "Tahun",
     "Cara", "Langsung", "Pinjaman", "Jumlah", "(", "sambungan)", "(sambungan)",
 }  # fmt: skip
-_FOOTER = re.compile(rf"\d{{1,3}}|LAMPIRAN 2 - (?:PENYATA )?PERBELANJAAN PEMBANGUNAN|{PRINTER_SLUG}")
+_FOOTER = re.compile(
+    rf"\d{{1,3}}|LAMPIRAN 2 [-–] (?:PENYATA )?PERBELANJAAN PEMBANGUNAN|{PRINTER_SLUG}"
+    # FY2016-2019 furniture inside the table area: the running head and the side tab's words.
+    r"|(?:\$10\s+)?PENYATA KEWANGAN KERAJAAN PERSEKUTUAN(?:\s+\d{4})?|\[2[O0]1\d\]|LAMPIRAN 2 - PERBELANJAAN|PEMBANGUNAN"
+    r"|\$10|(?:\$10\s+)?Excellent Accounting @ Your Service(?:\s+(?:\$10|\d{1,3}))?"
+)
+_TRAILING_BANG = re.compile(r"\s*!\s*$")  # FY2016-2018: a "!" the page does not draw
 _RIGHT_COLUMNS = (
     "Anggaran Cara Langsung",
     "Anggaran Pinjaman",
@@ -63,10 +69,15 @@ _PROJECT = re.compile(r"(?P<mark>\*?)(?P<code>\d{5})(?:\s+(?P<name>.*))?")
 _STATEMENT_TOTAL = re.compile(r"JUMLAH PERBELANJAAN PEMBANGUNAN")
 _VOTE_TOTAL = re.compile(r"JUMLAH (?P<name>.+)")
 _GROUP_TOTAL = re.compile(r"Jumlah (?P<name>.+)")
-_NOTE = re.compile(r"Nota:\s*(?P<text>.*)")
+_NOTE = re.compile(r"Nota:\s*(?:!\s*)?(?P<text>.*)")  # FY2018 p218: "Nota: !*P.06–", the "!" not drawn
 _PROJECT_NOTE = re.compile(r"\*(?P<vote>P\.\d{2})\s*[–-]\s*Butiran\s+(?P<codes>[\dA-Z\s,dan]+?)\s*-\s*(?P<text>.+)")
 _STATEMENT_NOTE = re.compile(r"\*\s+(?P<text>.+)")
 _PARENT_NAME = re.compile(r"(?P<stem>.+?) (?P<first>\S+), (?P<middle>.+?) dan (?P<last>.+)")
+
+
+def _unbang(line: str) -> str:
+    """A line with the "!" FY2016-2018 put after column head words removed, whitespace collapsed."""
+    return " ".join(word.removesuffix("!") for word in line.split() if word != "!")
 
 
 def _norm(name: str) -> str:
@@ -195,8 +206,9 @@ class _Vote:
 
 
 class _Parser:
-    def __init__(self, fiscal_year: int) -> None:
+    def __init__(self, fiscal_year: int, slug_pages: bool) -> None:
         self.fiscal_year = fiscal_year
+        self.slug_pages = slug_pages  # FY2016-2019: book pages from the printer slug, not the running head
         self.votes: list[_Vote] = []
         self.vote: _Vote | None = None
         self.projects: list[_Project] = []
@@ -209,6 +221,9 @@ class _Parser:
         # right page's to-date column. They differ in a plan's first year (FY2021: RMKe-11, RMKe-12).
         self.plans: dict[str, set[str]] = {"left": set(), "right": set()}
         self.last_project: _Project | None = None
+        self.left_ends: dict[int, list[int]] = {}
+        self.blank_before = False  # the left-page line above the current one is blank
+        self.reopenable: tuple[_Vote, _Total] | None = None  # a vote just closed by "JUMLAH <name>"
         self.finished = False
         self.where = Citation(0, 0, 0, "")
 
@@ -220,16 +235,18 @@ class _Parser:
 
     def body(self, page: PageText, units: re.Pattern[str], side: str) -> tuple[int, list[tuple[int, str]]]:
         """Return the book page and the numbered lines below the column units line."""
-        lines = page.layout.split("\n")
-        at = next((i for i, line in enumerate(lines) if units.fullmatch(line.strip())), None)
+        lines = [self.unbang(line) for line in page.layout.split("\n")]
+        at = next((i for i, line in enumerate(lines) if units.fullmatch(_unbang(line))), None)
         if at is None:
             raise ParseError(page.pdf_page, 1, lines[0] if lines else "", "no column units line")
         book_pages: list[int] = []
         for i, line in enumerate(lines[:at]):
-            text = " ".join(line.split())
+            text = _unbang(line)
             running = _RUNNING_HEAD.fullmatch(text)
-            if running is not None and int(running["year"]) == self.fiscal_year:
+            if running is not None and int(running["year"]) == self.fiscal_year and not self.slug_pages:
                 book_pages.append(int(running["left"] or running["right"]))
+            elif self.slug_pages and _FOOTER.fullmatch(text):
+                continue
             else:
                 words = set(re.sub(r"\(\s*s\s*ambungan\)", "(sambungan)", text).split())  # "(s ambungan)", FY2021
                 plans = {w for w in words if re.fullmatch(r"RMKe-\d+", w)}
@@ -245,9 +262,18 @@ class _Parser:
                 )
                 if not words <= allowed:
                     raise ParseError(page.pdf_page, i + 1, line, "unexpected line in the page head")
+        if self.slug_pages:
+            book_pages.append(slug_book_page(page))
         if len(book_pages) != 1:
             raise ParseError(page.pdf_page, 1, lines[0], "page head has no single running head")
         return book_pages[0], [(i + 1, lines[i]) for i in range(at + 1, len(lines))]
+
+    def unbang(self, line: str) -> str:
+        """FY2016-2018 text layers carry "!" glyphs the pages do not draw, after column heads,
+        inside note lines and on lines of their own. In those years every "!" is blanked."""
+        if self.slug_pages:
+            return line.replace("!", " ").rstrip()
+        return _TRAILING_BANG.sub("", line)
 
     def feed_spread(self, left: PageText, right: PageText) -> None:
         left_book, left_lines = self.body(left, _LEFT_UNITS, "left")
@@ -258,15 +284,26 @@ class _Parser:
             raise ParseError(right.pdf_page, 1, "", "right page does not follow its left page")
 
         waiting: list[_Project | _Total] = []  # left rows with amounts, in print order
+        # Where each amount ends on the left page's complete rows, to place a lone amount.
+        self.left_ends = {n: ends for n, line in left_lines if len((ends := trailing_values(line, 2)[2])) == 2}
         in_notes = False
         first_new = len(self.projects)
-        for line_no, line in left_lines:
+        self.blank_before = False
+        for index, (line_no, line) in enumerate(left_lines):
             text = line.strip()
             self.where = Citation(left.pdf_page, left_book, line_no, text)
             if not text or _FOOTER.fullmatch(text):
                 in_notes = False if _FOOTER.fullmatch(text) else in_notes
+                self.blank_before = not text
                 continue
             note = _NOTE.fullmatch(text)
+            if note is not None and self.slug_pages:
+                # FY2016-2019 -layout scatters a note over several lines; -raw keeps each whole.
+                for after_no, after in left_lines[index:]:
+                    if trailing_values(after, 2)[1] and not _FOOTER.fullmatch(after.strip()):
+                        raise self.fail("amounts below the notes", Citation(left.pdf_page, left_book, after_no, after))
+                self.raw_notes(left)
+                break
             if note is not None:
                 self.add_note(note["text"])
                 in_notes = True
@@ -277,7 +314,8 @@ class _Parser:
                 else:
                     self.extend_note(text)
                 continue
-            row = self.feed_left(text)
+            row = self.feed_left(text, line, line_no)
+            self.blank_before = False
             if row is not None:
                 waiting.append(row)
 
@@ -331,13 +369,29 @@ class _Parser:
 
     # left page
 
-    def feed_left(self, text: str) -> _Project | _Total | None:
+    def feed_left(self, text: str, line: str, line_no: int) -> _Project | _Total | None:
         label, values, _ = trailing_values(text, 2)
         if len(values) == 1:
-            raise self.fail("left-page row with one amount, expected 2")
+            values = self.fill_left_cell(line, line_no)
         if values:
             return self.left_row(label, values)
         return self.left_text(text)
+
+    def fill_left_cell(self, line: str, line_no: int) -> list[Value]:
+        """Named rule BLANK_CELL_READ_AS_ZERO (left page): a row with one of its two cells
+        empty (FY2018 p220, P.06 95000: no Kos Keseluruhan). The amount is placed by its
+        right edge against the nearest complete row on the page; the empty cell reads as zero."""
+        _, values, ends = trailing_values(line, 2)
+        if not self.left_ends:
+            raise self.fail("left-page row with one amount and no complete row to place it by")
+        nearest = self.left_ends[min(self.left_ends, key=lambda n: abs(n - line_no))]
+        column = min(range(2), key=lambda c: abs(ends[0] - nearest[c]))
+        if abs(ends[0] - nearest[column]) > 2:
+            raise self.fail("left-page row with one amount that lines up with neither column")
+        blank = Value(0, "", True, False)
+        name = ("Kos Keseluruhan", "Sebenar hingga akhir tahun lalu")[1 - column]
+        self.corrections.append(Correction("BLANK_CELL_READ_AS_ZERO", f"empty {name} read as zero", self.where))
+        return [values[0], blank] if column == 0 else [blank, values[0]]
 
     def left_row(self, label: str, values: list[Value]) -> _Project | _Total:
         if self.finished:
@@ -370,10 +424,14 @@ class _Parser:
                     Correction("VOTE_TOTAL_NAME_DIFFERS", f"{m['name']!r} closes {vote.code} {vote.name!r}", self.where)
                 )
             if (open_group := self.open_group()) is not None:
-                raise self.fail(f"vote total while group {open_group.name!r} is open")
+                if not self.slug_pages:
+                    raise self.fail(f"vote total while group {open_group.name!r} is open")
+                self.dissolve(vote, open_group)
             self.vote = None
             self.last_project = None
-            return self.total(DevelopmentScope.VOTE, vote.code, None, "", left)
+            record = self.total(DevelopmentScope.VOTE, vote.code, None, "", left)
+            self.reopenable = (vote, record) if self.slug_pages and not vote.groups else None
+            return record
         if (m := _GROUP_TOTAL.fullmatch(label)) is not None:
             group = self.close_group(vote, m["name"])
             self.last_project = None
@@ -392,6 +450,9 @@ class _Parser:
         raise self.fail("amounts on a line that is not a project or a total")
 
     def left_text(self, text: str) -> None:
+        reopenable, self.reopenable = self.reopenable, None
+        if reopenable is not None and self.vote is None and not re.search(r"[a-z]", text) and not _VOTE.fullmatch(text):
+            self.reopen(*reopenable)
         if (m := _VOTE.fullmatch(text)) is not None:
             code, name = f"P.{m['num']}", _SAMB.sub("", m["name"])
             if self.vote is not None and self.vote.code == code:
@@ -414,9 +475,22 @@ class _Parser:
             return
         project = self.last_project
         open_group = self.open_group()
+        if project is None and open_group is not None and self.slug_pages and self.blank_before:
+            # A heading set off by a blank line from the heading just opened, with no project
+            # between: the first is a caption with no total (FY2018 P.60 "PENGURUSAN DASAR
+            # DALAM NEGERI" over "Tiga Perkhidmatan"), so it is dissolved (HEADING_WITHOUT_TOTAL).
+            self.dissolve(self.require_vote(), open_group)
+            open_group = None
         if project is None and open_group is not None:
             # Wraps the heading just opened: "BANGUNAN-BANGUNAN KERAJAAN" / "(Selain daripada Perumahan)".
             open_group.name = f"{open_group.name} {text}"
+            return
+        if project is None and self.slug_pages:
+            # Named rule TITLE_CASE_HEADING (FY2016-2019): a heading printed in title case
+            # ("Kerajaan Tempatan", FY2018 P.43). With no project above it and no group open,
+            # the line cannot continue a name; it opens a group like a heading in capitals.
+            self.corrections.append(Correction("TITLE_CASE_HEADING", f"{text!r} read as a heading", self.where))
+            self.heading(self.require_vote(), text)
             return
         if project is None:
             raise self.fail("wrapped text with no project above it")
@@ -428,6 +502,21 @@ class _Parser:
         if open_group is not None:
             if _norm(text) == _norm(open_group.name):
                 return  # repeated at the top of a continuation page
+            subheading = (
+                _norm(text).startswith(_norm(open_group.name) + " ")
+                if self.last_project is None
+                else (self.blank_before)
+            )
+            if self.slug_pages and subheading:
+                # Named rule SUBHEADING_NOT_TOTALLED (FY2016-2019): a heading inside an open
+                # group that no "Jumlah" line closes: one that extends the group's own heading
+                # ("PENGANGKUTAN DARAT" / "PENGANGKUTAN DARAT SEMENANJUNG"), or one set off by
+                # a blank line after projects ("PROJEK KTMB" under "PROJEK REL/LRT/ERL"). Its
+                # projects stay in the open group, whose printed total covers them.
+                self.corrections.append(
+                    Correction("SUBHEADING_NOT_TOTALLED", f"{text!r} inside group {open_group.name!r}", self.where)
+                )
+                return
             if self.last_project is None:
                 # Capitals straight after a heading wrap the heading. FY2023 prints
                 # "JALAN RAYA DAN JAMBATAN SEMENANJUNG" then "SEMENANJUNG" again.
@@ -447,6 +536,33 @@ class _Parser:
             raise self.fail("continued heading with no group open")
         vote.groups.append(_Group(vote.code, len(vote.groups) + 1, text, self.where))
         self.last_project = None
+
+    def dissolve(self, vote: _Vote, group: _Group) -> None:
+        """Named rule HEADING_WITHOUT_TOTAL (FY2016-2019): a heading still open when its vote's
+        total is printed has no total of its own (FY2018 P.10 "PERBADANAN KEMAJUAN NEGERI").
+        It is a caption, not a group: its projects belong to the vote only, whose total covers them."""
+        members = [p for p in self.projects if p.vote_code == vote.code and p.group == group.ordinal]
+        for project in members:
+            project.group = None
+        vote.groups.remove(group)
+        detail = f"heading {group.name!r} over {len(members)} projects has no total; they belong to the vote only"
+        self.corrections.append(Correction("HEADING_WITHOUT_TOTAL", detail, group.citation))
+
+    def reopen(self, vote: _Vote, total: _Total) -> None:
+        """Named rule OWN_PROJECTS_TOTAL_IN_CAPITALS (FY2016-2019): "JUMLAH <vote name>" under
+        the ministry's own projects, followed by group headings of the same vote, totals those
+        projects; the vote's own total is the second such line (FY2018 P.24)."""
+        run = self.unheaded_run(vote)
+        if not run:
+            raise self.fail(f"heading after the total of {vote.code}, which has no projects to group")
+        group = _Group(vote.code, len(vote.groups) + 1, vote.name, run[0].first, closed=True)
+        vote.groups.append(group)
+        for project in run:
+            project.group = group.ordinal
+        total.scope, total.group = DevelopmentScope.GROUP, group.ordinal
+        self.vote = vote
+        detail = f"'JUMLAH {vote.name}' totals the {len(run)} projects above it; a heading of {vote.code} follows"
+        self.corrections.append(Correction("OWN_PROJECTS_TOTAL_IN_CAPITALS", detail, total.left_citation))
 
     def start_project(self, vote: _Vote, m: re.Match[str]) -> _Project:
         open_group = self.open_group()
@@ -555,6 +671,20 @@ class _Parser:
 
     # notes
 
+    def raw_notes(self, page: PageText) -> None:
+        lines = [" ".join(self.unbang(line).split()) for line in page.raw.split("\n")]
+        start = next(i for i, line in enumerate(lines) if _NOTE.fullmatch(line))
+        for line in lines[start:]:
+            self.where = Citation(page.pdf_page, self.where.book_page, 0, line)
+            if not line or _FOOTER.fullmatch(line):
+                continue
+            if (note := _NOTE.fullmatch(line)) is not None:
+                self.add_note(note["text"])
+            elif line.startswith("*"):
+                self.add_note(line)
+            else:
+                self.extend_note(line)
+
     def add_note(self, text: str) -> None:
         if (m := _PROJECT_NOTE.fullmatch(text)) is not None:
             codes = re.findall(r"\d{5}", m["codes"])
@@ -615,7 +745,18 @@ class _Parser:
         for p in self.projects:
             key = (p.vote_code, p.code)
             if key in seen:
-                raise self.fail(f"project {p.code} appears twice in {p.vote_code}", p.first)
+                other = next(o for o in self.projects if (o.vote_code, o.code) == key)
+                if other.group == p.group or _norm(" ".join(other.parts)) == _norm(" ".join(p.parts)):
+                    raise self.fail(f"project {p.code} appears twice in {p.vote_code}", p.first)
+                # Named rule DUPLICATE_PROJECT_CODE: two different projects printed with one
+                # code, in different groups under different names (FY2018 P.21 90700, PDF
+                # p224). Both are stored; each is its own row of the statement.
+                detail = (
+                    f"{p.vote_code} {p.code} also printed at pdf page {other.first.pdf_page} line {other.first.line_no}"
+                )
+                self.corrections.append(Correction("DUPLICATE_PROJECT_CODE", detail, p.first))
+                if p.mark and other.mark:
+                    raise self.fail(f"project {p.code} is printed twice, both marked; its note is ambiguous", p.first)
             seen.add(key)
             if p.left is None or p.right is None or p.left_citation is None or p.right_citation is None:
                 raise self.fail(f"project {p.code} has no amounts", p.first)
@@ -699,10 +840,10 @@ def _amounts(left: tuple[int, int], right: tuple[int, ...]) -> DevelopmentAmount
     return DevelopmentAmounts(left[0], left[1], *right)
 
 
-def parse_development(pages: Sequence[PageText], fiscal_year: int) -> DevelopmentStatement:
+def parse_development(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool = False) -> DevelopmentStatement:
     if len(pages) % 2:
         raise ParseError(pages[-1].pdf_page, 1, "", "Lampiran 2 page range is not whole spreads")
-    parser = _Parser(fiscal_year)
+    parser = _Parser(fiscal_year, slug_pages)
     for left, right in zip(pages[::2], pages[1::2], strict=True):
         parser.feed_spread(left, right)
     return parser.finish()

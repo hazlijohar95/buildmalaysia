@@ -13,12 +13,20 @@ the revenue_reconciliation view at load time, not here.
 
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pipeline.covid import running_head_book_page
 from pipeline.development import trailing_values
-from pipeline.model import Citation, RevenueAmounts, RevenueCategory, RevenueItem, RevenueStatement, RevenueTotal
-from pipeline.parse import PageText, ParseError, Value
+from pipeline.model import (
+    Citation,
+    Correction,
+    RevenueAmounts,
+    RevenueCategory,
+    RevenueItem,
+    RevenueStatement,
+    RevenueTotal,
+)
+from pipeline.parse import PageText, ParseError, Value, slug_book_page
 
 C = RevenueCategory
 CATEGORIES: dict[str, tuple[RevenueCategory, RevenueCategory | None]] = {
@@ -49,6 +57,7 @@ class _Row:
     lines: list[str]
     at: Citation
     amounts: RevenueAmounts
+    doubled: list[str] = field(default_factory=list)  # continuation lines dropped as a doubled text layer
 
 
 def _only(lines: list[str], pattern: re.Pattern[str], page: PageText, what: str) -> int:
@@ -68,7 +77,7 @@ def _amounts(values: list[Value], page: PageText, line_no: int, text: str) -> Re
     return RevenueAmounts(original, revised, actual, prior)
 
 
-def _rows(pages: Sequence[PageText], fiscal_year: int) -> list[_Row]:
+def _rows(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool) -> list[_Row]:
     rows: list[_Row] = []
     book_pages: list[int] = []
     for index, page in enumerate(pages):
@@ -83,7 +92,9 @@ def _rows(pages: Sequence[PageText], fiscal_year: int) -> list[_Row]:
         stop = _only(lines, _END if index == len(pages) - 1 else _BREAK, page, "end-of-table")
         if stop < start:
             raise ParseError(page.pdf_page, stop + 1, lines[stop], "table ends before it starts")
-        book_pages.append(running_head_book_page(page, lines[:start], fiscal_year))
+        book_pages.append(
+            slug_book_page(page) if slug_pages else running_head_book_page(page, lines[:start], fiscal_year)
+        )
 
         open_row: _Row | None = None
         page_rows = 0
@@ -92,6 +103,8 @@ def _rows(pages: Sequence[PageText], fiscal_year: int) -> list[_Row]:
             if not text:
                 open_row = None
                 continue
+            if slug_pages and text == str(book_pages[-1]):
+                continue  # FY2016-2019: the book page, printed in a side tab level with the rows
             words = text.split()
             if page_rows == 0 and all(w in _HEADER_WORDS or re.fullmatch(r"\d{4}", w) for w in words):
                 if {int(w) for w in words if w.isdigit()} - {fiscal_year, fiscal_year - 1}:
@@ -99,6 +112,12 @@ def _rows(pages: Sequence[PageText], fiscal_year: int) -> list[_Row]:
                 continue
             label, values, _ = trailing_values(text, 6)
             indent = len(raw) - len(raw.lstrip())
+            if slug_pages and open_row is not None and not values and lines[i + 1].strip() == text:
+                # Named rule DOUBLED_TEXT_LAYER (FY2016-2019): the text layer holds a wrapped
+                # word twice, a few points apart; the page draws the indented copy, the second
+                # (FY2018 p65 "Kerajaan", "Wilayah", "Persekutuan"). The first is dropped.
+                open_row.doubled.append(text)
+                continue
             if not values:
                 if open_row is None or indent <= open_row.indent:
                     raise ParseError(page.pdf_page, line_no, text, "text line that does not continue the row above")
@@ -120,13 +139,16 @@ def _rows(pages: Sequence[PageText], fiscal_year: int) -> list[_Row]:
     return rows
 
 
-def parse_revenue(pages: Sequence[PageText], fiscal_year: int) -> RevenueStatement:
+def parse_revenue(pages: Sequence[PageText], fiscal_year: int, slug_pages: bool = False) -> RevenueStatement:
     if not pages:
         raise ValueError("no pages given for the revenue note")
     items: list[RevenueItem] = []
     totals: list[RevenueTotal] = []
     open_path: list[RevenueCategory] = []  # the categories enclosing the next row, outermost first
-    for row in _rows(pages, fiscal_year):
+    corrections: list[Correction] = []
+    for row in _rows(pages, fiscal_year, slug_pages):
+        for text in row.doubled:
+            corrections.append(Correction("DOUBLED_TEXT_LAYER", f"repeated line {text!r} read once", row.at))
         name = " ".join(" ".join(row.parts).split())
         citation = Citation(row.at.pdf_page, row.at.book_page, row.at.line_no, "\n".join(row.lines))
         at = (row.at.pdf_page, row.at.line_no, row.at.text)
@@ -150,4 +172,4 @@ def parse_revenue(pages: Sequence[PageText], fiscal_year: int) -> RevenueStateme
     names = [i.name for i in items]
     if len(set(names)) != len(names):
         raise ParseError(pages[0].pdf_page, 1, "", "an item name repeats")
-    return RevenueStatement(fiscal_year, tuple(items), tuple(totals))
+    return RevenueStatement(fiscal_year, tuple(items), tuple(totals), tuple(corrections))

@@ -39,9 +39,15 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
         pages = page_count(pdf)
         if pages != source.page_count:
             raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
-        operating = parse_statement(extract_pages(pdf, source.operating_pages), source.fiscal_year)
-        development = parse_development(extract_pages(pdf, source.development_pages), source.fiscal_year)
-        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year)
+        operating = parse_statement(
+            extract_pages(pdf, source.operating_pages, source.crop),
+            source.fiscal_year,
+            source.operating_columns,
+        )
+        development = parse_development(
+            extract_pages(pdf, source.development_pages, source.crop), source.fiscal_year, source.crop is not None
+        )
+        revenue = parse_revenue(extract_pages(pdf, source.revenue_pages), source.fiscal_year, source.crop is not None)
         covid = (
             parse_covid(extract_pages(pdf, source.covid_pages), source.fiscal_year, source.covid_columns)
             if source.covid_pages
@@ -70,7 +76,7 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
     )
     if covid is not None:
         print(f"  COVID-19 Fund (Lampiran 3): programmes {result.covid_lines}, total reconciled")
-    _print_corrections(operating.corrections + development.corrections)
+    _print_corrections(operating.corrections + development.corrections + revenue.corrections)
     for misprint in source.known_misprints:
         print(f"  known misprint accepted: {misprint.key}: {misprint.evidence}")
     for note in operating.unreferenced_notes:

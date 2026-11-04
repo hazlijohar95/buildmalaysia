@@ -100,3 +100,15 @@ Each statement's revenue note was checked against two figures in the same set of
 
 - **Lampiran 1.** HASIL Sebenar equals Lampiran 1's operating total including the transfer to the Development Fund, within the note's rounding to whole ringgit: -13, +3, -21, -33 and +50 sen for 2021 to 2025. This is the source for the observation above that data.gov.my `revenue` equals that operating total. The Consolidated Revenue Account transfers its surplus to the Development Fund, so revenue and spending after the transfer are equal by construction.
 - **Previous statement.** Each statement's prior-year Sebenar equals the previous statement's Sebenar for all seven categories and every item, FY2022 to FY2025. Four items match only across a rename: FY2022 renames `Aktiviti Carigali Minyak dan Gas MTJA`, `Faedah dan Perolehan daripada Pelaburan` and `Sumbangan dan Bayaran Ganti daripada Luar Negeri ...`, and FY2024 renames `Duti Eksais` to `Duti Eksais Terhadap Barangan Tempatan`. The values are unchanged in each case. FY2022 drops the two GST items, which were zero in FY2021 and FY2020.
+
+## FY2016-FY2019 statements
+
+FY2019 is not loaded: its PDF omits one page of Lampiran 1 (see `pipeline/README.md`, "FY2016-2019 statements"). Its Note 5(a) is read only for the check below.
+
+### Revenue (Note 5(a))
+
+| Year | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
+|---|---|---|---|
+| 2018 | 232,882,562,288 | 232,882,562,287.80 | +20 sen |
+
+**Previous statement.** The FY2019 note's 2018 Sebenar column (PDF pp. 60-61) equals FY2018's Sebenar for all 7 categories and all 26 items, matched by value. FY2019 adds one item printed with a dash for 2018 ("Terimaan ... Kerajaan Lain", 12,697 in 2019).

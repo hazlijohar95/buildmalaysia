@@ -37,8 +37,10 @@ class Citation:
 @dataclass(frozen=True)
 class Amounts:
     original: int  # Asal
-    supplementary: int  # Tambahan/(Kurangan)
-    virement: int  # Viremen
+    # Tambahan/(Kurangan) and Viremen; None where the statement prints only Asal and the
+    # revised estimate (Dipinda), as FY2016-2019 do.
+    supplementary: int | None
+    virement: int | None
     revised: int  # Jumlah
     actual: int  # Sebenar
 
@@ -265,3 +267,4 @@ class RevenueStatement:
     fiscal_year: int
     items: tuple[RevenueItem, ...]
     totals: tuple[RevenueTotal, ...]  # in printed order, each after its parent
+    corrections: tuple[Correction, ...] = ()

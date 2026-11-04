@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from dataclasses import astuple, dataclass
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 import psycopg
@@ -87,7 +88,7 @@ class YearLoad:
     covid_lines: int  # COVID-19 Fund programmes loaded; zero for a year without Lampiran 3
 
 
-def _amounts(a: Amounts) -> tuple[int, int, int, int, int]:
+def _amounts(a: Amounts) -> tuple[int, int | None, int | None, int, int]:
     return (a.original, a.supplementary, a.virement, a.revised, a.actual)
 
 
@@ -505,6 +506,10 @@ def _development_key(row: dict[str, Any]) -> str:
     return " ".join([f"{row['scope']} total", *codes])
 
 
+def _sen(diff: Decimal | None) -> int:
+    return 0 if diff is None else int(diff)
+
+
 def _mismatches(
     cur: psycopg.Cursor, doc: str, view: str, columns: tuple[str, ...], key: Callable[[dict[str, Any]], str]
 ) -> tuple[int, list[Mismatch]]:
@@ -522,8 +527,9 @@ def _mismatches(
             pdf_page=row["pdf_page"],
             leaf_count=row[count_column],
             columns=columns,
-            # The diffs are numeric (bigint minus sum(bigint)); they are whole sen.
-            diffs_sen=tuple(int(row[f"{c}_diff_sen"]) for c in columns),
+            # The diffs are numeric (bigint minus sum(bigint)); they are whole sen. A column
+            # the statement does not print (Tambahan and Viremen before FY2020) has no diff.
+            diffs_sen=tuple(_sen(row[f"{c}_diff_sen"]) for c in columns),
         )
         for row in rows
         if not row["matches"]
