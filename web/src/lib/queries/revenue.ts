@@ -1,7 +1,7 @@
 import sql from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import type { SankeyNode } from "@/components/Sankey/SankeyChartD3";
-import { titleCase } from "@/lib/queries/sankey";
+import { SMALL_SHARE, groupSmall, titleCase } from "@/lib/queries/sankey";
 
 interface CategoryRow {
   category: string;
@@ -49,7 +49,9 @@ export async function getRevenueTree(year: number): Promise<SankeyNode | null> {
         })),
     ],
   });
-  return build(root);
+  const tree = build(root);
+  const sum = lines.reduce((t, l) => t + Number(l.actual_sen) / 100, 0);
+  return groupSmall(tree, sum * SMALL_SHARE, "Other revenue");
 }
 
 /** HASIL for a year as printed in Note 5(a), with its page. */

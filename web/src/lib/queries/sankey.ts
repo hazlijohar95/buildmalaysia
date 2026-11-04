@@ -1,6 +1,6 @@
 import sql from "@/lib/db";
 import type { SankeyNode } from "@/components/Sankey/SankeyChartD3";
-import { slugify } from "@/lib/slug";
+import { getMinistrySlugs } from "@/lib/queries/ministry";
 
 /** Ringgit (not sen) for the chart: amounts it sizes and prints with amountScalingFactor = 1. */
 const rm = (sen: string | number) => Number(sen) / 100;
@@ -57,68 +57,51 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
     `,
   ]);
 
-  const ministryLink = new Map<string, string>();
-  for (const m of ministries) {
-    const link = `/ministries/${slugify(m.name_ms)}`;
-    if (m.operating_vote_code) ministryLink.set(m.operating_vote_code, link);
-    if (m.development_vote_code) ministryLink.set(m.development_vote_code, link);
-  }
+  const slugs = await getMinistrySlugs();
+  const leaf = (id: string, name: string, sen: string): SankeyNode => ({ id, displayName: name, amount: rm(sen) });
+  const programmeLeaves = (code: string | null) =>
+    programmes
+      .filter((p) => p.vote_code === code)
+      .map((p) => leaf(`op-${p.vote_code}-${p.programme_code}`, titleCase(p.programme_name ?? `Programme ${p.programme_code}`), p.actual_sen));
+  const developmentLeaves = (code: string | null) =>
+    development
+      .filter((d) => d.vote_code === code)
+      .map((d, i) =>
+        leaf(
+          `dev-${d.vote_code}-${i}`,
+          d.group_name ? `Development: ${titleCase(d.group_name)}` : "Development projects",
+          d.actual_sen,
+        ),
+      );
 
-  const byVote = <R extends { vote_code: string; vote_name: string }>(rows: R[]) => {
-    const groups = new Map<string, R[]>();
-    for (const r of rows) groups.set(r.vote_code, [...(groups.get(r.vote_code) ?? []), r]);
-    return [...groups.entries()];
-  };
+  // One node per ministry, operating and development together, as on the ministry pages.
+  const ministryNodes: SankeyNode[] = ministries.map((m) => ({
+    id: `m-${m.number}`,
+    displayName: shortName(m.name_ms),
+    searchName: titleCase(m.name_ms),
+    link: `/ministries/${slugs.get(m.number)}`,
+    children: [...programmeLeaves(m.operating_vote_code), ...developmentLeaves(m.development_vote_code)],
+  }));
 
-  const voteNode = (prefix: string, code: string, name: string, children: SankeyNode[]): SankeyNode => ({
-    id: `${prefix}-${code}`,
-    displayName: titleCase(name),
-    link: ministryLink.get(code) ?? `/${year}/vote/${code.replace(".", "")}`,
-    children,
+  const charged = [...new Set(programmes.filter((p) => p.section === "charged").map((p) => p.vote_code))].map((code) => {
+    const rows = programmes.filter((p) => p.vote_code === code);
+    return {
+      id: `op-${code}`,
+      displayName: CHARGED_NAMES[code] ?? titleCase(rows[0].vote_name),
+      searchName: titleCase(rows[0].vote_name),
+      link: `/${year}/vote/${code.replace(".", "")}`,
+      children: programmeLeaves(code),
+    };
   });
 
-  const operatingVotes = (section: "charged" | "supply") =>
-    byVote(programmes.filter((p) => p.section === section)).map(([code, rows]) =>
-      voteNode(
-        "op",
-        code,
-        rows[0].vote_name,
-        rows
-          .filter((r) => rm(r.actual_sen) > 0)
-          .map((r) => ({
-            id: `op-${code}-${r.programme_code}`,
-            displayName: titleCase(r.programme_name ?? `Programme ${r.programme_code}`),
-            amount: rm(r.actual_sen),
-          })),
-      ),
-    );
-
-  const developmentVotes = byVote(development).map(([code, rows]) =>
-    voteNode(
-      "dev",
-      code,
-      rows[0].vote_name,
-      rows
-        .filter((r) => rm(r.actual_sen) > 0)
-        .map((r, i) => ({
-          id: `dev-${code}-${i}`,
-          displayName: titleCase(r.group_name ?? rows[0].vote_name),
-          amount: rm(r.actual_sen),
-        })),
-    ),
-  );
-
+  // Ministries under MINISTRY_SHARE of spending share one block, so the large ones can be read at a glance.
+  const spent = ministryNodes.reduce((t, m) => t + total(m), 0) + charged.reduce((t, c) => t + total(c), 0);
+  const major = ministryNodes.filter((m) => total(m) >= spent * MINISTRY_SHARE);
+  const minor = ministryNodes.filter((m) => total(m) < spent * MINISTRY_SHARE && total(m) > 0);
   const children: SankeyNode[] = [
-    {
-      id: "operating",
-      displayName: "Operating (Mengurus)",
-      link: `/${year}/operating`,
-      children: [
-        { id: "charged", displayName: "Charged: debt service, pensions, grants to states", children: operatingVotes("charged") },
-        ...operatingVotes("supply"),
-      ],
-    },
-    { id: "development", displayName: "Development (Pembangunan)", link: `/${year}/development`, children: developmentVotes },
+    { id: "charged", displayName: "Charged: debt, pensions, grants to states", children: charged },
+    ...major,
+    ...(minor.length ? [{ id: "m-other", displayName: `${minor.length} other ministries`, children: minor }] : []),
   ];
   const covidSpent = covid.filter((c) => rm(c.actual_sen) > 0);
   if (covidSpent.length) {
@@ -126,10 +109,49 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
       id: "covid",
       displayName: "COVID-19 Fund",
       link: `/${year}/covid`,
-      children: covidSpent.map((c) => ({ id: `covid-${c.code}`, displayName: c.name_ms, amount: rm(c.actual_sen) })),
+      children: covidSpent.map((c) => leaf(`covid-${c.code}`, c.name_ms, c.actual_sen)),
     });
   }
-  return prune({ id: "spending", displayName: "Spending", children });
+  const tree = prune({ id: "spending", displayName: "Spending", children });
+  return groupSmall(tree, total(tree) * SMALL_SHARE);
+}
+
+/** Charged votes named in plain English on the chart; the printed name stays searchable. */
+const CHARGED_NAMES: Record<string, string> = {
+  "T.13": "Debt charges",
+  "T.14": "Pensions and gratuities",
+  "T.12": "Treasury: grants to states",
+};
+
+/** Below this share of the side's total, siblings are gathered under one "Other" node. */
+export const SMALL_SHARE = 0.008;
+/** Ministries below this share of spending are gathered at the top level. */
+const MINISTRY_SHARE = 0.03;
+
+const total = (n: SankeyNode): number => n.amount ?? (n.children ?? []).reduce((s, c) => s + total(c), 0);
+
+/**
+ * Gathers small siblings into one "Other (n)" node so every block on the chart is tall enough to label.
+ * The gathered nodes stay as its children, so search and drill-down still reach them.
+ */
+export function groupSmall(node: SankeyNode, min: number, otherLabel = "Other"): SankeyNode {
+  if (!node.children) return node;
+  const children = node.children.map((c) => groupSmall(c, min));
+  const small = children.filter((c) => total(c) < min);
+  if (small.length < 2) return { ...node, children };
+  return {
+    ...node,
+    children: [
+      ...children.filter((c) => total(c) >= min),
+      { id: `${node.id}-other`, displayName: `${otherLabel} (${small.length})`, children: small },
+    ],
+  };
+}
+
+/** "KEMENTERIAN PENDIDIKAN TINGGI" -> "Pendidikan Tinggi": the ministry's subject, for chart labels. */
+export function shortName(name: string): string {
+  const t = titleCase(name).replace(/^Kementerian /, "");
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 /** Drops branches that end up empty (votes with nothing spent). */

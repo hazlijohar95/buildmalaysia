@@ -1,18 +1,18 @@
-// Layout adapted from CanadaSpends' federal spending page (MIT, Build Canada).
+// After CanadaSpends' federal spending page (MIT, Build Canada).
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { H1, H2, InternalLink, Intro, P, Page, PageContent, Section } from "@/components/Layout";
-import { StatCard, StatCardContainer } from "@/components/StatCard";
+import { Band, H2, PageHeader, StatRow } from "@/components/Boxed";
+import CitationLink from "@/components/CitationLink";
+import RankedList from "@/components/RankedList";
 import SpendingSankey from "@/components/Sankey/SpendingSankey";
 import YearNav from "@/components/YearNav";
-import CitationLink from "@/components/CitationLink";
-import { getSpendingTree, titleCase } from "@/lib/queries/sankey";
-import { getRevenueTree } from "@/lib/queries/revenue";
-import { getFederalSpending, getMinistrySpending } from "@/lib/queries/spending";
+import { formatSen, formatSenCompact, parseSen } from "@/lib/money";
+import { getSpendingShares } from "@/lib/queries/allocation";
+import { getRevenueTotal, getRevenueTree } from "@/lib/queries/revenue";
+import { getSpendingTree } from "@/lib/queries/sankey";
+import { getFederalSpending } from "@/lib/queries/spending";
 import { getLoadedYears } from "@/lib/years";
-import { formatSen, formatSenCompact } from "@/lib/money";
-import { slugify } from "@/lib/slug";
 
 export const metadata: Metadata = { title: "Government spending" };
 
@@ -26,102 +26,119 @@ export default async function SpendingPage({ searchParams }: Props) {
   const year = years.includes(requested) ? requested : years[0];
   if (year === undefined) notFound();
 
-  const [spendingTree, revenue, spending, ministries] = await Promise.all([
+  const [spendingTree, revenueTree, spending, revenue, shares] = await Promise.all([
     getSpendingTree(year),
     getRevenueTree(year),
     getFederalSpending(year),
-    getMinistrySpending(year),
+    getRevenueTotal(year),
+    getSpendingShares(year),
   ]);
-  if (!spending) notFound();
+  if (!spending || !shares) notFound();
+  const gap = revenue ? spending.total_actual_sen - revenue.actual_sen : null;
 
   return (
-    <Page>
-      <PageContent>
-        <Section>
-          <H1>Government spending</H1>
-          <Intro>
-            How the Malaysian federal government raised and spent public money, from the Accountant General&apos;s
-            audited financial statements.
-          </Intro>
-        </Section>
-        <Section>
-          <YearNav year={year} years={years} suffix="" hrefFor={(y) => `/spending?year=${y}`} />
-          <H2>{year} government revenue and spending</H2>
-          <P>
-            Follow revenue in from the left and spending out to the right, or search for a ministry, tax or programme.
-            {revenue
-              ? " Where spending exceeds revenue, the hatched Shortfall block shows the difference. It is total spending less total revenue as the statement prints them, not the official fiscal deficit, which nets off some recoveries."
-              : " Revenue for this year is not loaded yet, so the chart shows spending only."}
-          </P>
-        </Section>
-      </PageContent>
+    <>
+      <PageHeader
+        eyebrow={`Federal spending · ${year}`}
+        title="Where the money went"
+        intro="How the federal government raised and spent public money, from the Accountant General's audited financial statements."
+      >
+        <YearNav year={year} years={years} hrefFor={(y) => `/spending?year=${y}`} />
+      </PageHeader>
 
-      <div className="sankey-chart-container relative overflow-hidden border-y-2 border-foreground md:min-h-[776px]">
-        <SpendingSankey spending={spendingTree} revenue={revenue} />
-        <div className="absolute bottom-3 left-6 text-xs">
-          <CitationLink
-            year={year}
-            docUrl={spending.doc_url}
-            pdfPage={spending.operating_pdf_page}
-            bookPage={spending.operating_book_page}
-          />
-        </div>
-        <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm md:hidden">
-          <span className="rounded-md bg-foreground px-3.5 py-2.5 text-sm font-semibold text-background">
-            Open on a wider screen to explore the chart
-          </span>
-        </div>
-      </div>
+      <StatRow
+        stats={[
+          {
+            label: `Spent in ${year}`,
+            value: formatSenCompact(spending.total_actual_sen),
+            title: formatSen(spending.total_actual_sen),
+          },
+          {
+            label: "Running costs",
+            value: formatSenCompact(spending.operating_net_actual_sen),
+            title: formatSen(spending.operating_net_actual_sen),
+            sub: "salaries, supplies, grants, debt charges",
+          },
+          {
+            label: "Development",
+            value: formatSenCompact(spending.development_actual_sen),
+            title: formatSen(spending.development_actual_sen),
+            sub: "projects and assets",
+          },
+          ...(revenue && gap !== null
+            ? [
+                {
+                  label: gap > 0 ? "Spent beyond revenue" : "Revenue left over",
+                  value: formatSenCompact(parseSen(Math.abs(gap))),
+                  title: formatSen(parseSen(Math.abs(gap))),
+                  sub: `against ${formatSenCompact(revenue.actual_sen)} raised`,
+                },
+              ]
+            : []),
+        ]}
+      />
 
-      <PageContent>
-        <Section>
-          <H2>Where the money went</H2>
-          <StatCardContainer>
-            <StatCard title={`In ${year},`} value={formatSenCompact(spending.total_actual_sen)} subtitle="was spent by the federal government" />
-            <StatCard
-              title="Of which"
-              value={formatSenCompact(spending.operating_net_actual_sen)}
-              subtitle="was operating spending: salaries, supplies, grants and debt service"
+      <section className="hidden md:block border-b-2 border-foreground">
+        <div className="px-8 py-6 md:px-16">
+          <p className="mx-auto max-w-6xl text-charcoal-800">
+            Money comes in on the left and goes out on the right. The hatched block is the gap between spending and
+            revenue, which was borrowed. Hover a block for its share; click a name to open its page.
+          </p>
+        </div>
+        <div className="sankey-chart-container relative overflow-hidden border-t-2 border-foreground min-h-[1040px]">
+          <SpendingSankey spending={spendingTree} revenue={revenueTree} />
+          <div className="absolute bottom-3 left-6 text-xs">
+            <CitationLink
+              year={year}
+              docUrl={spending.doc_url}
+              pdfPage={spending.operating_pdf_page}
+              bookPage={spending.operating_book_page}
+              className="text-charcoal-400"
             />
-            <StatCard title="and" value={formatSenCompact(spending.development_actual_sen)} subtitle="was development spending on projects" />
-            {spending.covid_fund_actual_sen !== null && spending.covid_fund_actual_sen > 0 && (
-              <StatCard title="plus" value={formatSenCompact(spending.covid_fund_actual_sen)} subtitle="from the COVID-19 Fund" />
-            )}
-          </StatCardContainer>
-          <P className="mt-6 text-sm">
-            Operating is the statement&apos;s total less the {formatSen(spending.development_fund_transfer_sen)} it
-            transferred to the Development Fund, which pays for development spending and would otherwise be counted
-            twice. <Link href={`/${year}`}>Full breakdown for {year}</Link>.
-          </P>
-        </Section>
-
-        <Section>
-          <H2>Ministries explained</H2>
-          <div className="text-gray-600 leading-relaxed mb-4">
-            {ministries
-              .filter((m) => m.operating_vote_code || m.development_vote_code)
-              .map((m) => (
-                <div key={m.number} className="py-3 border-b border-gray-200 flex justify-between gap-4">
-                  <InternalLink href={`/ministries/${slugify(m.name_ms)}`} className="font-medium text-gray-600">
-                    {titleCase(m.name_ms)}
-                  </InternalLink>
-                  <span className="tabnum text-sm text-gray-500">{formatSenCompact(m.actual_sen)}</span>
-                </div>
-              ))}
           </div>
-        </Section>
+        </div>
+      </section>
 
-        <Section>
-          <H2>Sources</H2>
-          <P>
-            All figures come from the Jabatan Akauntan Negara&apos;s <em>Penyata Kewangan Kerajaan Persekutuan</em>{" "}
-            for {year}: revenue from Note 5(a), <em>Hasil mengikut penjenisan</em>, and spending from Lampiran 1 to
-            3. Every total it prints is recomputed from its line items before we publish it, and the chart
-            links each ministry to its own page. If you spot an error, the{" "}
-            <InternalLink href="/methodology">methodology page</InternalLink> lists every source and check.
-          </P>
-        </Section>
-      </PageContent>
-    </Page>
+      <Band>
+        <H2>Who spent it</H2>
+        <p className="mt-3 max-w-3xl text-charcoal-800">
+          Every ministry, with its running costs and development projects together, and the charges paid outside any
+          ministry.
+        </p>
+        <RankedList
+          className="mt-8"
+          items={shares.items.map((s) => ({
+            key: s.id,
+            name: s.name,
+            href: s.href,
+            amount_sen: s.amount_sen,
+            note: s.gloss ?? `${((s.amount_sen / shares.total_sen) * 100).toFixed(1)}% of spending`,
+          }))}
+        />
+      </Band>
+
+      <Band>
+        <H2>How the total is counted</H2>
+        <div className="mt-4 max-w-3xl space-y-3 text-charcoal-800">
+          <p>
+            Running costs are the operating statement&apos;s total less the{" "}
+            <span title={formatSen(spending.development_fund_transfer_sen)}>
+              {formatSenCompact(spending.development_fund_transfer_sen)}
+            </span>{" "}
+            it transferred to the Development Fund, which pays for development spending and would otherwise be counted
+            twice.
+            {spending.covid_fund_actual_sen
+              ? ` The total includes ${formatSenCompact(spending.covid_fund_actual_sen)} spent from the COVID-19 Fund.`
+              : ""}
+          </p>
+          <p>
+            Figures come from the Jabatan Akauntan Negara&apos;s <em>Penyata Kewangan Kerajaan Persekutuan {year}</em>:
+            revenue from Note 5(a), spending from Lampiran 1 to 3. Every total the statement prints is recomputed from
+            its line items before it is published. <Link href={`/${year}`}>Full breakdown for {year}</Link> ·{" "}
+            <Link href="/methodology">How we check every number</Link>
+          </p>
+        </div>
+      </Band>
+    </>
   );
 }

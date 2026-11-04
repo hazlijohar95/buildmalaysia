@@ -1,7 +1,7 @@
 import sql from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import { titleCase } from "@/lib/queries/sankey";
-import { slugify } from "@/lib/slug";
+import { getMinistrySlugs } from "@/lib/queries/ministry";
 
 /** One destination of the year's federal spending, as a share of the whole. */
 export interface SpendingShare {
@@ -25,9 +25,10 @@ const CHARGED: Record<string, string> = {
  * page, because the development spending it pays for is already counted under each ministry.
  */
 export async function getSpendingShares(year: number): Promise<{ total_sen: Sen; items: SpendingShare[] } | null> {
-  const [[total], ministries, charged] = await Promise.all([
-    sql<{ total_actual_sen: string; development_fund_transfer_sen: string }[]>`
-      select total_actual_sen, development_fund_transfer_sen from federal_spending where fiscal_year = ${year}
+  const [[total], ministries, charged, slugs] = await Promise.all([
+    sql<{ total_actual_sen: string; development_fund_transfer_sen: string; covid_fund_actual_sen: string | null }[]>`
+      select total_actual_sen, development_fund_transfer_sen, covid_fund_actual_sen
+      from federal_spending where fiscal_year = ${year}
     `,
     sql<{ number: string; name_ms: string; operating_vote_code: string | null; actual_sen: string }[]>`
       select number, name_ms, operating_vote_code, actual_sen from ministry_spending where fiscal_year = ${year}
@@ -39,6 +40,7 @@ export async function getSpendingShares(year: number): Promise<{ total_sen: Sen;
       where t.fiscal_year = ${year} and v.section = 'charged' and t.scope = 'programme' and t.object_code is null
       group by 1, 2
     `,
+    getMinistrySlugs(),
   ]);
   if (!total) return null;
   const transfer = Number(total.development_fund_transfer_sen);
@@ -48,7 +50,7 @@ export async function getSpendingShares(year: number): Promise<{ total_sen: Sen;
     name: titleCase(m.name_ms),
     gloss: null,
     amount_sen: parseSen(Number(m.actual_sen) - (m.operating_vote_code === "B.12" ? transfer : 0)),
-    href: `/ministries/${slugify(m.name_ms)}`,
+    href: `/ministries/${slugs.get(m.number)}`,
   }));
   const other = charged.filter((c) => !(c.code in CHARGED));
   items.push(
@@ -69,6 +71,16 @@ export async function getSpendingShares(year: number): Promise<{ total_sen: Sen;
       href: null,
     },
   );
+
+  if (total.covid_fund_actual_sen !== null && Number(total.covid_fund_actual_sen) > 0) {
+    items.push({
+      id: "covid",
+      name: "Kumpulan Wang COVID-19",
+      gloss: "COVID-19 Fund, spent outside the ministries' votes",
+      amount_sen: parseSen(total.covid_fund_actual_sen),
+      href: `/${year}/covid`,
+    });
+  }
 
   const sum = items.reduce((s, i) => s + i.amount_sen, 0);
   const totalSen = Number(total.total_actual_sen);

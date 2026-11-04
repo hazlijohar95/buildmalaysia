@@ -442,3 +442,11 @@
 .sankey-chart-container .label-name a:hover {
   text-decoration: underline;
 }
+
+/* Long printed names stop at three lines instead of running into the block below. */
+.sankey-chart-container .block:not(.short) .label-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

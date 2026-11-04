@@ -63,12 +63,47 @@ export async function getLatestMinistries(): Promise<MinistryYear[]> {
   return all.filter((m) => m.fiscal_year === latest);
 }
 
-/** A ministry by the slug of its latest name, with every loaded year of its vote number. */
-export async function getMinistry(slug: string): Promise<{ latest: MinistryYear; years: MinistryYear[] } | null> {
-  const all = await allMinistryYears();
-  const latest = all.find((m) => slugify(m.name_ms) === slug && m.fiscal_year === all[0]?.fiscal_year);
-  if (!latest) return null;
-  return { latest, years: all.filter((m) => m.number === latest.number) };
+/** Ministries that spent something in `year`, largest first. */
+export async function getMinistriesForYear(year: number): Promise<MinistryYear[]> {
+  return (await allMinistryYears()).filter((m) => m.fiscal_year === year && m.actual_sen > 0);
+}
+
+/** A development vote's ten largest projects by spending, for votes whose projects carry no group heading. */
+export async function getTopProjects(
+  year: number,
+  voteCode: string,
+): Promise<{ code: string; name_ms: string; estimate_sen: Sen; actual_sen: Sen }[]> {
+  const rows = await sql<{ code: string; name_ms: string; estimate_sen: string; actual_sen: string }[]>`
+    select code, name_ms, estimate_sen, actual_sen from development_project
+    where fiscal_year = ${year} and vote_code = ${voteCode}
+    order by actual_sen desc, code limit 10
+  `;
+  return rows.map((r) => ({ ...r, estimate_sen: parseSen(r.estimate_sen), actual_sen: parseSen(r.actual_sen) }));
+}
+
+/**
+ * A ministry is identified by its vote number; its slug is that number's most recent printed name.
+ * Returns the slug for every number seen in any loaded year.
+ */
+export async function getMinistrySlugs(): Promise<Map<string, string>> {
+  const all = await allMinistryYears(); // newest year first
+  const slugs = new Map<string, string>();
+  for (const m of all) if (!slugs.has(m.number)) slugs.set(m.number, slugify(m.name_ms));
+  return slugs;
+}
+
+/**
+ * A ministry by slug, with every loaded year of its vote number. Any name the number has been printed
+ * under resolves; `canonical` is the slug of the latest name, for redirecting old links.
+ */
+export async function getMinistry(
+  slug: string,
+): Promise<{ latest: MinistryYear; years: MinistryYear[]; canonical: string } | null> {
+  const all = await allMinistryYears(); // newest year first
+  const match = all.find((m) => slugify(m.name_ms) === slug);
+  if (!match) return null;
+  const years = all.filter((m) => m.number === match.number);
+  return { latest: years[0], years, canonical: slugify(years[0].name_ms) };
 }
 
 export interface ProgrammeSpend {

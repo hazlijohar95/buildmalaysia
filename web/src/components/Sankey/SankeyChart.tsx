@@ -16,14 +16,14 @@ type FlatNode = SankeyNode & { parent?: string; value: number; type: Side };
 
 type HoverNode = SankeyHoverNode & { percent: number; overallPercent?: number };
 
-const chartHeight = 760;
+const chartHeight = 940;
 
 const chartConfig = {
   revenue: {
     id: "revenue-chart-root",
     colors: { primary: colours.lake[700] },
     direction: "right-to-left",
-    differenceLabel: "Shortfall",
+    differenceLabel: "Gap",
   },
   spending: {
     id: "spending-chart-root",
@@ -70,12 +70,43 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
     if (hideTimeout.current) clearTimeout(hideTimeout.current);
   }, []);
 
-  const search = (text: string) => {
-    setQuery(text);
-    const match = flat.find((n) => n.displayName === text);
-    if (!match) return setFocus(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const byId = useMemo(() => new Map(flat.map((n) => [`${n.type}:${n.id}`, n])), [flat]);
+  const parentOf = (n: FlatNode) => (n.parent ? byId.get(`${n.type}:${n.parent}`) : undefined);
+
+  // Case-insensitive substring search over printed and short names, largest first, one row per name
+  // and parent so the 30-odd "Dasar Baru" programmes read as "Dasar Baru, in Pertahanan".
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const seen = new Set<string>();
+    const out: { node: FlatNode; context: string }[] = [];
+    for (const n of [...flat].sort((a, b) => b.value - a.value)) {
+      if (!`${n.displayName} ${n.searchName ?? ""}`.toLowerCase().includes(q)) continue;
+      // Skip the "Other (n)" blocks the chart groups small items into: they say nothing about where an item sits.
+      let parent = n.parent ? byId.get(`${n.type}:${n.parent}`) : undefined;
+      while (parent?.id.endsWith("-other")) parent = byId.get(`${parent.type}:${parent.parent}`);
+      const context = parent ? (parent.searchName ?? parent.displayName) : n.type === "revenue" ? "Revenue" : "Spending";
+      const key = `${n.searchName ?? n.displayName}|${context}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ node: n, context });
+      if (out.length === 8) break;
+    }
+    return out;
+  }, [query, flat, byId]);
+
+  const choose = (n: FlatNode) => {
+    setQuery(n.searchName ?? n.displayName);
+    setOpen(false);
     // A leaf shows within its parent, as in CanadaSpends.
-    setFocus(match.children ? match : (flat.find((n) => n.id === match.parent) ?? null));
+    setFocus(n.children ? n : (parentOf(n) ?? null));
+  };
+  const clear = () => {
+    setQuery("");
+    setFocus(null);
+    setOpen(false);
   };
 
   const onMouseOver = useCallback(
@@ -104,23 +135,71 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
   return (
     <div className="sankey-chart-wrapper">
       <div className="sankey-chart-header">
-        <div className="search-container">
+        <div className="search-container relative">
           <input
-            list="sankey-nodes"
+            role="combobox"
+            aria-expanded={open && query.trim().length >= 2}
+            aria-controls="sankey-search-results"
+            aria-activedescendant={open && results[active] ? `sankey-result-${active}` : undefined}
+            aria-autocomplete="list"
             value={query}
-            onChange={(e) => search(e.target.value)}
-            placeholder="Search a ministry, tax or programme..."
-            className="w-full rounded-md border border-[#A8A19B] bg-[#272727] px-3 py-2 text-sm text-[#f6ebe3] placeholder:text-[#A8A19B]"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setActive((i) => Math.min(i + 1, results.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActive((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter" && results[active]) {
+                e.preventDefault();
+                choose(results[active].node);
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+            placeholder="Search a ministry, tax or programme"
+            className="w-full border-2 border-[#A8A19B] bg-[#272727] px-3 py-2 text-sm text-[#f6ebe3] placeholder:text-[#A8A19B]"
             aria-label="Search the chart"
           />
-          <datalist id="sankey-nodes">
-            {flat.map((n) => (
-              <option key={`${n.type}-${n.id}`} value={n.displayName} />
-            ))}
-          </datalist>
+          {open && query.trim().length >= 2 && (
+            <ul
+              id="sankey-search-results"
+              role="listbox"
+              className="absolute right-0 z-20 mt-1 w-full max-w-md border-2 border-[#A8A19B] bg-[#272727] text-[#f6ebe3]"
+            >
+              {results.length === 0 && <li className="px-3 py-2 text-sm text-[#A8A19B]">No matches for “{query}”</li>}
+              {results.map(({ node, context }, i) => (
+                <li
+                  key={`${node.type}-${node.id}`}
+                  id={`sankey-result-${i}`}
+                  role="option"
+                  aria-selected={i === active}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    choose(node);
+                  }}
+                  onMouseEnter={() => setActive(i)}
+                  className={`flex cursor-pointer justify-between gap-3 px-3 py-2 text-sm ${i === active ? "bg-[#3a3a3a]" : ""}`}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{node.searchName ?? node.displayName}</span>
+                    <span className="block truncate text-xs text-[#A8A19B]">in {context}</span>
+                  </span>
+                  <span className="shrink-0 tabular-nums">{formatNumber(node.value, amountScalingFactor)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {focus && (
-            <button type="button" className="ml-2 text-sm text-[#f6ebe3] underline" onClick={() => search("")}>
-              Show all
+            <button type="button" className="mt-2 text-sm text-[#f6ebe3] underline" onClick={clear}>
+              Show the whole chart
             </button>
           )}
         </div>

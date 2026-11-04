@@ -5,6 +5,7 @@ export type SankeyNode = {
   displayName: string; // user-facing name
   amount?: number; // leaves carry amounts; parents sum their children
   link?: string; // a page about this node, linked from its label and tooltip
+  searchName?: string; // full printed name when displayName is shortened
   children?: SankeyNode[];
 };
 
