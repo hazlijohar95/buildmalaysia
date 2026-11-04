@@ -12,6 +12,11 @@ export function parseSen(raw: string | number | bigint): Sen {
   return n as Sen;
 }
 
+/** A nullable bigint column: null where the document prints no figure (not zero). */
+export function parseSenOrNull(raw: string | number | bigint | null): Sen | null {
+  return raw === null ? null : parseSen(raw);
+}
+
 /** Full RM with two decimal places, e.g. "RM 13,532,772.40". */
 export function formatSen(sen: Sen): string {
   const rm = sen / 100;

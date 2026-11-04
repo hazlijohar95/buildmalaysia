@@ -1,13 +1,13 @@
 import sql from "@/lib/db";
-import { parseSen, type Sen } from "@/lib/money";
+import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
 
 export interface VoteHeader {
   code: string;
   name_ms: string;
   section: "charged" | "supply";
   original_sen: Sen;
-  supplementary_sen: Sen;
-  virement_sen: Sen;
+  supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  virement_sen: Sen | null; // null in years whose statement prints no such column
   revised_sen: Sen;
   actual_sen: Sen;
   pdf_page: number;
@@ -19,8 +19,8 @@ export interface ProgrammeTotal {
   programme_code: string;
   programme_name_ms: string;
   original_sen: Sen;
-  supplementary_sen: Sen;
-  virement_sen: Sen;
+  supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  virement_sen: Sen | null; // null in years whose statement prints no such column
   revised_sen: Sen;
   actual_sen: Sen;
   pdf_page: number;
@@ -33,8 +33,8 @@ export interface ActivityTotal {
   activity_code: string;
   activity_name_ms: string;
   original_sen: Sen;
-  supplementary_sen: Sen;
-  virement_sen: Sen;
+  supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  virement_sen: Sen | null; // null in years whose statement prints no such column
   revised_sen: Sen;
   actual_sen: Sen;
   pdf_page: number;
@@ -49,8 +49,8 @@ export interface LeafLine {
   object_name_ms: string;
   object_name_en: string;
   original_sen: Sen;
-  supplementary_sen: Sen;
-  virement_sen: Sen;
+  supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  virement_sen: Sen | null; // null in years whose statement prints no such column
   revised_sen: Sen;
   actual_sen: Sen;
   pdf_page: number;
@@ -63,8 +63,8 @@ interface RawVoteHeader {
   name_ms: string;
   section: "charged" | "supply";
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
   pdf_page: number;
@@ -76,8 +76,8 @@ interface RawProgrammeTotal {
   programme_code: string;
   programme_name_ms: string;
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
   pdf_page: number;
@@ -90,8 +90,8 @@ interface RawActivityTotal {
   activity_code: string;
   activity_name_ms: string;
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
   pdf_page: number;
@@ -106,8 +106,8 @@ interface RawLeafLine {
   object_name_ms: string;
   object_name_en: string;
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
   pdf_page: number;
@@ -117,15 +117,15 @@ interface RawLeafLine {
 
 function parseSens(r: {
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
 }) {
   return {
     original_sen: parseSen(r.original_sen),
-    supplementary_sen: parseSen(r.supplementary_sen),
-    virement_sen: parseSen(r.virement_sen),
+    supplementary_sen: parseSenOrNull(r.supplementary_sen),
+    virement_sen: parseSenOrNull(r.virement_sen),
     revised_sen: parseSen(r.revised_sen),
     actual_sen: parseSen(r.actual_sen),
   };

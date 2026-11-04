@@ -227,7 +227,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
               </thead>
               <tbody>
                 {(projects.length > 0
-                  ? projects.map((p) => ({ key: p.code, name: p.name_ms, estimate: p.estimate_sen, actual: p.actual_sen }))
+                  ? projects.map((p, i) => ({ key: `${p.code}-${i}`, name: p.name_ms, estimate: p.estimate_sen, actual: p.actual_sen }))
                   : groups.map((g) => ({
                       key: g.name,
                       name: titleCase(g.name),

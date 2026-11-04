@@ -310,10 +310,11 @@ function Projects({ year, plan, projects }: { year: number; plan: string; projec
           </tr>
         </thead>
         <tbody>
-          {projects.map((p) => {
+          {projects.map((p, i) => {
             const over = p.actual_sen > p.estimate_sen;
             return (
-              <tr key={p.code}>
+              // A code can repeat within a vote in older statements (FY2016, FY2018).
+              <tr key={`${p.code}-${i}`}>
                 <td className="font-mono text-xs">{p.code}</td>
                 <td lang="ms">
                   {p.name_ms}

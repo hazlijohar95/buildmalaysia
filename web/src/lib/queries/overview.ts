@@ -1,13 +1,13 @@
 import sql from "@/lib/db";
-import { parseSen, type Sen } from "@/lib/money";
+import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
 
 export interface VoteSummaryRow {
   code: string;
   name_ms: string;
   section: "charged" | "supply";
   original_sen: Sen;
-  supplementary_sen: Sen;
-  virement_sen: Sen;
+  supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  virement_sen: Sen | null; // null in years whose statement prints no such column
   revised_sen: Sen;
   actual_sen: Sen;
   pdf_page: number;
@@ -20,8 +20,8 @@ interface RawRow {
   name_ms: string;
   section: "charged" | "supply";
   original_sen: string;
-  supplementary_sen: string;
-  virement_sen: string;
+  supplementary_sen: string | null;
+  virement_sen: string | null;
   revised_sen: string;
   actual_sen: string;
   pdf_page: number;
@@ -69,8 +69,8 @@ export async function getVoteSummaries(
   return rows.map((r) => ({
     ...r,
     original_sen: parseSen(r.original_sen),
-    supplementary_sen: parseSen(r.supplementary_sen),
-    virement_sen: parseSen(r.virement_sen),
+    supplementary_sen: parseSenOrNull(r.supplementary_sen),
+    virement_sen: parseSenOrNull(r.virement_sen),
     revised_sen: parseSen(r.revised_sen),
     actual_sen: parseSen(r.actual_sen),
   }));
@@ -78,8 +78,8 @@ export async function getVoteSummaries(
 
 export interface FiscalTotals {
   total_original_sen: Sen;
-  total_supplementary_sen: Sen;
-  total_virement_sen: Sen;
+  total_supplementary_sen: Sen | null; // null in years whose statement prints no such column
+  total_virement_sen: Sen | null; // null in years whose statement prints no such column
   total_revised_sen: Sen;
   total_actual_sen: Sen;
   charged_revised_sen: Sen;
@@ -93,8 +93,8 @@ export interface FiscalTotals {
 
 interface RawTotals {
   total_original_sen: string;
-  total_supplementary_sen: string;
-  total_virement_sen: string;
+  total_supplementary_sen: string | null;
+  total_virement_sen: string | null;
   total_revised_sen: string;
   total_actual_sen: string;
   charged_revised_sen: string;
@@ -140,8 +140,8 @@ export async function getFiscalTotals(year: number): Promise<FiscalTotals | null
   return {
     ...row,
     total_original_sen: parseSen(row.total_original_sen),
-    total_supplementary_sen: parseSen(row.total_supplementary_sen),
-    total_virement_sen: parseSen(row.total_virement_sen),
+    total_supplementary_sen: parseSenOrNull(row.total_supplementary_sen),
+    total_virement_sen: parseSenOrNull(row.total_virement_sen),
     total_revised_sen: parseSen(row.total_revised_sen),
     total_actual_sen: parseSen(row.total_actual_sen),
     charged_revised_sen: parseSen(row.charged_revised_sen),

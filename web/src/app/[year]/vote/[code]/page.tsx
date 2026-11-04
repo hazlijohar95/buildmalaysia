@@ -93,6 +93,8 @@ export default async function VoteDetailPage({ params }: Props) {
   const spent = money(header.actual_sen);
   const actsByProg = groupBy(activities, (a) => a.programme_code);
   const linesByActivity = groupBy(lines, (l) => l.activity_code);
+  // Statements before FY2021 print no supplementary or virement columns.
+  const printsExtras = lines.some((l) => l.supplementary_sen !== null || l.virement_sen !== null);
 
   return (
     <>
@@ -248,10 +250,17 @@ export default async function VoteDetailPage({ params }: Props) {
           Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the sen, each
           with the page it was read from.
         </p>
-        <label className="mt-6 inline-flex items-center gap-3 text-sm cursor-pointer">
-          <input type="checkbox" className="h-4 w-4 accent-foreground" />
-          Show the supplementary (Tambahan) and virement (Viremen) columns
-        </label>
+        {printsExtras ? (
+          <label className="mt-6 inline-flex min-h-11 items-center gap-3 text-sm cursor-pointer">
+            <input type="checkbox" className="h-5 w-5 accent-foreground" />
+            Show the supplementary (Tambahan) and virement (Viremen) columns
+          </label>
+        ) : (
+          <p className="mt-6 text-sm text-charcoal-700">
+            The {year} statement prints the original budget, the revised budget and actual spending only, with no
+            supplementary or virement columns.
+          </p>
+        )}
         {programmes.map((prog) => (
           <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12 scroll-mt-4">
             <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
@@ -399,8 +408,8 @@ function Lines({ year, lines }: { year: number; lines: LeafLine[] }) {
                   </span>
                 </td>
                 <td className="num">{formatSen(l.original_sen)}</td>
-                <td className={`num ${EXTRA}`}>{formatSen(l.supplementary_sen)}</td>
-                <td className={`num ${EXTRA}`}>{formatSen(l.virement_sen)}</td>
+                <td className={`num ${EXTRA}`}>{l.supplementary_sen === null ? "–" : formatSen(l.supplementary_sen)}</td>
+                <td className={`num ${EXTRA}`}>{l.virement_sen === null ? "–" : formatSen(l.virement_sen)}</td>
                 <td className="num">{formatSen(l.revised_sen)}</td>
                 <td className={`num ${over ? "over-budget" : ""}`}>{formatSen(l.actual_sen)}</td>
                 <td>

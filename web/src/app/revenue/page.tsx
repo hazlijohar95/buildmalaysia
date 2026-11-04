@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 const COLOR: Record<(typeof REVENUE_CATEGORIES)[number]["category"], string> = {
   direct_tax: colours.lake[800],
   indirect_tax: colours.lake[500],
+  tax: colours.lake[700],
   non_tax: colours.copper[600],
   non_revenue_receipts: colours.charcoal[500],
   federal_territory: colours.pine[600],
@@ -43,7 +44,10 @@ export default async function RevenuePage({ searchParams }: Props) {
   if (!detail || !now) notFound();
 
   const before = history.find((h) => h.year === year - 1);
-  const tax = now.byCategory.direct_tax + now.byCategory.indirect_tax;
+  const tax = now.byCategory.direct_tax + now.byCategory.indirect_tax + now.byCategory.tax;
+  // Only the categories this year's note uses, and in the history only those any loaded year uses.
+  const present = REVENUE_CATEGORIES.filter((c) => now.byCategory[c.category] > 0);
+  const everPresent = REVENUE_CATEGORIES.filter((c) => history.some((h) => h.byCategory[c.category] > 0));
   const share = (v: number) => (v / now.total) * 100;
   const allItems = detail.groups.flatMap((g) => g.items);
   const biggest = [...allItems].sort((a, b) => b.actual_sen - a.actual_sen)[0];
@@ -96,7 +100,7 @@ export default async function RevenuePage({ searchParams }: Props) {
           role="img"
           aria-label={`Revenue by type, ${year}`}
         >
-          {REVENUE_CATEGORIES.map((c) => (
+          {present.map((c) => (
             <div
               key={c.category}
               title={`${c.en}: ${formatSenCompact(now.byCategory[c.category])}`}
@@ -109,7 +113,7 @@ export default async function RevenuePage({ searchParams }: Props) {
           ))}
         </div>
         <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-6">
-          {REVENUE_CATEGORIES.map((c) => (
+          {present.map((c) => (
             <div key={c.category} className="border-t-[6px] pt-3" style={{ borderColor: COLOR[c.category] }}>
               <div className="font-display text-2xl font-semibold tabular-nums">
                 {share(now.byCategory[c.category]).toFixed(1)}%
@@ -126,7 +130,7 @@ export default async function RevenuePage({ searchParams }: Props) {
         <div className="mt-8">
           <StackedBars
             label="Federal revenue by type and year"
-            series={REVENUE_CATEGORIES.map((c) => ({
+            series={everPresent.map((c) => ({
               label: c.en,
               color: COLOR[c.category],
             }))}
@@ -134,7 +138,7 @@ export default async function RevenuePage({ searchParams }: Props) {
               .sort((a, b) => a.year - b.year)
               .map((h) => ({
                 year: h.year,
-                values: REVENUE_CATEGORIES.map((c) => h.byCategory[c.category]),
+                values: everPresent.map((c) => h.byCategory[c.category]),
               }))}
           />
         </div>
@@ -170,6 +174,11 @@ export default async function RevenuePage({ searchParams }: Props) {
                         style={{ background: COLOR[g.category] }}
                       />
                       {en} <span className="font-normal text-charcoal-700">({g.name_ms})</span>
+                      {!g.printed && (
+                        <span className="block text-xs font-normal text-charcoal-700">
+                          Printed as a heading without an amount; the figure is the sum of its items.
+                        </span>
+                      )}
                     </td>
                     <td className="num">{g.revised_sen === null ? "–" : formatSen(g.revised_sen)}</td>
                     <td className="num">{formatSen(g.actual_sen)}</td>
