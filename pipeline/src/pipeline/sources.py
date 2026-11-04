@@ -227,6 +227,61 @@ SOURCES: dict[int, SourceDocument] = {
             ),
         ),
     ),
+    2016: SourceDocument(
+        id="janm-penyata-kewangan-2016",
+        publisher="Jabatan Akauntan Negara Malaysia",
+        title="Penyata Kewangan Kerajaan Persekutuan 2016",
+        fiscal_year=2016,
+        url="https://www.anm.gov.my/images/dokumen/arkib/penyata-kewangan/2016_PENYATA_KEWANGAN_KERAJAAN_PERSEKUTUAN.pdf",
+        sha256="f2b9c42832890eb2a6521229341d7814c52aee7f8f523a4bca8a3cf502a6c26c",
+        page_count=293,
+        raw_path="janm/2016.pdf",
+        operating_pages=(77, 223),
+        development_pages=(225, 256),
+        revenue_pages=(63, 64),
+        operating_columns=4,
+        slug_pages=True,
+        operating_crop=_OPERATING_CROP,
+        development_crop=_DEVELOPMENT_CROP,
+        known_misprints=(
+            KnownMisprint(
+                key="programme total vote=T.08 programme=010000 object=40000",
+                diffs_sen=(3_900_000, 0, 0, 3_900_000, 3_158_712),
+                evidence=(
+                    "PDF p79: as in FY2017, T.08 programme 010000's second per-object line is labelled "
+                    "'Pemberian dan Kenaan Bayaran Tetap' (39,000; 39,000; 31,587.12), the figures of its only "
+                    "activity's leaf '20000 Perkhidmatan dan Bekalan'; the vote prints them as 'Jumlah "
+                    "Perkhidmatan dan Bekalan'"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.06 programme=520000 object=40000",
+                diffs_sen=(0, 0, 0, 0, -13),
+                evidence=(
+                    "PDF p105: programme 520000's 'Pemberian dan Kenaan Bayaran Tetap' line prints Amaun "
+                    "39,965,322 with no sen; its only 40000 leaf (520300) prints 39,965,322.13, and 'Jumlah "
+                    "520000' (272,253,356.92) includes the 13 sen"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.10 programme=090000",
+                diffs_sen=(-410_000_000, 0, 0, 0, 0),
+                evidence=(
+                    "PDF p122: 'Jumlah 090000' prints Asal 288,084,900; its ten activities sum to 292,184,900, as "
+                    "do its per-object lines (70,492,000 + 9,592,900 + 208,000,000 + 4,100,000). The 4,100,000 "
+                    "left out is activity 090500's (Bayaran Balik Hasil); the vote total includes it"
+                ),
+            ),
+            KnownMisprint(
+                key="programme total vote=B.31 programme=020000 object=20000",
+                diffs_sen=(0, 0, 0, 0, -6),
+                evidence=(
+                    "PDF p170: programme 020000's 'Perkhidmatan dan Bekalan' line prints Amaun 29,444,834 with no "
+                    "sen; its six 20000 leaves sum to 29,444,834.06"
+                ),
+            ),
+        ),
+    ),
     2017: SourceDocument(
         id="janm-penyata-kewangan-2017",
         publisher="Jabatan Akauntan Negara Malaysia",

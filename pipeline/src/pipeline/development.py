@@ -70,7 +70,9 @@ _STATEMENT_TOTAL = re.compile(r"JUMLAH PERBELANJAAN PEMBANGUNAN")
 _VOTE_TOTAL = re.compile(r"JUMLAH (?P<name>.+)")
 _GROUP_TOTAL = re.compile(r"Jumlah (?P<name>.+)")
 _NOTE = re.compile(r"Nota:\s*(?:!\s*)?(?P<text>.*)")  # FY2018 p218: "Nota: !*P.06–", the "!" not drawn
-_PROJECT_NOTE = re.compile(r"\*(?P<vote>P\.\d{2})\s*[–-]\s*Butiran\s+(?P<codes>[\dA-Z\s,dan]+?)\s*-\s*(?P<text>.+)")
+_PROJECT_NOTE = re.compile(
+    r"\*(?P<vote>P\.\d{2})\s*(?:[–-]\s*)?Butiran\s+(?P<codes>[\dA-Z\s,&dan]+?)\s*-\s*(?P<text>.+)"
+)
 _STATEMENT_NOTE = re.compile(r"\*\s+(?P<text>.+)")
 _PARENT_NAME = re.compile(r"(?P<stem>.+?) (?P<first>\S+), (?P<middle>.+?) dan (?P<last>.+)")
 
@@ -328,10 +330,12 @@ class _Parser:
                 self.corrections.append(Correction("STRAY_MARK_IGNORED", f"dropped {text!r}", self.where))
                 continue
             note = _NOTE.fullmatch(text)
-            if note is not None and self.slug_pages:
+            if self.slug_pages and (note is not None or _PROJECT_NOTE.fullmatch(text)):
+                # FY2016 prints notes without "Nota:" ("*P.60 Butiran 00900- ...").
                 # FY2016-2019 -layout scatters a note over several lines; -raw keeps each whole.
                 for after_no, after in left_lines[index:]:
-                    if trailing_values(after, 2)[1] and not _FOOTER.fullmatch(after.strip()):
+                    values = trailing_values(after, 2)[1]
+                    if len(values) == 2 and all(v.has_decimals or v.is_dash for v in values):
                         raise self.fail("amounts below the notes", Citation(left.pdf_page, left_book, after_no, after))
                 self.raw_notes(left)
                 break
@@ -358,6 +362,10 @@ class _Parser:
             if not text or _FOOTER.fullmatch(text):
                 continue
             label, values, ends = trailing_values(line, 7)
+            if self.slug_pages and label == "" and len(values) == 1 and values[0].is_dash:
+                # STRAY_MARK_IGNORED: a lone dash drawn in a column with no row (FY2016 p256).
+                self.corrections.append(Correction("STRAY_MARK_IGNORED", "dropped a lone '-'", at))
+                continue
             if label == "" and len(values) in (5, 6, 7):
                 if trailing_text:
                     raise self.fail("text between amount rows on the right page", trailing_text[0])
@@ -715,7 +723,7 @@ class _Parser:
 
     def raw_notes(self, page: PageText) -> None:
         lines = [" ".join(self.unbang(line).split()) for line in page.raw.split("\n")]
-        start = next(i for i, line in enumerate(lines) if _NOTE.fullmatch(line))
+        start = next(i for i, line in enumerate(lines) if _NOTE.fullmatch(line) or _PROJECT_NOTE.fullmatch(line))
         for line in lines[start:]:
             self.where = Citation(page.pdf_page, self.where.book_page, 0, line)
             if not line or _FOOTER.fullmatch(line):
@@ -730,7 +738,7 @@ class _Parser:
     def add_note(self, text: str) -> None:
         if (m := _PROJECT_NOTE.fullmatch(text)) is not None:
             codes = re.findall(r"\d{5}", m["codes"])
-            if not codes or re.sub(r"\d{5}|\s|,|dan", "", m["codes"]) not in ("", "P"):
+            if not codes or re.sub(r"\d{5}|\s|,|&|dan", "", m["codes"]) not in ("", "P"):
                 raise self.fail("note names no butiran, or names one in an unknown form")
             if "P" in m["codes"]:
                 self.corrections.append(
@@ -788,11 +796,11 @@ class _Parser:
             key = (p.vote_code, p.code)
             if key in seen:
                 other = next(o for o in self.projects if (o.vote_code, o.code) == key)
-                if other.group == p.group or _norm(" ".join(other.parts)) == _norm(" ".join(p.parts)):
+                if other.group == p.group and _norm(" ".join(other.parts)) == _norm(" ".join(p.parts)):
                     raise self.fail(f"project {p.code} appears twice in {p.vote_code}", p.first)
-                # Named rule DUPLICATE_PROJECT_CODE: two different projects printed with one
-                # code, in different groups under different names (FY2018 P.21 90700, PDF
-                # p224). Both are stored; each is its own row of the statement.
+                # Named rule DUPLICATE_PROJECT_CODE: two different rows printed with one code,
+                # in different groups or under different names (FY2018 P.21 90700, PDF p224;
+                # FY2016 P.10 96000, p227). Both are stored; each is its own row of the statement.
                 detail = (
                     f"{p.vote_code} {p.code} also printed at pdf page {other.first.pdf_page} line {other.first.line_no}"
                 )

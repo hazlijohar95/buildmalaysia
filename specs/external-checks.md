@@ -124,3 +124,15 @@ FY2017 and FY2018 (both loaded):
 **Lampiran 2, RMKe-11 spending to date.** FY2018's statement total for RMKe-11 spending to 31.12.2017 (RM86,878,876,528.87) equals FY2017's to-date column. By project, 741 of the 742 (vote, code) pairs in both statements agree; the other is P.21 90700, which FY2018 prints twice (the NATC row alone equals FY2017's).
 
 **Lampiran 1 transfer to the Development Fund.** B.12 'Kumpulan Wang Pembangunan' actual: FY2017 RM2,710,809,215.47 (the note prints RM2,710,809,216), FY2018 RM1,922,069,619.86 (the note prints the same).
+
+FY2016 (loaded):
+
+| Year | HASIL Sebenar (RM) | Lampiran 1 total (RM) | Difference |
+|---|---|---|---|
+| 2016 | 212,421,098,894 | 212,421,098,894.35 | -35 sen |
+
+**FY2017 against FY2016.** The FY2017 note's 2016 Sebenar column (PDF pp. 61-62) equals FY2016's Sebenar for all 25 items and the 5 categories FY2016 prints; FY2017 adds Cukai Pelancongan (a dash for 2016). FY2016 prints no direct/indirect tax split, and FY2017 prints those two categories without amounts, so they are not compared.
+
+**Lampiran 2.** FY2016 is the first year of RMKe-11: its left page reports RMKe-10 spending to 2015 and its to-date column RMKe-11 (equal to the year's actual, RM41,995,037,696.86). FY2017's statement total for RMKe-11 spending to 31.12.2016 equals it. By project, 708 of 709 (vote, code) pairs agree; P.06 17300 (Pusat Rukun Tetangga) differs: FY2017 prints 3,634,391.97, FY2016 3,563,158.97. Not explained by any source read.
+
+**Transfer to the Development Fund.** FY2016's Lampiran 1 footnote (*) (PDF p223) says RM2,248,437,460.02, but the B.12 'Kumpulan Wang Pembangunan' line it refers to (PDF p126) prints Sebenar RM2,248,437,560.02, and Note 5's Consolidated Revenue Account (PDF p63) and a later note (PDF p66) both print RM2,248,437,560. The footnote is off by RM100; the line, which reconciles with every total above it, is what is loaded and what `federal_spending` subtracts. The footnote text is stored as printed.

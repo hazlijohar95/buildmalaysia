@@ -572,6 +572,21 @@ class _Parser:
                         )
                     splits[i], splits[i + 1] = joined[0], _Split("", [], [])
                     lines[i], lines[i + 1] = lines[i].rstrip() + "\n" + lines[i + 1].strip(), ""
+        for i in range(units + 1, len(lines) - 1):
+            below = next((j for j in range(i + 1, len(lines)) if lines[j].strip()), None)
+            if (
+                not splits[i].label
+                and len(splits[i].values) == width
+                and below is not None
+                and lines[below].strip() == "JUMLAH KESELURUHAN MENGURUS"
+            ):
+                # Named rule LABEL_BELOW_AMOUNTS: the statement total's label printed on the line
+                # under its amounts (FY2016 p223). Only this label is read this way.
+                at = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
+                self.corrections.append(Correction("LABEL_BELOW_AMOUNTS", "JUMLAH KESELURUHAN MENGURUS", at))
+                splits[i] = _Split(lines[below].strip(), splits[i].values, splits[i].ends)
+                lines[i] = lines[i].rstrip() + "\n" + lines[below].strip()
+                lines[below], splits[below] = "", _Split("", [], [])
         for i in range(units + 1, len(lines)):
             self.where = Citation(page.pdf_page, book_page, i + 1, lines[i].strip())
             if self.phase is Phase.NOTES and self.notes_page == page.pdf_page:
@@ -1038,6 +1053,17 @@ class _Parser:
                     raise self.fail(f"continued programme {pending.code} {pending.name!r} is not the open one", at)
                 self.note_samb_name(pending.name, current.name, at)
                 return
+        current = self.programme
+        if (
+            current is not None
+            and (pending.code, pending.name) == (current.code, current.name)
+            and self.phase is Phase.ACTIVITY_DONE
+        ):
+            # Named rule PROGRAMME_HEADING_REPEATED: the open programme's heading printed again
+            # between two of its activities, without "(SAMB.)" (FY2016 p97, B.06 120000). It
+            # continues the programme.
+            self.corrections.append(Correction("PROGRAMME_HEADING_REPEATED", f"{pending.code} printed again", at))
+            return
         self.transition(Event.NEW_PROGRAMME, at)
         if any(p.vote_code == self.vote.code and p.code == pending.code for p in self.programmes):
             raise self.fail(f"duplicate programme {pending.code} in vote {self.vote.code}", at)

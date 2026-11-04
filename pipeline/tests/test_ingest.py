@@ -259,6 +259,17 @@ def test_one_sen_development_edit_is_rejected(ingest: Ingest) -> None:
             None,
             22_040_600_188_400,
         ),
+        # FY2016: four columns; four Lampiran 1 totals disagree with their rows (sources.KnownMisprint).
+        (
+            2016,
+            (50, 409, 1341, 2598, 3021),
+            (27, 67, 952, 95),
+            25,
+            21_242_109_889_435,
+            4_199_503_769_686,
+            None,
+            21_242_109_889_400,
+        ),
     ],
 )
 def test_earlier_years_load_and_reconcile(
@@ -292,8 +303,8 @@ def test_earlier_years_load_and_reconcile(
         unreconciled = (o.printed_totals - o.reconciled) + (d.printed_totals - d.reconciled)
         assert unreconciled == len(source.known_misprints)
         r = result.revenue
-        # FY2017 prints Cukai Langsung and Cukai Tak Langsung without amounts: 5 printed totals.
-        printed = 5 if year == 2017 else 7
+        # FY2017 prints Cukai Langsung and Cukai Tak Langsung without amounts, FY2016 not at all: 5 printed totals.
+        printed = 5 if year in (2016, 2017) else 7
         assert (r.items, r.printed_totals, r.reconciled) == (revenue_items, printed, printed)
         assert (r.actual_sen, r.operating_actual_sen) == (revenue_actual, operating_actual)
         row = conn.execute(
