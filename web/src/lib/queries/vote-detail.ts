@@ -17,7 +17,7 @@ export interface VoteHeader {
 
 export interface ProgrammeTotal {
   programme_code: string;
-  programme_name_ms: string;
+  programme_name_ms: string | null; // null where the statement prints no heading
   original_sen: Sen;
   supplementary_sen: Sen | null; // null in years whose statement prints no such column
   virement_sen: Sen | null; // null in years whose statement prints no such column
@@ -74,7 +74,7 @@ interface RawVoteHeader {
 
 interface RawProgrammeTotal {
   programme_code: string;
-  programme_name_ms: string;
+  programme_name_ms: string | null;
   original_sen: string;
   supplementary_sen: string | null;
   virement_sen: string | null;

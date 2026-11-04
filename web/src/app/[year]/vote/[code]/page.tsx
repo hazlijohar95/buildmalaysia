@@ -219,8 +219,10 @@ export default async function VoteDetailPage({ params }: Props) {
                 return (
                   <tr key={p.programme_code}>
                     <td className="font-mono text-xs">{p.programme_code}</td>
-                    <td lang="ms">
-                      <a href={`#p${p.programme_code}`}>{titleCase(p.programme_name_ms)}</a>
+                    <td>
+                      <a href={`#p${p.programme_code}`}>
+                        <ProgrammeName name={p.programme_name_ms} />
+                      </a>
                     </td>
                     <td className="num">
                       <Money sen={p.original_sen} />
@@ -269,7 +271,7 @@ export default async function VoteDetailPage({ params }: Props) {
           <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12">
             <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
               <span className="font-mono text-sm font-normal text-charcoal-700 mr-3">{prog.programme_code}</span>
-              <span lang="ms">{titleCase(prog.programme_name_ms)}</span>
+              <ProgrammeName name={prog.programme_name_ms} />
             </h3>
             <ActivityHead />
             {(actsByProg[prog.programme_code] ?? []).map((act) => (
@@ -443,4 +445,13 @@ function groupBy<T>(arr: T[], key: (item: T) => string): Record<string, T[]> {
     (out[k] ??= []).push(item);
   }
   return out;
+}
+
+/** A few programmes have no heading in the statement; say so rather than invent one. */
+function ProgrammeName({ name }: { name: string | null }) {
+  return name ? (
+    <span lang="ms">{titleCase(name)}</span>
+  ) : (
+    <span className="text-charcoal-700">Name not printed in the statement</span>
+  );
 }

@@ -11,9 +11,8 @@ import {
   type BudgetHeadingRow,
   type BudgetProjectRow,
 } from "@/lib/queries/budget";
-import { getBudgetVoteYears, getMinistryLink } from "@/lib/queries/vote-nav";
+import { getBudgetVoteYears, getMinistryLink, getVoteYears } from "@/lib/queries/vote-nav";
 import { titleCase } from "@/lib/queries/sankey";
-import { getLoadedYears } from "@/lib/years";
 import { parseSen } from "@/lib/money";
 import { slugToVoteCode, voteCodeToSlug } from "@/lib/citations";
 import { columnLabel, columnLabelMs, requireBudgetYear } from "@/lib/budgetYear";
@@ -35,11 +34,11 @@ export default async function BudgetVotePage({ params }: Props) {
   const { budgetYear, code: slug } = await params;
   const year = await requireBudgetYear(budgetYear);
   const code = slugToVoteCode(slug);
-  const [source, totals, votes, loadedYears, budgetYears, voteYears, ministry] = await Promise.all([
+  const [source, totals, votes, statementYears, budgetYears, voteYears, ministry] = await Promise.all([
     getBudgetSource(year),
     getBudgetTotals(year),
     getBudgetVotes(year),
-    getLoadedYears(),
+    getVoteYears(code),
     getBudgetYears(),
     getBudgetVoteYears(code),
     getMinistryLink(code, null),
@@ -52,7 +51,10 @@ export default async function BudgetVotePage({ params }: Props) {
     development ? Promise.resolve([]) : getBudgetOperatingHeadings(year, code),
     development ? getBudgetProjects(year, code) : Promise.resolve([]),
   ]);
-  const spentYear = loadedYears.find((y) => totals.some((t) => t.fiscal_year === y && t.basis === "actual"));
+  // The latest year this book prints an actual for and whose statement carries the vote; new votes have none.
+  const spentYear = statementYears.findLast(({ year: y }) =>
+    totals.some((t) => t.fiscal_year === y && t.basis === "actual"),
+  )?.year;
   const prior = totals.at(-2)?.fiscal_year ?? year - 1;
   const kind = development
     ? "development (P) vote"
