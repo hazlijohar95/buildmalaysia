@@ -16,6 +16,7 @@ from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.parse import ParseError, parse_statement
 from pipeline.revenue import parse_revenue
+from pipeline.tax_schedule import ScheduleError, write_schedule
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -135,6 +136,17 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
     return 0
 
 
+def tax_schedule(year: int, raw_dir: Path, out: Path) -> int:
+    try:
+        schedule = write_schedule(raw_dir, year, out)
+    except (OSError, ScheduleError) as error:
+        print(f"tax-schedule {year} failed: {error}", file=sys.stderr)
+        return 1
+    bands = schedule["bands"]
+    print(f"wrote {out}: {schedule['rate_table']}, {len(bands)} bands, each checked against LHDN's printed tax")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -146,7 +158,13 @@ def main() -> int:
     budget_cmd.add_argument("--year", type=int, required=True, help="the budget year, e.g. 2027")
     budget_cmd.add_argument("--database-url", required=True)
     budget_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    tax_cmd = commands.add_parser("tax-schedule", help="read one year's personal income tax schedule into JSON")
+    tax_cmd.add_argument("--year", type=int, required=True, help="the year of assessment, e.g. 2025")
+    tax_cmd.add_argument("--out", type=Path, required=True)
+    tax_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     args = parser.parse_args()
+    if args.command == "tax-schedule":
+        return tax_schedule(args.year, args.raw_dir, args.out)
     if args.command == "ingest-budget":
         return ingest_budget(args.year, args.database_url, args.raw_dir)
     return ingest(args.year, args.database_url, args.raw_dir)

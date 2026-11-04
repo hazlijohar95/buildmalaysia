@@ -24,6 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     { href: "/", label: "Home", match: "/" },
     { href: "/spending", label: "Spending", match: "/spending" },
     { href: "/ministries", label: "Ministries", match: "/ministries" },
+    { href: "/tax", label: "Your taxes", match: "/tax" },
     ...(budget ? [{ href: `/budget/${budget}`, label: "Budget", match: "/budget" }] : []),
     ...(latest ? [{ href: `/${latest}`, label: "By year", match: `/${latest}` }] : []),
   ];

@@ -1,0 +1,143 @@
+{
+  "year_of_assessment": 2025,
+  "rate_table": "Tahun Taksiran 2023, 2024 & 2025",
+  "bands": [
+    {
+      "band": "A",
+      "lower": 0,
+      "upper": 5000,
+      "rate_pct": 0,
+      "tax_below": 0,
+      "source_text": "A | 0 – 5,000 | 5,000 pertama | 0 | 0"
+    },
+    {
+      "band": "B",
+      "lower": 5000,
+      "upper": 20000,
+      "rate_pct": 1,
+      "tax_below": 0,
+      "source_text": "B | 5,001 – 20,000 | 5,000 pertama | 15,000 berikutnya | – | 1 | 0 | 150"
+    },
+    {
+      "band": "C",
+      "lower": 20000,
+      "upper": 35000,
+      "rate_pct": 3,
+      "tax_below": 150,
+      "source_text": "C | 20,001 – 35,000 | 20,000 pertama | 15,000 berikutnya | – | 3 | 150 | 450"
+    },
+    {
+      "band": "D",
+      "lower": 35000,
+      "upper": 50000,
+      "rate_pct": 6,
+      "tax_below": 600,
+      "source_text": "D | 35,001 – 50,000 | 35,000 pertama | 15,000 berikutnya | – | 6 | 600 | 900"
+    },
+    {
+      "band": "E",
+      "lower": 50000,
+      "upper": 70000,
+      "rate_pct": 11,
+      "tax_below": 1500,
+      "source_text": "E | 50,001 – 70,000 | 50,000 pertama | 20,000 berikutnya | – | 11 | 1,500 | 2,200"
+    },
+    {
+      "band": "F",
+      "lower": 70000,
+      "upper": 100000,
+      "rate_pct": 19,
+      "tax_below": 3700,
+      "source_text": "F | 70,001 – 100,000 | 70,000 pertama | 30,000 berikutnya | – | 19 | 3,700 | 5,700"
+    },
+    {
+      "band": "G",
+      "lower": 100000,
+      "upper": 400000,
+      "rate_pct": 25,
+      "tax_below": 9400,
+      "source_text": "G | 100,001 – 400,000 | 100,000 pertama | 300,000 berikutnya | – | 25 | 9,400 | 75,000"
+    },
+    {
+      "band": "H",
+      "lower": 400000,
+      "upper": 600000,
+      "rate_pct": 26,
+      "tax_below": 84400,
+      "source_text": "H | 400,001 – 600,000 | 400,000 pertama | 200,000 berikutnya | – | 26 | 84,400 | 52,000"
+    },
+    {
+      "band": "I",
+      "lower": 600000,
+      "upper": 2000000,
+      "rate_pct": 28,
+      "tax_below": 136400,
+      "source_text": "I | 600,001 – 2,000,000 | 600,000 pertama | 1,400,000 berikutnya | – | 28 | 136,400 | 392,000"
+    },
+    {
+      "band": "J",
+      "lower": 2000000,
+      "upper": null,
+      "rate_pct": 30,
+      "tax_below": 528400,
+      "source_text": "J | Melebihi 2,000,000 | 2,000,000 pertama | Setiap ringgit berikutnya | – | 30 | 528,400 | –"
+    }
+  ],
+  "reliefs": {
+    "individual": {
+      "amount": 9000,
+      "source_text": "1 | Individu dan saudara tanggungan | 9,000"
+    },
+    "epf": {
+      "amount": 4000,
+      "source_text": "Caruman wajib kepada skim yang diluluskan atau caruman sukarela kepada KWSP (tidak termasuk skim persaraan swasta) atau caruman di bawah mana-mana undang-undang bertulis ( | Terhad RM4,000"
+    },
+    "perkeso": {
+      "amount": 350,
+      "source_text": "Caruman kepada Pertubuhan Keselamatan Sosial (PERKESO) mengikut Akta Keselamatan Sosial Pekerja 1969 atau Akta Sistem Insurans Pekerjaan 2017 | 350 (Terhad)"
+    }
+  },
+  "rebate": {
+    "amount": 400,
+    "chargeable_income_below": 35000,
+    "source_text": "Rebat Cukai Pendapatan Bagi Individu Yang Mempunyai Pendapatan Bercukai Kurang Daripada RM35,000 … Tahun Taksiran | 2009 & Seterusnya(RM) | a | Taksiran Berasingan | Isteri | Suami | – | 350 | 350 | – | 400 | 400"
+  },
+  "epf": {
+    "employee_rate_pct": 11,
+    "source_text": "RM5,000 and below | Employees share: 11% | Employer’s share: 13% | ( | Ref Third Schedule – Part A … More than RM5,000 | Employees share: 11% | Employer’s share: 12% | ( | Ref Third Schedule – Part A"
+  },
+  "sources": [
+    {
+      "id": "lhdn-kadar-cukai",
+      "title": "LHDN, Kadar Cukai (individu)",
+      "url": "https://www.hasil.gov.my/individu/kadar-cukai/",
+      "file": "lhdn/kadar-cukai.html",
+      "sha256": "ae13c994a6b2929342f4ee985385974866c72d16a40c951364da0c0eb06282a9",
+      "retrieved": "2026-11-04"
+    },
+    {
+      "id": "lhdn-pelepasan-cukai",
+      "title": "LHDN, Pelepasan Cukai (individu)",
+      "url": "https://www.hasil.gov.my/individu/pelepasan-cukai/",
+      "file": "lhdn/pelepasan-cukai.html",
+      "sha256": "6c238b3117078aad5adc5af5b8679b1d1a22f4ae8604b25c5e58e74074238f07",
+      "retrieved": "2026-11-04"
+    },
+    {
+      "id": "lhdn-rebat",
+      "title": "LHDN, Rebat (individu)",
+      "url": "https://www.hasil.gov.my/individu/rebat/",
+      "file": "lhdn/rebat.html",
+      "sha256": "d397f2ca454d57d2dfb22f16906dbb6a069118b6be75eaa4fb677a20727fddad",
+      "retrieved": "2026-11-04"
+    },
+    {
+      "id": "kwsp-mandatory-contribution",
+      "title": "KWSP, Employer Mandatory Contribution",
+      "url": "https://www.kwsp.gov.my/en/employer/responsibilities/mandatory-contribution",
+      "file": "kwsp/mandatory-contribution.html",
+      "sha256": "c3523992f2a37f2f553b2699dd705d2429ca9b6772a4730331af2abcc63a423e",
+      "retrieved": "2026-11-04"
+    }
+  ]
+}
