@@ -22,7 +22,7 @@ const cachedChecks = unstable_cache(
     ]);
     return { version, sources, misprints, budgets };
   },
-  ["methodology-checks-v2"], // bump when the cached shape changes
+  ["methodology-checks-v3"], // bump when the cached shape changes
 );
 
 /** Every check the methodology page reports, recomputed only after the data changes. */
@@ -41,6 +41,8 @@ export interface SourceCheck {
   sha256: string;
   operating_total: number;
   operating_matched: number;
+  operating_misprinted: number; // registered misprints: the load accepts exactly these differences
+  operating_missing_page: number; // totals whose rows are on a page missing from the published PDF
   development_total: number;
   development_matched: number;
   covid_matches: boolean | null; // null when the year has no COVID-19 Fund statement
@@ -56,6 +58,8 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
       sha256: string;
       operating_total: string;
       operating_matched: string;
+      operating_misprinted: string;
+      operating_missing_page: string;
       development_total: string;
       development_matched: string;
       covid_matches: boolean | null;
@@ -64,6 +68,10 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
     select d.fiscal_year, d.title, d.url, d.sha256,
            (select count(*) from reconciliation r where r.document_id = d.id) as operating_total,
            (select count(*) from reconciliation r where r.document_id = d.id and r.matches) as operating_matched,
+           (select count(*) from reconciliation r where r.document_id = d.id and r.result = 'differs')
+             as operating_misprinted,
+           (select count(*) from reconciliation r where r.document_id = d.id and r.result = 'missing_page')
+             as operating_missing_page,
            (select count(*) from development_reconciliation r where r.document_id = d.id) as development_total,
            (select count(*) from development_reconciliation r where r.document_id = d.id and r.matches)
              as development_matched,
@@ -76,6 +84,8 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
     ...r,
     operating_total: Number(r.operating_total),
     operating_matched: Number(r.operating_matched),
+    operating_misprinted: Number(r.operating_misprinted),
+    operating_missing_page: Number(r.operating_missing_page),
     development_total: Number(r.development_total),
     development_matched: Number(r.development_matched),
   }));
@@ -139,6 +149,8 @@ export interface BudgetCheck {
   sha256: string;
   operating_total: number;
   operating_matched: number;
+  operating_misprinted: number; // registered misprints: the load accepts exactly these differences
+  operating_missing_page: number; // totals whose rows are on a page missing from the published PDF
   development_total: number;
   development_matched: number;
   votes_consistent: number;
@@ -186,6 +198,8 @@ export async function getBudgetChecks(): Promise<BudgetCheck[]> {
     sha256: String(r.sha256),
     operating_total: Number(r.operating_total),
     operating_matched: Number(r.operating_matched),
+    operating_misprinted: Number(r.operating_misprinted),
+    operating_missing_page: Number(r.operating_missing_page),
     development_total: Number(r.development_total),
     development_matched: Number(r.development_matched),
     votes_consistent: Number(r.votes_consistent),

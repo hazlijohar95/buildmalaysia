@@ -129,7 +129,31 @@ export default async function MethodologyPage() {
                     </a>
                   </td>
                   <td className="num">
-                    <Check matched={s.operating_matched} total={s.operating_total} />
+                    <Check
+                      matched={s.operating_matched}
+                      total={s.operating_total}
+                      accounted={s.operating_misprinted + s.operating_missing_page}
+                    />
+                    {(s.operating_misprinted > 0 || s.operating_missing_page > 0) && (
+                      <span className="block text-xs text-charcoal-700">
+                        {[
+                          s.operating_misprinted > 0 &&
+                            `${s.operating_misprinted} printed ${s.operating_misprinted === 1 ? "misprint" : "misprints"}`,
+                          s.operating_missing_page > 0 && (
+                            <a key="gap" href="#gaps">
+                              {s.operating_missing_page} on the missing page
+                            </a>
+                          ),
+                        ]
+                          .filter(Boolean)
+                          .map((x, i) => (
+                            <span key={i}>
+                              {i > 0 && " · "}
+                              {x}
+                            </span>
+                          ))}
+                      </span>
+                    )}
                   </td>
                   <td className="num">
                     <Check matched={s.development_matched} total={s.development_total} />
@@ -295,8 +319,9 @@ const COLUMN_LABEL = {
   actual: "Spent",
 } as const;
 
-function Check({ matched, total }: { matched: number; total: number }) {
-  const ok = total > 0 && matched === total;
+/** Green when every total reconciles, or when the rest are all registered misprints or missing-page totals. */
+function Check({ matched, total, accounted = 0 }: { matched: number; total: number; accounted?: number }) {
+  const ok = total > 0 && matched + accounted === total;
   return (
     <span className={ok ? "text-pine-700" : "over-budget"}>
       {matched.toLocaleString("en-MY")} of {total.toLocaleString("en-MY")}
