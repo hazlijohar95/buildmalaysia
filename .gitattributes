@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.{cmd,[cC]md} text eol=crlf
+*.{bat,[bB]at} text eol=crlf
+*.sh text eol=lf
+*.jpg binary
+*.png binary
+*.woff2 binary
+# Saved source pages are archived byte for byte; their SHA-256 is recorded with the figures read from them.
+data/raw/** -text

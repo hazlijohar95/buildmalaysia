@@ -6,7 +6,7 @@ Research behind the design: [`specs/`](specs/). Build Canada's repos, cloned for
 
 ## First source
 
-JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Statements loaded: FY2021 to FY2025 (FY2020's operating tables have no text layer and need OCR) (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`), e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
+JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Statements loaded: FY2016 to FY2025 (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`). FY2020's Lampiran 1 has no text layer and is read by OCR (`pipeline/src/pipeline/ocr.py`, readings cached in `data/ocr/`); FY2019's published PDF is missing one page of Lampiran 1, registered as a `KnownGap`, e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
 
 - Lampiran 1, *Penyata Perbelanjaan Mengurus* (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
 - Lampiran 2, *Penyata Perbelanjaan Pembangunan* (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
@@ -43,14 +43,28 @@ createdb buildmalaysia
 for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia -f "$f"; done
 
 cd pipeline && uv sync
-for y in 2021 2022 2023 2024 2025; do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
+for y in $(seq 2016 2025); do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
 for y in 2025 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
-uv run pytest                       # uses the buildmalaysia_pipeline db
+uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
+uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
 cd ../web && pnpm install
 DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:///buildmalaysia pnpm start
 ```
 
-`/` and `/methodology` are prerendered at build time, so rebuild the site after each ingest.
+Prerendered pages refresh hourly; restart or rebuild the site to see a new ingest at once.
 
 Deploying to Supabase: `supabase link` then `supabase db push`.
+
+## Contributing
+
+`main` is protected: every change lands through a pull request from a short-lived branch, and CI must pass first. CI (`.github/workflows/ci.yml`) runs the web tests, lint, typecheck and Prettier check, and the pipeline's ruff check and unit tests. The pipeline's integration tests need the source PDFs and Postgres, so run them locally before a pull request that touches parsing or loading.
+
+- Web: `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm format` (Prettier, 120 columns).
+- Pipeline: `uv run pytest`, `uvx ruff@0.17.3 check .`, `uvx ruff@0.17.3 format .`.
+- Commit messages are one plain imperative sentence ("Show the COVID-19 Fund's withdrawals"), with detail in the body when it helps.
+- Never type a number in by hand. A figure the parser cannot read is a parser fix, or a `KnownMisprint`, `KnownGap` or `ManualReading` registered with its page and evidence.
+
+## License
+
+Code: MIT, see [`LICENSE`](LICENSE). The web design adapts Build Canada's [CanadaSpends](https://github.com/BuildCanada/CanadaSpends) under its MIT licence ([`web/THIRD_PARTY_NOTICES.md`](web/THIRD_PARTY_NOTICES.md)); Build Malaysia is not affiliated with Build Canada. The figures come from Malaysian government publications, cited page by page.
