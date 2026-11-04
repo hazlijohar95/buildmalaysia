@@ -99,7 +99,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
         // Dims the page under an open menu, so the panel reads as a layer above it.
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/20 motion-safe:animate-[nav-fade-in_200ms_ease-out]"
+          className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/15 backdrop-blur-[2px] motion-safe:animate-[nav-fade-in_200ms_ease-out]"
           onClick={() => setOpenMenu(null)}
         />
       )}
@@ -159,7 +159,8 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                       cell,
                       "gap-2 text-foreground cursor-pointer",
                       open
-                        ? "bg-charcoal-1000 text-linen-50"
+                        ? // The open button is the panel's tab: same paper, covering the bar's bottom rule beneath it.
+                          "relative z-10 bg-linen-50 after:absolute after:inset-x-0 after:-bottom-[2px] after:h-[2px] after:bg-linen-50"
                         : itemActive(item)
                           ? "bg-linen-200 hover:bg-foreground hover:text-background"
                           : "hover:bg-foreground hover:text-background",
@@ -218,57 +219,76 @@ function MenuPanel({
   isActive: (link: NavLink) => boolean;
   entering: boolean;
 }) {
+  const count = item.links.length;
   return (
-    // The same dark as its open button, so the two read as one shape dropping from the bar.
+    // A sheet of lighter paper drawn from the bar. Its top rule is the bar's own, broken under the open button,
+    // and its cells are ruled by hairline gaps over a tinted backing.
     <div
       id={id}
       className={cn(
-        "absolute inset-x-0 top-full bg-charcoal-1000 text-linen-50 shadow-[0_24px_48px_-32px_rgb(0_0_0/0.6)]",
-        entering && "motion-safe:animate-[nav-panel-in_220ms_cubic-bezier(0.2,0,0,1)]",
+        "absolute inset-x-0 top-full -mt-[2px] border-y-2 border-foreground bg-linen-50 shadow-[0_28px_56px_-28px_rgb(39_39_39/0.45)]",
+        entering && "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
       )}
     >
-      <div className="flex gap-16 px-10 py-10 xl:px-14 xl:py-12">
-        <ul className="m-0 grid flex-1 list-none grid-cols-3 gap-x-12 gap-y-9 p-0">
-          {item.links.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                aria-current={isActive(link) ? "page" : undefined}
-                className="group block no-underline text-linen-50"
+      <div
+        className={cn(
+          "grid gap-px bg-foreground/15",
+          item.years && "grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]",
+        )}
+      >
+        <ul className="m-0 grid list-none grid-cols-3 gap-px p-0">
+          {item.links.map((link, i) => {
+            const active = isActive(link);
+            return (
+              <li
+                key={link.href}
+                // Over three links the first widens to fill the last row, so no cell is left empty.
+                className={cn("flex", i === 0 && count > 3 && count % 3 === 2 && "col-span-2")}
               >
-                <span className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
-                  {link.label}
-                  {isActive(link) && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-auburn-500" />}
+                <Link
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className="group relative flex w-full flex-col bg-linen-50 px-7 py-7 xl:px-9 no-underline text-foreground transition-colors duration-200 hover:bg-linen-100"
+                >
+                  {/* A line that draws across the top on hover, and stays drawn for the current page. */}
                   <span
                     aria-hidden="true"
-                    className="text-linen-50/60 opacity-0 -translate-x-1 transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0"
-                  >
-                    →
+                    className={cn(
+                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-auburn-700 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                      active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
+                    )}
+                  />
+                  <span className="flex items-baseline justify-between gap-4">
+                    <span className="font-display text-xl font-semibold tracking-tight transition-colors duration-200 group-hover:text-auburn-800">
+                      {link.label}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="text-auburn-800 opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0"
+                    >
+                      →
+                    </span>
                   </span>
-                </span>
-                {link.note && (
-                  <span className="mt-1 block text-sm leading-snug text-linen-50/50 transition-colors duration-200 group-hover:text-linen-50/75">
-                    {link.note}
-                  </span>
-                )}
-              </Link>
-            </li>
-          ))}
+                  {link.note && <span className="mt-1.5 text-sm leading-snug text-charcoal-700">{link.note}</span>}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
         {item.years && (
-          <div className="w-64 shrink-0 border-l border-linen-50/10 pl-12">
-            <div className={cn(kicker, "text-[11px] text-linen-50/40")}>{item.years.title}</div>
-            <ul className="m-0 mt-4 grid list-none grid-cols-5 gap-x-4 gap-y-3 p-0">
+          <div className="bg-linen-50 px-7 py-7 xl:px-9">
+            <div className={cn(kicker, "text-[11px] text-charcoal-600")}>{item.years.title}</div>
+            <ul className="m-0 mt-5 grid list-none grid-cols-5 gap-px border border-foreground/25 bg-foreground/25 p-0">
               {item.years.links.map((link) => (
-                <li key={link.href}>
+                <li key={link.href} className="flex">
                   <Link
                     href={link.href}
                     aria-current={isActive(link) ? "page" : undefined}
                     className={cn(
-                      "font-mono text-[13px] tabular-nums no-underline underline-offset-[6px] transition-colors duration-150",
+                      "flex min-h-10 w-full items-center justify-center font-mono text-[12px] tabular-nums tracking-[0.08em] no-underline transition-colors duration-150",
                       isActive(link)
-                        ? "text-linen-50 underline decoration-auburn-500 decoration-2"
-                        : "text-linen-50/50 hover:text-linen-50",
+                        ? "bg-auburn-800 text-linen-50"
+                        : "bg-linen-50 text-charcoal-800 hover:bg-foreground hover:text-background",
                     )}
                   >
                     {link.label}
