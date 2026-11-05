@@ -1,6 +1,7 @@
 import sql from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import { slugify } from "@/lib/slug";
+import type { AliasOrigin } from "@/lib/queries/ministry";
 import { voteCodeToSlug } from "@/lib/citations";
 import { getLoadedYears } from "@/lib/years";
 
@@ -66,7 +67,16 @@ export function expandSynonyms(q: string): string[] {
 }
 
 export type SearchHit =
-  | { kind: "ministry"; name_ms: string; code: string; fiscal_year: number; href: string; actual_sen: Sen }
+  | {
+      kind: "ministry";
+      name_ms: string;
+      code: string;
+      fiscal_year: number;
+      href: string;
+      actual_sen: Sen;
+      /** The name that matched, when it is not the body's current name: an old or gazetted name, or an acronym. */
+      formerly: { name_ms: string; origin: AliasOrigin } | null;
+    }
   | { kind: "vote"; name_ms: string; code: string; fiscal_year: number; href: string; actual_sen: Sen | null }
   | {
       kind: "programme";
@@ -147,34 +157,44 @@ export async function searchHits(raw: string): Promise<SearchHit[]> {
 // --- individual queries ---
 
 interface RawMinistry {
+  body_name_ms: string;
+  alias_name_ms: string;
+  alias_origin: AliasOrigin;
   code: string;
-  name_ms: string;
   fiscal_year: number;
   actual_sen: string;
 }
 
+/** Bodies any of whose names matches, each resolved to its latest year of spending. */
 async function queryMinistries(patterns: string[]): Promise<SearchHit[]> {
   const rows = await sql<RawMinistry[]>`
     with matching as (
-      select distinct number from ministry_spending
-      where name_ms ilike any(${anyOf(patterns)})
+      -- One alias per body: its current name when that matched, else the latest matching name.
+      select distinct on (a.body_id) a.body_id, a.name_ms as alias_name_ms, a.origin::text as alias_origin
+      from body_alias a
+      join body b on b.id = a.body_id
+      where a.name_ms ilike any(${anyOf(patterns)})
+      order by a.body_id, (a.name_ms = b.name_ms) desc, a.valid_to desc nulls first, a.valid_from desc nulls last
     )
-    select * from (
-      select distinct on (m.number) m.number as code, m.name_ms, m.fiscal_year, m.actual_sen
-      from ministry_spending m
-      join matching mn on mn.number = m.number
-      order by m.number, m.fiscal_year desc
-    ) latest
-    order by actual_sen desc
+    select b.name_ms as body_name_ms, mn.alias_name_ms, mn.alias_origin, s.number as code, s.fiscal_year, s.actual_sen
+    from matching mn
+    join body b on b.id = mn.body_id
+    join lateral (
+      select number, fiscal_year, actual_sen from ministry_spending
+      where body_id = mn.body_id and not residual
+      order by fiscal_year desc limit 1
+    ) s on true
+    order by s.actual_sen desc
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
     kind: "ministry",
     code: r.code,
-    name_ms: r.name_ms,
+    name_ms: r.body_name_ms,
     fiscal_year: r.fiscal_year,
-    href: `/ministries/${slugify(r.name_ms)}`,
+    href: `/ministries/${slugify(r.body_name_ms)}`,
     actual_sen: parseSen(r.actual_sen),
+    formerly: r.alias_name_ms === r.body_name_ms ? null : { name_ms: r.alias_name_ms, origin: r.alias_origin },
   }));
 }
 
