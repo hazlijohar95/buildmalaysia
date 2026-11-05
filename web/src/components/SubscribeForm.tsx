@@ -4,12 +4,12 @@ import { cn } from "@/lib/cn";
 export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
   const dark = tone === "dark";
   return (
-    <form method="post" action="/api/subscribe" className="max-w-md">
+    <form method="post" action="/api/subscribe" className="@container max-w-md">
       <p className={cn("mb-4 text-sm", dark ? "text-charcoal-200" : "text-charcoal-800")}>
         One email when new figures are loaded: a new budget book or audited statement. Nothing else.
       </p>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <label className="flex flex-1">
+      <div className="flex flex-col gap-3 @sm:flex-row">
+        <label className="flex min-w-0 flex-1">
           <span className="sr-only">Email address</span>
           <input
             type="email"
@@ -17,7 +17,7 @@ export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
             required
             placeholder="you@example.com"
             className={cn(
-              "flex-1 border-2 bg-transparent px-4 py-2 font-mono text-sm placeholder:text-charcoal-500 focus:outline-2 focus:outline-offset-2",
+              "w-full min-w-0 border-2 bg-transparent px-4 py-2 font-mono text-sm placeholder:text-charcoal-500 focus:outline-2 focus:outline-offset-2",
               dark
                 ? "border-charcoal-300 text-background focus:outline-background"
                 : "border-foreground focus:outline-foreground",
