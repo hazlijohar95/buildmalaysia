@@ -13,17 +13,17 @@
     { "pattern": "www.buildmalaysia.com", "custom_domain": true },
   ],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  // The memory queue revalidates ISR pages by calling the worker itself.
-  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "buildmalaysia" }],
-  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "buildmalaysia-opennext-cache" }],
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
       "id": "b5a46a67958f4fb4b922b16d0db833f3",
-      // Local runs and the build use this instead. Override it with
+      // Local runs use this instead. Override it with
       // CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE if your Postgres differs.
       "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/buildmalaysia",
     },
   ],
+  // The site is served only on its own domain.
+  "workers_dev": false,
+  "preview_urls": false,
   "observability": { "enabled": true },
 }

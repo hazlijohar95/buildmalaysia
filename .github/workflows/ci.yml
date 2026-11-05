@@ -84,3 +84,37 @@ jobs:
       # The integration tests load the full source PDFs into Postgres; run them locally (see README).
       - name: Run unit tests
         run: uv run pytest -m "not integration"
+
+  deploy:
+    name: Deploy
+    # Every merge to main goes live once the checks above pass.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [web-test, web-lint, pipeline]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and deploy to Cloudflare
+        run: pnpm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

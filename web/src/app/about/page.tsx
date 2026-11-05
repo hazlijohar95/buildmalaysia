@@ -9,7 +9,6 @@ import { getCoverage } from "@/lib/queries/coverage";
 import { LuUsersRound } from "react-icons/lu";
 import { SiClaude } from "react-icons/si";
 
-export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "About",
   description: "Why Build Malaysia exists, the principles it is built on, and how it reads the public record.",

@@ -17,7 +17,12 @@ const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "C
 // A Worker can't reuse a socket opened by another request, so each request
 // opens its own client. Hyperdrive keeps the real connections to the database warm.
 const requestClient = cache(
-  (): Sql => postgres(getCloudflareContext().env.HYPERDRIVE.connectionString, { max: 5, fetch_types: false }),
+  (): Sql =>
+    postgres(getCloudflareContext().env.HYPERDRIVE.connectionString, {
+      max: 5,
+      fetch_types: false,
+      connection: { application_name: "buildmalaysia-web" },
+    }),
 );
 
 // In Node one pool lives for the process. Dev mode hot-reloads modules, so it

@@ -24,6 +24,10 @@ const mono = localFont({
   display: "swap",
 });
 
+// Every page renders from the database at request time, so a build never needs one;
+// worker.ts caches the rendered pages.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { default: "Build Malaysia: the facts about government spending", template: "%s | Build Malaysia" },
   description:

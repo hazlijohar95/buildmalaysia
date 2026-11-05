@@ -61,12 +61,13 @@ The site runs on Cloudflare Workers through the [OpenNext adapter](https://openn
 ```bash
 supabase link --project-ref <ref> && supabase db push    # schema
 SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, checked row for row
-psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # once: the site's read-only role
-cd web && pnpm run deploy                                  # build and deploy the Worker
-pnpm preview                                               # or run the Worker locally first
+psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
+cd web && pnpm preview                                     # run the Worker locally against local Postgres
 ```
 
-Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Next app: it redirects `www.buildmalaysia.com` to `buildmalaysia.com` and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. After reloading the database, pages catch up within the hour; redeploy to show the new data at once. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
+Merging to `main` deploys: the `Deploy` job in `.github/workflows/ci.yml` runs `pnpm run deploy` once the checks pass, with a `CLOUDFLARE_API_TOKEN` secret on the `production` environment (Workers Scripts: Edit on the account). The build needs no database, so `pnpm run deploy` also works from any machine with that token.
+
+Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Next app: it redirects HTTP and `www.buildmalaysia.com` to `https://buildmalaysia.com`, sets the security headers (HSTS, nosniff, no framing), and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. Next renders every page per request (`dynamic = "force-dynamic"` in the root layout), so that cache is the only one. Browsers keep files under `/_next/static/` for a year (`web/public/_headers`). After reloading the database, pages catch up within the hour; redeploy to show the new data at once. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
 
 ## Contributing
 

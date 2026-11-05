@@ -17,3 +17,9 @@ revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;
 alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
 alter default privileges for role postgres in schema public revoke all on sequences from anon, authenticated;
+
+-- Nothing in public is meant to be called over the Data API. This also closes
+-- rls_auto_enable(), a SECURITY DEFINER function Supabase adds to new projects
+-- for its ensure_rls event trigger, which runs as its owner and is unaffected.
+revoke execute on all functions in schema public from public, anon, authenticated;
+alter default privileges for role postgres in schema public revoke execute on functions from public, anon, authenticated;

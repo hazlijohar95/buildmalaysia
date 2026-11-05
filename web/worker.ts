@@ -1,4 +1,6 @@
 // Front door for the Next app that OpenNext builds into .open-next/worker.js.
+// It sends every visitor to https://buildmalaysia.com, adds the security headers
+// to every response, and caches rendered pages.
 //
 // Every page is rendered from the database, but the data only changes when the
 // database is reloaded, so a rendered page is cached for an hour in the data
@@ -8,6 +10,15 @@ import nextApp from "next-app";
 
 const CANONICAL_HOST = "buildmalaysia.com";
 const PAGE_TTL_SECONDS = 3600;
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "strict-transport-security": "max-age=31536000; includeSubDomains",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "x-frame-options": "DENY",
+  "content-security-policy": "frame-ancestors 'none'",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
+};
 
 declare global {
   interface CloudflareEnv {
@@ -59,17 +70,26 @@ async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: Ex
   return response;
 }
 
+async function route(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
+  const url = new URL(request.url);
+
+  if (url.protocol === "http:" || url.hostname === `www.${CANONICAL_HOST}`) {
+    url.protocol = "https:";
+    url.hostname = CANONICAL_HOST;
+    return Response.redirect(url.toString(), 301);
+  }
+
+  if (isCacheablePageRequest(request, url)) return servePage(request, url, env, ctx);
+  return nextApp.fetch(request, env, ctx);
+}
+
 const frontDoor = {
   async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-
-    if (url.hostname === `www.${CANONICAL_HOST}`) {
-      url.hostname = CANONICAL_HOST;
-      return Response.redirect(url.toString(), 301);
-    }
-
-    if (isCacheablePageRequest(request, url)) return servePage(request, url, env, ctx);
-    return nextApp.fetch(request, env, ctx);
+    const routed = await route(request, env, ctx);
+    // Copied because redirects and some runtime responses have immutable headers.
+    const response = new Response(routed.body, routed);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
+    return response;
   },
 };
 
