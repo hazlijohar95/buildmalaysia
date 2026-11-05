@@ -27,7 +27,7 @@ const chartConfig = {
   },
   spending: {
     id: "spending-chart-root",
-    colors: { primary: colours.auburn[800] },
+    colors: { primary: colours.merah["600"] },
     direction: "left-to-right",
     differenceLabel: "Surplus",
   },

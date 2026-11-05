@@ -7,7 +7,7 @@
   --color-card-foreground: var(--color-charcoal-1000);
   --color-popover: var(--color-linen-50);
   --color-popover-foreground: var(--color-charcoal-1000);
-  --color-primary: var(--color-auburn-800);
+  --color-primary: var(--color-biru-800);
   --color-primary-foreground: var(--color-linen-50);
   --color-secondary: var(--color-nickel-100);
   --color-secondary-foreground: var(--color-charcoal-900);
@@ -21,11 +21,11 @@
 
   --color-accent: var(--color-nickel-100);
   --color-accent-foreground: var(--color-charcoal-1000);
-  --color-destructive: var(--color-auburn-500);
+  --color-destructive: var(--color-merah-600);
   --color-destructive-foreground: var(--color-linen-50);
   --color-border: var(--color-charcoal-200);
   --color-input: var(--color-charcoal-200);
-  --color-ring: var(--color-auburn-800);
+  --color-ring: var(--color-biru-800);
 
   --color-link: var(--color-maritime-700);
   --color-link-hover: var(--color-maritime-800);
@@ -34,12 +34,12 @@
 
   --color-sidebar: var(--color-nickel-50);
   --color-sidebar-foreground: var(--color-charcoal-1000);
-  --color-sidebar-primary: var(--color-auburn-800);
+  --color-sidebar-primary: var(--color-biru-800);
   --color-sidebar-primary-foreground: var(--color-linen-100);
   --color-sidebar-accent: var(--color-charcoal-100);
   --color-sidebar-accent-foreground: var(--color-charcoal-1000);
   --color-sidebar-border: var(--color-charcoal-100);
-  --color-sidebar-ring: var(--color-auburn-800);
+  --color-sidebar-ring: var(--color-biru-800);
 }
 
 .link {

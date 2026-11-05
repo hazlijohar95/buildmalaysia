@@ -18,8 +18,8 @@
   --muted: var(--color-charcoal-600);
   --border: var(--color-border);
   --table-stripe: rgb(0 0 0 / 0.025);
-  --accent: var(--color-auburn-800);
-  --over: var(--color-auburn-700);
+  --accent: var(--color-biru-800);
+  --over: var(--color-merah-600);
 }
 
 @theme inline {
@@ -118,7 +118,7 @@ main a:not([class]):hover {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-auburn-800);
+  outline: 2px solid var(--color-biru-800);
   outline-offset: 2px;
 }
 

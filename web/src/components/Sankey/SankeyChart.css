@@ -225,6 +225,11 @@
     opacity: 0.5;
   }
 
+  /* Merah at half opacity over the dark ground mixes to maroon; at 0.75 it still reads as the flag's red. */
+  #spending-chart-root .sankey-chart-svg .link {
+    opacity: 0.75;
+  }
+
   .column.narrow .block {
     flex-direction: column;
     justify-content: center;

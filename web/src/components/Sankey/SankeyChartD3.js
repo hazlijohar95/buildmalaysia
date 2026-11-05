@@ -23,7 +23,7 @@ export class SankeyChartD3 {
           left: 1,
         },
         colors: {
-          primary: colours.auburn[800],
+          primary: colours.merah["600"],
         },
         shortBlockHeight: 16,
         data: null,

@@ -169,7 +169,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
           <StackedBars
             label={`${name} spending by year`}
             series={[
-              { label: "Operating", color: colours.auburn[800] },
+              { label: "Operating", color: colours.merah["600"] },
               { label: "Development", color: colours.lake[700] },
             ]}
             rows={history.map((h) => ({

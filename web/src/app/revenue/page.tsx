@@ -21,7 +21,7 @@ const COLOR: Record<(typeof REVENUE_CATEGORIES)[number]["category"], string> = {
   direct_tax: colours.lake[800],
   indirect_tax: colours.lake[500],
   tax: colours.lake[700],
-  non_tax: colours.copper[600],
+  non_tax: colours.biru["400"],
   non_revenue_receipts: colours.charcoal[500],
   federal_territory: colours.pine[600],
 };
