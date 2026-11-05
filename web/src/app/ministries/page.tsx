@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Band, PageHeader } from "@/components/Boxed";
 import RankedList from "@/components/RankedList";
 import YearNav from "@/components/YearNav";
-import { getMinistriesForYear, getMinistrySlugs } from "@/lib/queries/ministry";
+import { getMinistriesForYear } from "@/lib/queries/ministry";
+import { slugify } from "@/lib/slug";
 import { titleCase } from "@/lib/queries/sankey";
 import { getLoadedYears } from "@/lib/years";
 
@@ -19,7 +20,7 @@ export default async function MinistriesPage({ searchParams }: Props) {
   const requested = Number((await searchParams).year);
   const year = years.includes(requested) ? requested : years[0];
   if (year === undefined) notFound();
-  const [ministries, slugs] = await Promise.all([getMinistriesForYear(year), getMinistrySlugs()]);
+  const ministries = await getMinistriesForYear(year);
   return (
     <>
       <PageHeader
@@ -32,9 +33,9 @@ export default async function MinistriesPage({ searchParams }: Props) {
       <Band>
         <RankedList
           items={ministries.map((m) => ({
-            key: m.number,
+            key: m.body_id,
             name: titleCase(m.name_ms),
-            href: `/ministries/${slugs.get(m.number)}`,
+            href: `/ministries/${slugify(m.body_name_ms)}`,
             amount_sen: m.actual_sen,
             note: `${(m.share * 100).toFixed(1)}% of federal spending`,
           }))}

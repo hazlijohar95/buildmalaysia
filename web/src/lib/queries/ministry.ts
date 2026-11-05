@@ -2,15 +2,64 @@ import sql from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import { slugify } from "@/lib/slug";
 
+export type Confidence = "high" | "medium" | "unverified";
+export type AliasOrigin = "printed" | "gazetted" | "acronym";
+
+export interface Citation {
+  url: string;
+  title: string;
+  locator: string | null;
+  quote: string | null;
+}
+
+/** A ministry, department or commission: the institution behind a vote number across its names and years. */
+export interface Body {
+  id: string;
+  name_ms: string;
+  slug: string;
+  established: string | null;
+  dissolved: string | null;
+}
+
+export interface BodyAlias {
+  name_ms: string;
+  valid_from: string | null;
+  valid_to: string | null;
+  origin: AliasOrigin;
+  confidence: Confidence;
+  citation: Citation;
+}
+
+export interface LineageLink {
+  direction: "predecessor" | "successor";
+  body: Pick<Body, "id" | "name_ms" | "slug">;
+  effective: string;
+  whole: boolean;
+  functions: string;
+  confidence: Confidence;
+  citation: Citation;
+}
+
+/** One body's hold on a vote number (B.nn and P.nn together), by fiscal year. */
+export interface VoteTenure {
+  number: string;
+  body: Pick<Body, "id" | "name_ms" | "slug">;
+  from_year: number;
+  to_year: number | null;
+}
+
 /**
- * A ministry is a vote number: its supply vote B.nn and development vote P.nn in a year.
- * Vote numbers can be reused when ministries are reorganised, so each year's row carries the
- * name printed that year.
+ * One body's supply vote B.nn and development vote P.nn in a year, with the name printed that year.
+ * A `residual` year is one where the number was still printed, with nothing spent, after the body
+ * was dissolved.
  */
 export interface MinistryYear {
   fiscal_year: number;
   number: string;
   name_ms: string;
+  body_id: string;
+  body_name_ms: string;
+  residual: boolean;
   operating_vote_code: string | null;
   development_vote_code: string | null;
   operating_actual_sen: Sen;
@@ -24,6 +73,9 @@ interface RawMinistryYear {
   fiscal_year: number;
   number: string;
   name_ms: string;
+  body_id: string;
+  body_name_ms: string;
+  residual: boolean;
   operating_vote_code: string | null;
   development_vote_code: string | null;
   operating_actual_sen: string | null;
@@ -35,7 +87,8 @@ interface RawMinistryYear {
 
 async function allMinistryYears(): Promise<MinistryYear[]> {
   const rows = await sql<RawMinistryYear[]>`
-    select m.fiscal_year, m.number, m.name_ms, m.operating_vote_code, m.development_vote_code,
+    select m.fiscal_year, m.number, m.name_ms, m.body_id, m.body_name_ms, m.residual,
+           m.operating_vote_code, m.development_vote_code,
            m.operating_actual_sen, m.development_actual_sen, m.actual_sen, f.total_actual_sen as total_sen,
            rank() over (partition by m.fiscal_year order by m.actual_sen desc) as rank
     from ministry_spending m
@@ -46,6 +99,9 @@ async function allMinistryYears(): Promise<MinistryYear[]> {
     fiscal_year: r.fiscal_year,
     number: r.number,
     name_ms: r.name_ms,
+    body_id: r.body_id,
+    body_name_ms: r.body_name_ms,
+    residual: r.residual,
     operating_vote_code: r.operating_vote_code,
     development_vote_code: r.development_vote_code,
     operating_actual_sen: parseSen(r.operating_actual_sen ?? 0),
@@ -56,14 +112,7 @@ async function allMinistryYears(): Promise<MinistryYear[]> {
   }));
 }
 
-/** Ministries in the latest loaded year, largest first. */
-export async function getLatestMinistries(): Promise<MinistryYear[]> {
-  const all = await allMinistryYears();
-  const latest = all[0]?.fiscal_year;
-  return all.filter((m) => m.fiscal_year === latest);
-}
-
-/** Ministries that spent something in `year`, largest first. */
+/** Bodies that spent something in `year`, largest first. */
 export async function getMinistriesForYear(year: number): Promise<MinistryYear[]> {
   return (await allMinistryYears()).filter((m) => m.fiscal_year === year && m.actual_sen > 0);
 }
@@ -81,29 +130,115 @@ export async function getTopProjects(
   return rows.map((r) => ({ ...r, estimate_sen: parseSen(r.estimate_sen), actual_sen: parseSen(r.actual_sen) }));
 }
 
-/**
- * A ministry is identified by its vote number; its slug is that number's most recent printed name.
- * Returns the slug for every number seen in any loaded year.
- */
-export async function getMinistrySlugs(): Promise<Map<string, string>> {
-  const all = await allMinistryYears(); // newest year first
-  const slugs = new Map<string, string>();
-  for (const m of all) if (!slugs.has(m.number)) slugs.set(m.number, slugify(m.name_ms));
-  return slugs;
+interface RawCitation {
+  url: string;
+  title: string;
+  locator: string | null;
+  quote: string | null;
+}
+
+interface RawBody {
+  id: string;
+  name_ms: string;
+  established: string | null;
+  dissolved: string | null;
+}
+
+const toBody = (r: RawBody): Body => ({ ...r, slug: slugify(r.name_ms) });
+
+export interface Ministry {
+  body: Body;
+  /** The body's address: the slug of its display name. */
+  canonical: string;
+  latest: MinistryYear;
+  /** Years the body spent under its vote number, newest first. */
+  years: MinistryYear[];
+  /** Years the number was still printed, with nothing spent, after the body was dissolved. */
+  residual: MinistryYear[];
+  aliases: BodyAlias[];
+  lineage: LineageLink[];
+  /** Every body that has held the same vote numbers, this one included. */
+  tenures: VoteTenure[];
 }
 
 /**
- * A ministry by slug, with every loaded year of its vote number. Any name the number has been printed
- * under resolves; `canonical` is the slug of the latest name, for redirecting old links.
+ * A ministry by slug. Every name the body has carried resolves, so old addresses still work;
+ * `canonical` is the slug of its display name, for redirecting them.
  */
-export async function getMinistry(
-  slug: string,
-): Promise<{ latest: MinistryYear; years: MinistryYear[]; canonical: string } | null> {
-  const all = await allMinistryYears(); // newest year first
-  const match = all.find((m) => slugify(m.name_ms) === slug);
-  if (!match) return null;
-  const years = all.filter((m) => m.number === match.number);
-  return { latest: years[0], years, canonical: slugify(years[0].name_ms) };
+export async function getMinistry(slug: string): Promise<Ministry | null> {
+  const aliases = await sql<{ body_id: string; name_ms: string }[]>`select body_id, name_ms from body_alias`;
+  const bodyId = aliases.find((a) => slugify(a.name_ms) === slug)?.body_id;
+  if (bodyId === undefined) return null;
+
+  const [[raw], all, aliasRows, edgeRows, tenureRows] = await Promise.all([
+    sql<RawBody[]>`
+      select id, name_ms, established::text as established, dissolved::text as dissolved from body where id = ${bodyId}
+    `,
+    allMinistryYears(),
+    sql<(Omit<BodyAlias, "citation"> & RawCitation)[]>`
+      select a.name_ms, a.valid_from::text as valid_from, a.valid_to::text as valid_to,
+             a.origin::text as origin, a.confidence::text as confidence,
+             c.url, c.title, c.locator, c.quote
+      from body_alias a join citation c on c.id = a.citation_id
+      where a.body_id = ${bodyId}
+      order by a.valid_from nulls first, a.origin, a.name_ms
+    `,
+    sql<
+      ({
+        predecessor: string;
+        other_id: string;
+        other_name_ms: string;
+        effective: string;
+        whole: boolean;
+        functions: string;
+        confidence: Confidence;
+      } & RawCitation)[]
+    >`
+      select e.predecessor, b.id as other_id, b.name_ms as other_name_ms, e.effective::text as effective,
+             e.whole, e.functions, e.confidence::text as confidence, c.url, c.title, c.locator, c.quote
+      from lineage_edge e
+      join body b on b.id = case when e.predecessor = ${bodyId} then e.successor else e.predecessor end
+      join citation c on c.id = e.citation_id
+      where ${bodyId} in (e.predecessor, e.successor)
+      order by e.effective, e.id
+    `,
+    sql<{ number: string; body_id: string; body_name_ms: string; from_year: number; to_year: number | null }[]>`
+      select distinct substr(h.vote_code, 3) as number, b.id as body_id, b.name_ms as body_name_ms,
+             h.from_year, h.to_year
+      from vote_holder h
+      join body b on b.id = h.body_id
+      where substr(h.vote_code, 3) in (select substr(vote_code, 3) from vote_holder where body_id = ${bodyId})
+      order by number, h.from_year
+    `,
+  ]);
+  if (!raw) return null;
+  const body = toBody(raw);
+  const ofBody = all.filter((m) => m.body_id === body.id);
+  const years = ofBody.filter((m) => !m.residual);
+  if (years.length === 0) return null;
+  return {
+    body,
+    canonical: body.slug,
+    latest: years[0],
+    years,
+    residual: ofBody.filter((m) => m.residual),
+    aliases: aliasRows.map(({ url, title, locator, quote, ...a }) => ({
+      ...a,
+      citation: { url, title, locator, quote },
+    })),
+    lineage: edgeRows.map(({ predecessor, other_id, other_name_ms, url, title, locator, quote, ...e }) => ({
+      ...e,
+      direction: predecessor === body.id ? "successor" : "predecessor",
+      body: { id: other_id, name_ms: other_name_ms, slug: slugify(other_name_ms) },
+      citation: { url, title, locator, quote },
+    })),
+    tenures: tenureRows.map((t) => ({
+      number: t.number,
+      body: { id: t.body_id, name_ms: t.body_name_ms, slug: slugify(t.body_name_ms) },
+      from_year: t.from_year,
+      to_year: t.to_year,
+    })),
+  };
 }
 
 export interface ProgrammeSpend {

@@ -1,6 +1,6 @@
 // Wayfinding for vote pages: which loaded years print a vote, under what name, and which ministry it belongs to.
 import sql from "@/lib/db";
-import { getMinistrySlugs } from "@/lib/queries/ministry";
+import { slugify } from "@/lib/slug";
 
 export interface VoteYear {
   year: number;
@@ -57,26 +57,28 @@ export async function getPrintedVoteNames(budgetYear: number): Promise<Map<strin
 }
 
 export interface MinistryLink {
-  name_ms: string; // as printed in `year`, or the latest name when that year has none
-  slug: string; // of the latest name: the ministry page's canonical address
+  name_ms: string; // as printed in `year`, or the body's name when that year is not loaded
+  slug: string; // the body's page
 }
 
 /**
- * The ministry a supply or development vote belongs to: its vote number. Charged (T) votes belong to no
- * ministry. The link goes to the number's latest name; the label is the name printed in `year` when loaded.
+ * The body a supply or development vote belonged to in `year`, or its latest holder when `year` is null
+ * (budget pages). Charged (T) votes belong to no ministry.
  */
 export async function getMinistryLink(code: string, year: number | null): Promise<MinistryLink | null> {
   if (!/^[BP]\.\d{2}$/.test(code)) return null;
-  const number = code.slice(2);
-  const [rows, slugs] = await Promise.all([
-    sql<{ fiscal_year: number; name_ms: string }[]>`
-      select fiscal_year, name_ms from ministry_spending where number = ${number} order by fiscal_year desc
-    `,
-    getMinistrySlugs(),
-  ]);
-  const slug = slugs.get(number);
-  const named = rows.find((r) => r.fiscal_year === year) ?? rows[0];
-  return slug && named ? { name_ms: named.name_ms, slug } : null;
+  const held = year === null ? sql`true` : sql`${year} between h.from_year and coalesce(h.to_year, 32767)`;
+  const [row] = await sql<{ body_name_ms: string; printed_name_ms: string | null }[]>`
+    select b.name_ms as body_name_ms, s.name_ms as printed_name_ms
+    from vote_holder h
+    join body b on b.id = h.body_id
+    left join ministry_spending s
+      on s.body_id = h.body_id and s.number = substr(h.vote_code, 3) and s.fiscal_year = ${year}
+    where h.vote_code = ${code} and ${held}
+    order by h.from_year desc
+    limit 1
+  `;
+  return row ? { name_ms: row.printed_name_ms ?? row.body_name_ms, slug: slugify(row.body_name_ms) } : null;
 }
 
 /** Names a vote was printed under in other years than `year`, each with its years: for a note under the tabs. */

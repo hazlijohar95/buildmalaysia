@@ -156,7 +156,7 @@ export default async function YearOverview({ year }: { year: number }) {
             </thead>
             <tbody>
               {ministries.map((m) => (
-                <MinistryRow key={m.number} year={year} m={m} largest={largest} />
+                <MinistryRow key={m.body_id} year={year} m={m} largest={largest} />
               ))}
             </tbody>
           </table>

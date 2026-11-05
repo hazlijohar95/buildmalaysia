@@ -1,7 +1,7 @@
 import sql from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import { titleCase } from "@/lib/queries/sankey";
-import { getMinistrySlugs } from "@/lib/queries/ministry";
+import { slugify } from "@/lib/slug";
 
 /** One destination of the year's federal spending, as a share of the whole. */
 export interface SpendingShare {
@@ -25,13 +25,21 @@ const CHARGED: Record<string, string> = {
  * page, because the development spending it pays for is already counted under each ministry.
  */
 export async function getSpendingShares(year: number): Promise<{ total_sen: Sen; items: SpendingShare[] } | null> {
-  const [[total], ministries, charged, slugs] = await Promise.all([
+  const [[total], ministries, charged] = await Promise.all([
     sql<{ total_actual_sen: string; development_fund_transfer_sen: string; covid_fund_actual_sen: string | null }[]>`
       select total_actual_sen, development_fund_transfer_sen, covid_fund_actual_sen
       from federal_spending where fiscal_year = ${year}
     `,
-    sql<{ number: string; name_ms: string; operating_vote_code: string | null; actual_sen: string }[]>`
-      select number, name_ms, operating_vote_code, actual_sen from ministry_spending where fiscal_year = ${year}
+    sql<
+      {
+        body_id: string;
+        body_name_ms: string;
+        name_ms: string;
+        operating_vote_code: string | null;
+        actual_sen: string;
+      }[]
+    >`
+      select body_id, body_name_ms, name_ms, operating_vote_code, actual_sen from ministry_spending where fiscal_year = ${year}
     `,
     sql<{ code: string; name_ms: string; actual_sen: string }[]>`
       select v.code, v.name_ms, sum(t.actual_sen) as actual_sen
@@ -40,17 +48,16 @@ export async function getSpendingShares(year: number): Promise<{ total_sen: Sen;
       where t.fiscal_year = ${year} and v.section = 'charged' and t.scope = 'programme' and t.object_code is null
       group by 1, 2
     `,
-    getMinistrySlugs(),
   ]);
   if (!total) return null;
   const transfer = Number(total.development_fund_transfer_sen);
 
   const items: SpendingShare[] = ministries.map((m) => ({
-    id: `m-${m.number}`,
+    id: `m-${m.body_id}`,
     name: titleCase(m.name_ms),
     gloss: null,
     amount_sen: parseSen(Number(m.actual_sen) - (m.operating_vote_code === "B.12" ? transfer : 0)),
-    href: `/ministries/${slugs.get(m.number)}`,
+    href: `/ministries/${slugify(m.body_name_ms)}`,
   }));
   const other = charged.filter((c) => !(c.code in CHARGED));
   items.push(

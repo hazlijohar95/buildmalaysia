@@ -11,10 +11,10 @@ export const contentType = OG_CONTENT_TYPE;
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const ministry = await getMinistry((await params).slug);
   if (!ministry) notFound();
-  const { latest } = ministry;
+  const { body, latest } = ministry;
   return ogImage({
     kicker: "Ministries",
-    title: titleCase(latest.name_ms),
+    title: titleCase(body.name_ms),
     figure: formatSenCompact(latest.actual_sen),
     note: `spent in ${latest.fiscal_year}, operating and development`,
   });

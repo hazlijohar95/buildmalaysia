@@ -1,6 +1,6 @@
 import sql from "@/lib/db";
 import type { SankeyNode } from "@/components/Sankey/SankeyChartD3";
-import { getMinistrySlugs } from "@/lib/queries/ministry";
+import { slugify } from "@/lib/slug";
 import { getOperatingGaps } from "@/lib/queries/gaps";
 
 /** Ringgit (not sen) for the chart: amounts it sizes and prints with amountScalingFactor = 1. */
@@ -54,14 +54,20 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
       select code, name_ms, actual_sen from covid_fund_line where fiscal_year = ${year}
     `,
     sql<
-      { number: string; name_ms: string; operating_vote_code: string | null; development_vote_code: string | null }[]
+      {
+        body_id: string;
+        body_name_ms: string;
+        name_ms: string;
+        operating_vote_code: string | null;
+        development_vote_code: string | null;
+      }[]
     >`
-      select number, name_ms, operating_vote_code, development_vote_code from ministry_spending where fiscal_year = ${year}
+      select body_id, body_name_ms, name_ms, operating_vote_code, development_vote_code
+      from ministry_spending where fiscal_year = ${year}
     `,
   ]);
 
-  const [slugs, gaps, voteTotals] = await Promise.all([
-    getMinistrySlugs(),
+  const [gaps, voteTotals] = await Promise.all([
     getOperatingGaps(year),
     sql<{ vote_code: string; actual_sen: string }[]>`
       select vote_code, actual_sen from printed_total
@@ -107,10 +113,10 @@ export async function getSpendingTree(year: number): Promise<SankeyNode> {
 
   // One node per ministry, operating and development together, as on the ministry pages.
   const ministryNodes: SankeyNode[] = ministries.map((m) => ({
-    id: `m-${m.number}`,
+    id: `m-${m.body_id}`,
     displayName: shortName(m.name_ms),
     searchName: titleCase(m.name_ms),
-    link: `/ministries/${slugs.get(m.number)}`,
+    link: `/ministries/${slugify(m.body_name_ms)}`,
     children: [
       ...programmeLeaves(m.operating_vote_code),
       ...gapLeaves(m.operating_vote_code),
