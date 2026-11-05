@@ -64,9 +64,9 @@ async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: Ex
   if (hit) return forBrowser(hit, "HIT");
 
   const rendered = await nextApp.fetch(request, env, ctx);
-  // Pages, and the logo files and link previews, which are rendered from the same data and code.
+  // Pages, generated images, and CSV downloads, which all change only when the database is reloaded.
   const type = rendered.headers.get("content-type") ?? "";
-  const cacheable = type.startsWith("text/html") || type.startsWith("image/");
+  const cacheable = type.startsWith("text/html") || type.startsWith("image/") || type.startsWith("text/csv");
   if (rendered.status !== 200 || !cacheable || rendered.headers.has("set-cookie")) return rendered;
 
   const response = forBrowser(rendered, "MISS");
