@@ -154,10 +154,11 @@ describe("POST /api/subscribe", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("returns 503 when RESEND_API_KEY is missing", async () => {
+  it("says sign-up is unavailable when RESEND_API_KEY is missing", async () => {
     delete process.env.RESEND_API_KEY;
     const res = await callPost({ email: "user@example.com", _honey: "" });
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("/subscribe?error=unavailable");
   });
 
   it("redirects to ?error=retry on a Resend 500", async () => {

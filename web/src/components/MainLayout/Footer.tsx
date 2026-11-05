@@ -1,6 +1,7 @@
 // Adapted from CanadaSpends' Footer (MIT, Build Canada).
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { CONTACT_EMAIL } from "@/lib/contact";
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
@@ -23,6 +24,9 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                 How the Malaysian federal government budgets and spends, from the official documents, with every figure
                 linked to its page.
               </p>
+              <div className="mt-8">
+                <SubscribeForm tone="dark" />
+              </div>
             </div>
             <ul role="list" className="space-y-3">
               {[

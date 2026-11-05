@@ -7,6 +7,7 @@ import { PiBank } from "react-icons/pi";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
 import Findings from "@/components/Findings";
+import { SubscribeForm } from "@/components/SubscribeForm";
 import { cn } from "@/lib/cn";
 import { formatSen, formatSenCompact, parseSen } from "@/lib/money";
 import { getBudgetTotals, getBudgetYears } from "@/lib/queries/budget";
@@ -185,6 +186,13 @@ export default async function HomePage() {
       </section>
 
       {latest && <Findings year={latest} />}
+
+      <Band className="bg-linen-200">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+          <H2>Know when new figures land.</H2>
+          <SubscribeForm tone="light" />
+        </div>
+      </Band>
 
       {spending && latest && (
         <>

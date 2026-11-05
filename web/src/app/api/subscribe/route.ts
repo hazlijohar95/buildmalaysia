@@ -11,7 +11,7 @@ export async function POST(request: Request): Promise<Response> {
   const env = getSubscribeEnv();
 
   if (!env.resendApiKey || !env.subscribeSecret) {
-    return new Response("Service unavailable", { status: 503 });
+    return redirect("/subscribe?error=unavailable");
   }
 
   const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";

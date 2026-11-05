@@ -7,6 +7,7 @@ function pickStatus(params: { sent?: string; confirmed?: string; error?: string 
   if (params.confirmed) return "confirmed";
   if (params.error === "invalid") return "invalid";
   if (params.error === "busy") return "busy";
+  if (params.error === "unavailable") return "unavailable";
   if (params.error === "retry") return "retry";
   return null;
 }

@@ -9,27 +9,26 @@ export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
         One email when new figures are loaded: a new budget book or audited statement. Nothing else.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <label htmlFor="subscribe-email" className="sr-only">
-          Email address
+        <label className="flex flex-1">
+          <span className="sr-only">Email address</span>
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="you@example.com"
+            className={cn(
+              "flex-1 border-2 bg-transparent px-4 py-2 font-mono text-sm placeholder:text-charcoal-500 focus:outline-2 focus:outline-offset-2",
+              dark
+                ? "border-charcoal-300 text-background focus:outline-background"
+                : "border-foreground focus:outline-foreground",
+            )}
+          />
         </label>
-        <input
-          id="subscribe-email"
-          type="email"
-          name="email"
-          required
-          placeholder="you@example.com"
-          className={cn(
-            "flex-1 border-2 bg-transparent px-4 py-2 font-mono text-sm placeholder:text-charcoal-500 focus:outline-2 focus:outline-offset-2",
-            dark
-              ? "border-charcoal-300 text-background focus:outline-background"
-              : "border-foreground focus:outline-foreground",
-          )}
-        />
         <button
           type="submit"
           className={cn(
             kicker,
-            "border-2 px-6 py-2",
+            "whitespace-nowrap border-2 px-6 py-2",
             dark
               ? "border-charcoal-300 text-background hover:bg-charcoal-300 hover:text-foreground"
               : "border-foreground hover:bg-foreground hover:text-background",
@@ -38,10 +37,12 @@ export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
           Get alerts
         </button>
       </div>
-      {/* Honeypot: positioned off-screen and hidden from AT; bots fill it, triggering a silent discard */}
+      {/* Bots fill every field; the API drops a sign-up that fills this one. */}
       <div aria-hidden="true" style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
-        <label htmlFor="subscribe-honey">Leave blank</label>
-        <input id="subscribe-honey" type="text" name="_honey" tabIndex={-1} autoComplete="off" />
+        <label>
+          Leave blank
+          <input type="text" name="_honey" tabIndex={-1} autoComplete="off" />
+        </label>
       </div>
     </form>
   );
