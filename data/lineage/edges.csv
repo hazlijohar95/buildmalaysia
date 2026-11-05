@@ -1,0 +1,39 @@
+id,predecessor,successor,effective,whole,functions,confidence,citation_id
+E1a,jpm,mea,2018-05-12,false,Unit Perancang Ekonomi (EPU); Jabatan Perangkaan Malaysia (DOSM); TERAJU,high,MEA-2019
+E1b,kplb,mea,2018-05-12,false,RISDA (2018 to 2020); MARA for part of FY2018 only,high,STAR-2018-09-02
+E1c-ukas,jpm,mof,2018-05-12,false,Unit Kerjasama Awam Swasta (UKAS),high,BB2019-10
+E1c-corridors,jpm,mof,2018-05-12,false,"Corridor authorities (ECERDC, NCIA, RECODA, IRDA, SEDIA), printed under B.10 in FY2018 and FY2020",medium,J18-corridors
+E1d-kpdn,kpdn,medac,2018-07-02,false,Suruhanjaya Koperasi Malaysia (SKM); Maktab Koperasi Malaysia (MKM),high,BB2019-26
+E1d-miti,miti,medac,2018-07-02,false,SME Corp,high,BB2019-26
+E1e,kpkt,kwp,2018-07-02,false,Kesejahteraan Bandar; PLANMalaysia; Jabatan Landskap Negara,high,BB2019-32
+E1f,kpt,kpm,2018-07-02,true,,high,BB2019-63
+E1g-kdn,jpm,kdn,2018-07-02,false,APMM; ESSCOM,high,BB2019-62
+E1g-mot,jpm,mot,2018-07-02,false,SPAD (replaced by APAD),high,STAR-2018-07-02
+E1g-ksm,jpm,ksm,2018-07-02,false,TalentCorp,high,STAR-2018-07-02
+E1h-kpm,motac,kpm,2018-05-12,false,Arkib Negara; Perpustakaan Negara (part of FY2018 only),unverified,J18-arkib
+E1h-kkmm,jpm,komunikasi,2018-05-12,false,MAMPU (part of FY2018 only),unverified,J18-mampu
+E2-mosti,kettha,mosti,2018-07-02,false,Energy; green technology; MGTC,high,MOSTI-ABOUT
+E2-kats,kettha,nres,2018-07-02,false,Water (Bekalan Air),high,PETRA-PLAN
+E2-nre,nres,mosti,2018-07-02,false,Environment; climate change,high,MOSTI-ABOUT
+E3-ketsa,mosti,nres,2020-03-10,false,Energy,high,MOSTI-ABOUT
+E3-kasa-mosti,mosti,kasa,2020-03-10,false,Environment; MetMalaysia; MGTC,high,J20-mdm
+E3-kasa-kats,nres,kasa,2020-04-02,false,Water; sewerage; JPS; NAHRIM,high,MALAYSIAKINI-2020-04-02
+E4,kasa,nres,2022-12-03,true,,high,AP25-p39-n4
+E5,nres,petra,2023-12-12,false,JPP; JPS; NAHRIM; IWK; PAAB; SPAN; Bahagian Bekalan Air; MyPower; SEDA; Suruhanjaya Tenaga,high,G20-2024
+E6-kd,komunikasi,kd,2023-12-12,false,JPDP; MYNIC; MDEC; DNB; CyberSecurity Malaysia,high,DIGITAL-GOV-MY
+E6-jdn,jpm,kd,2023-12-12,false,MAMPU (renamed Jabatan Digital Negara),high,G20-2024
+E6-jkom,jpm,komunikasi,2023-12-12,false,J-KOM,high,SINAR-2023-12-13
+E6-mydigital,ekonomi,kd,2023-12-12,false,MyDIGITAL Corporation,high,G20-2024
+E7a,jpm,kpn,2020-03-10,false,JPNIN,high,PARL-2020-07-13
+E7b,kpm,kpt,2020-03-10,false,Higher education: universities and polytechnics,high,PARL-2020-12-07
+E7c,kwp,kpkt,2020-01-01,false,Kesejahteraan Bandar (by Budget 2020); PLANMalaysia and Jabatan Landskap Negara (by Budget 2021),medium,BB2021-43
+E7d-jpm,mea,jpm,2020-03-10,false,Unit Perancang Ekonomi (EPU); Jabatan Perangkaan Malaysia (DOSM),high,EKONOMI-HISTORY
+E7d-kplb,mea,kplb,2020-03-10,false,RISDA,high,BB2021-22
+E7d-mof,mof,jpm,2020-03-10,false,UKAS; corridor authorities (by FY2021),medium,J21
+E8,kwp,jpm,2022-12-03,true,,high,AP25-p39-n3
+E9,motac,kpn,2022-12-07,false,Perpustakaan Negara; Arkib Negara; Jabatan Muzium Malaysia,high,UTUSAN-SARAWAK-2022-12-08
+E10,jpm,ekonomi,2022-12-03,false,Unit Perancang Ekonomi (EPU); Jabatan Perangkaan Malaysia (DOSM); ECERDC; IRDA; RECODA; NCIA; SEDIA; EKUINAS; MPRC; JPDC; state economic development corporations; MyDIGITAL,high,EKONOMI-HISTORY
+E11-standards,mosti,miti,2019-01-01,false,Standards Malaysia,medium,BB2019-24
+E11-mimos,mosti,miti,2019-01-01,false,MIMOS,medium,BB2021-30
+E11-mimos-back,miti,mosti,2021-01-01,false,MIMOS,medium,BB2021-30
+E11-might,jpm,mosti,2022-01-01,false,MIGHT,medium,J22-might
