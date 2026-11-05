@@ -48,7 +48,11 @@ describe("expandSynonyms", () => {
   it("substitutes the matched word when query has surrounding text", () => {
     const result = expandSynonyms("ministry of health");
     expect(result).toContain("ministry of health");
-    expect(result).toContain("ministry of kesihatan");
+    expect(result).toContain("kesihatan");
+  });
+
+  it("matches whole words only", () => {
+    expect(expandSynonyms("transport")).toEqual(["transport", "pengangkutan"]);
   });
 
   it("deduplicates when input word matches its own synonym", () => {

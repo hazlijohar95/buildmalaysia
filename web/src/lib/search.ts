@@ -48,16 +48,14 @@ export function escapeWildcard(q: string): string {
 }
 
 /**
- * Returns the original query plus a Malay-substituted variant for each English synonym
- * found in the query. Used to let English-speaking users find Malay-language records.
+ * Returns the original query plus the Malay word for each English synonym
+ * that appears in it as a whole word, so English queries find Malay-language records.
  */
 export function expandSynonyms(q: string): string[] {
   const terms: string[] = [q];
-  const lower = q.toLowerCase();
+  const words = new Set(q.toLowerCase().split(/[^a-z]+/));
   for (const [en, ms] of Object.entries(SYNONYMS)) {
-    if (lower.includes(en)) {
-      terms.push(q.replace(new RegExp(en, "gi"), ms));
-    }
+    if (words.has(en)) terms.push(ms);
   }
   return [...new Set(terms)];
 }
@@ -156,10 +154,13 @@ async function queryMinistries(patterns: string[]): Promise<SearchHit[]> {
       select distinct number from ministry_spending
       where name_ms ilike any(${patterns})
     )
-    select distinct on (m.number) m.number as code, m.name_ms, m.fiscal_year, m.actual_sen
-    from ministry_spending m
-    join matching mn on mn.number = m.number
-    order by m.number, m.fiscal_year desc
+    select * from (
+      select distinct on (m.number) m.number as code, m.name_ms, m.fiscal_year, m.actual_sen
+      from ministry_spending m
+      join matching mn on mn.number = m.number
+      order by m.number, m.fiscal_year desc
+    ) latest
+    order by actual_sen desc
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
@@ -190,6 +191,7 @@ async function queryOperatingVotes(patterns: string[], year: number): Promise<Se
      and pt.object_code is null
     where v.fiscal_year = ${year}
       and (v.code ilike any(${patterns}) or v.name_ms ilike any(${patterns}))
+    order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
@@ -212,6 +214,7 @@ async function queryDevelopmentVotes(patterns: string[], year: number): Promise<
      and dpt.scope = 'vote'
     where v.fiscal_year = ${year}
       and (v.code ilike any(${patterns}) or v.name_ms ilike any(${patterns}))
+    order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
@@ -246,6 +249,7 @@ async function queryProgrammes(patterns: string[], year: number): Promise<Search
      and pt.object_code is null
     where p.fiscal_year = ${year}
       and (p.code ilike any(${patterns}) or p.name_ms ilike any(${patterns}))
+    order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
@@ -281,6 +285,7 @@ async function queryActivities(patterns: string[], year: number): Promise<Search
      and pt.object_code is null
     where a.fiscal_year = ${year}
       and (a.code ilike any(${patterns}) or a.name_ms ilike any(${patterns}))
+    order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
@@ -310,6 +315,7 @@ async function queryProjects(patterns: string[], year: number): Promise<SearchHi
     join development_vote v on v.fiscal_year = p.fiscal_year and v.code = p.vote_code
     where p.fiscal_year = ${year}
       and (p.code ilike any(${patterns}) or p.name_ms ilike any(${patterns}))
+    order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
   return rows.map((r) => ({
