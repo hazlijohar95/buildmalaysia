@@ -16,7 +16,7 @@ import { getSourceNotes } from "@/lib/queries/gaps";
 import { cn } from "@/lib/cn";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `Operating expenditure ${(await params).year}` };
+  return { title: `Operating expenditure ${await requireYear((await params).year)}` };
 }
 
 interface Props {

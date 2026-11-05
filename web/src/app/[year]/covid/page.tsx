@@ -14,7 +14,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `COVID-19 Fund ${(await params).year}` };
+  return { title: `COVID-19 Fund ${await requireYear((await params).year)}` };
 }
 
 export default async function CovidFundPage({ params }: Props) {

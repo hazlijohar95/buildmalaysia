@@ -1,0 +1,157 @@
+/* Carta: the logo's colours and motion. Geometry lives in src/brand/carta.ts; a test checks these hex values
+   against its palette. */
+@theme {
+  --color-biru: #000066;
+  --color-merah: #cc0000;
+  --color-kuning: #ffcc00;
+}
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --carta-beat: 1400ms; /* one loader cycle: the star turns exactly one point */
+}
+
+/* Windows High Contrast would repaint the flag in system colours. */
+.carta {
+  forced-color-adjust: none;
+  overflow: visible;
+}
+.carta-stripe,
+.carta-canton,
+.carta-star {
+  transform-box: fill-box;
+}
+.carta-stripe {
+  transform-origin: left center;
+  transition: transform 200ms var(--ease-out);
+  transition-delay: calc(var(--i) * 12ms);
+}
+.carta-canton,
+.carta-star {
+  transform-origin: center;
+}
+.carta-star {
+  transition: transform 280ms var(--ease-in-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Intro, first page view of a session: the canton, then the star turns in one point, then the stripes rank in
+     from the hoist. The layout's inline script sets data-intro on the root before first paint. Each animation
+     ends on the logo's resting state, so a backwards fill releases it to the hover transitions when it ends. */
+  :root[data-intro] .carta[data-intro] .carta-word {
+    animation: carta-word-in 320ms var(--ease-out) backwards;
+  }
+  :root[data-intro] .carta[data-intro] .carta-canton {
+    animation: carta-canton-in 320ms var(--ease-out) backwards 60ms;
+  }
+  :root[data-intro] .carta[data-intro] .carta-star {
+    animation: carta-star-in 720ms var(--ease-out) backwards 160ms;
+  }
+  :root[data-intro] .carta[data-intro] .carta-stripe {
+    animation: carta-bar-in 560ms var(--ease-out) backwards;
+    animation-delay: calc(140ms + var(--i) * 35ms);
+  }
+
+  /* Hover on the link around the logo: the 45° edge steps out one stripe and the star turns one point. */
+  @media (hover: hover) and (pointer: fine) {
+    a:hover .carta[data-interactive] .carta-stripe {
+      transform: scaleX(var(--g));
+    }
+    a:hover .carta[data-interactive] .carta-star {
+      transform: rotate(var(--carta-star-step));
+    }
+  }
+
+  /* Loader: the edge ripples down the fourteen stripes; the star turns one point per beat. */
+  .carta-loader .carta-stripe {
+    animation: carta-bar-load var(--carta-beat) var(--ease-in-out) infinite;
+    animation-delay: calc(var(--i) * 70ms - var(--carta-beat));
+  }
+  .carta-loader .carta-star {
+    animation: carta-star-turn var(--carta-beat) linear infinite;
+  }
+  .carta-loader[data-size="sm"] .carta-star {
+    animation-duration: 700ms;
+  }
+}
+
+/* Reduced motion: nothing moves. The intro fades, the loader dims the stripes in turn, the spinner pulses. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-intro] .carta[data-intro] {
+    animation: carta-fade-in 200ms ease both;
+  }
+  .carta-loader .carta-stripe {
+    animation: carta-bar-dim var(--carta-beat) ease infinite;
+    animation-delay: calc(var(--i) * 70ms - var(--carta-beat));
+  }
+  .carta-loader[data-size="sm"] .carta-star {
+    animation: carta-star-dim 1200ms ease infinite;
+  }
+}
+
+/* A page loader waits 300ms before it appears, so a fast load shows nothing, then fades in rather than flashing. */
+.carta-loader[data-delayed] {
+  animation: carta-fade-in 200ms var(--ease-out) 300ms both;
+}
+
+@keyframes carta-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes carta-canton-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes carta-star-in {
+  from {
+    opacity: 0;
+    transform: rotate(calc(-1 * var(--carta-star-step))) scale(0.7);
+  }
+}
+@keyframes carta-bar-in {
+  from {
+    transform: scaleX(0.02);
+  }
+}
+@keyframes carta-bar-load {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.3);
+  }
+}
+@keyframes carta-star-turn {
+  to {
+    transform: rotate(var(--carta-star-step));
+  }
+}
+@keyframes carta-bar-dim {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes carta-star-dim {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes carta-fade-in {
+  from {
+    opacity: 0;
+  }
+}
