@@ -1,37 +1,17 @@
-import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 
-/**
- * The reconciliation views recompute every printed total from its rows, which takes seconds. Their result only
- * changes when the pipeline writes to the database, so it is cached against the database's write counters: any
- * load changes them and the next request recomputes.
- */
-async function dataVersion(): Promise<string> {
-  const [row] = await sql<{ version: string }[]>`
-    select coalesce(sum(n_tup_ins + n_tup_upd + n_tup_del), 0)::text as version from pg_stat_user_tables
-  `;
-  return row?.version ?? "0";
-}
-
-const cachedChecks = unstable_cache(
-  async (version: string) => {
-    const [sources, misprints, budgets] = await Promise.all([
-      getSourceChecks(),
-      getPrintedMismatches(),
-      getBudgetChecks(),
-    ]);
-    return { version, sources, misprints, budgets };
-  },
-  ["methodology-checks-v4"], // bump when the cached shape changes
-);
-
-/** Every check the methodology page reports, recomputed only after the data changes. */
+/** Every check the methodology page reports: each statement's and budget book's totals, and the known misprints. */
 export async function getMethodologyChecks(): Promise<{
   sources: SourceCheck[];
   misprints: PrintedMismatch[];
   budgets: BudgetCheck[];
 }> {
-  return cachedChecks(await dataVersion());
+  const [sources, misprints, budgets] = await Promise.all([
+    getSourceChecks(),
+    getPrintedMismatches(),
+    getBudgetChecks(),
+  ]);
+  return { sources, misprints, budgets };
 }
 
 export interface SourceCheck {
@@ -67,18 +47,30 @@ export async function getSourceChecks(): Promise<SourceCheck[]> {
       covid_matches: boolean | null;
     }[]
   >`
+    with operating as (
+      select document_id,
+             count(*) as total,
+             count(*) filter (where matches) as matched,
+             count(*) filter (where result = 'differs') as misprinted,
+             count(*) filter (where result = 'missing_page') as missing_page
+      from reconciliation
+      group by document_id
+    ), development as (
+      select document_id, count(*) as total, count(*) filter (where matches) as matched
+      from development_reconciliation
+      group by document_id
+    )
     select d.fiscal_year, d.title, d.url, d.sha256, d.operating_ocr_engine,
-           (select count(*) from reconciliation r where r.document_id = d.id) as operating_total,
-           (select count(*) from reconciliation r where r.document_id = d.id and r.matches) as operating_matched,
-           (select count(*) from reconciliation r where r.document_id = d.id and r.result = 'differs')
-             as operating_misprinted,
-           (select count(*) from reconciliation r where r.document_id = d.id and r.result = 'missing_page')
-             as operating_missing_page,
-           (select count(*) from development_reconciliation r where r.document_id = d.id) as development_total,
-           (select count(*) from development_reconciliation r where r.document_id = d.id and r.matches)
-             as development_matched,
+           coalesce(o.total, 0) as operating_total,
+           coalesce(o.matched, 0) as operating_matched,
+           coalesce(o.misprinted, 0) as operating_misprinted,
+           coalesce(o.missing_page, 0) as operating_missing_page,
+           coalesce(dv.total, 0) as development_total,
+           coalesce(dv.matched, 0) as development_matched,
            (select c.matches from covid_fund_reconciliation c where c.document_id = d.id) as covid_matches
     from source_document d
+    left join operating o on o.document_id = d.id
+    left join development dv on dv.document_id = d.id
     where not exists (select 1 from budget_document b where b.document_id = d.id)
     order by d.fiscal_year desc
   `;
