@@ -135,6 +135,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </main>
           <Footer spendingYear={latest} budgetYear={books[0]?.budget_year} />
         </div>
+        {/* Cloudflare Web Analytics: cookie-free page counts. Its automatic injection skips Worker responses. */}
+        <script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "5f437fbde63046c9a953e4bede3a550d"}'
+        />
       </body>
     </html>
   );
