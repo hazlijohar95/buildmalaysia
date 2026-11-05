@@ -324,7 +324,7 @@ function ActivityHead() {
 function Activity({ year, act, lines }: { year: number; act: ActivityTotal; lines: LeafLine[] }) {
   const over = act.actual_sen > act.revised_sen;
   return (
-    <details className="group/act border-b border-border">
+    <details id={`a${act.activity_code}`} className="group/act border-b border-border">
       <summary
         className={`${ROW} items-center py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100`}
       >

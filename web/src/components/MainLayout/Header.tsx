@@ -3,7 +3,7 @@
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -168,6 +168,16 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             })}
           </nav>
           <div className="flex-1" />
+          <Link
+            href="/search"
+            aria-label="Search"
+            className={cn(
+              cell,
+              "hidden lg:flex border-l border-foreground text-foreground hover:bg-foreground hover:text-background",
+            )}
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <Link
             href={cta.href}
             className={cn(
@@ -343,6 +353,7 @@ function MobileMenu({
           </div>
         ),
       )}
+      {row({ href: "/search", label: "Search", match: ["/search"] })}
       {row(cta)}
     </nav>
   );
