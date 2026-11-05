@@ -7,6 +7,11 @@ import { getLoadedYears } from "@/lib/years";
 export const SEARCH_MAX_LEN = 100;
 const PER_KIND_LIMIT = 10;
 
+// The Workers database client runs without fetch_types, so postgres.js can't send a JS array as text[]
+// (it arrives as "a,b"). The patterns travel as one string and are split in SQL instead.
+const SEPARATOR = "\u001f";
+const anyOf = (patterns: string[]) => sql`string_to_array(${patterns.join(SEPARATOR)}, chr(31))`;
+
 // English words that commonly appear in queries about Malaysian government entities,
 // mapped to the Bahasa Malaysia term printed in the data.
 export const SYNONYMS: Record<string, string> = {
@@ -118,7 +123,7 @@ export function rankHits(hits: SearchHit[], q: string): SearchHit[] {
 
 /** Runs all five entity searches in parallel and returns ranked hits. Returns [] for empty q. */
 export async function searchHits(raw: string): Promise<SearchHit[]> {
-  const q = raw.trim().slice(0, SEARCH_MAX_LEN);
+  const q = raw.replaceAll(SEPARATOR, "").trim().slice(0, SEARCH_MAX_LEN);
   if (!q) return [];
 
   const terms = expandSynonyms(q);
@@ -152,7 +157,7 @@ async function queryMinistries(patterns: string[]): Promise<SearchHit[]> {
   const rows = await sql<RawMinistry[]>`
     with matching as (
       select distinct number from ministry_spending
-      where name_ms ilike any(${patterns})
+      where name_ms ilike any(${anyOf(patterns)})
     )
     select * from (
       select distinct on (m.number) m.number as code, m.name_ms, m.fiscal_year, m.actual_sen
@@ -190,7 +195,7 @@ async function queryOperatingVotes(patterns: string[], year: number): Promise<Se
      and pt.scope = 'vote'
      and pt.object_code is null
     where v.fiscal_year = ${year}
-      and (v.code ilike any(${patterns}) or v.name_ms ilike any(${patterns}))
+      and (v.code ilike any(${anyOf(patterns)}) or v.name_ms ilike any(${anyOf(patterns)}))
     order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
@@ -213,7 +218,7 @@ async function queryDevelopmentVotes(patterns: string[], year: number): Promise<
      and dpt.vote_code = v.code
      and dpt.scope = 'vote'
     where v.fiscal_year = ${year}
-      and (v.code ilike any(${patterns}) or v.name_ms ilike any(${patterns}))
+      and (v.code ilike any(${anyOf(patterns)}) or v.name_ms ilike any(${anyOf(patterns)}))
     order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
@@ -248,7 +253,7 @@ async function queryProgrammes(patterns: string[], year: number): Promise<Search
      and pt.scope = 'programme'
      and pt.object_code is null
     where p.fiscal_year = ${year}
-      and (p.code ilike any(${patterns}) or p.name_ms ilike any(${patterns}))
+      and (p.code ilike any(${anyOf(patterns)}) or p.name_ms ilike any(${anyOf(patterns)}))
     order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
@@ -284,7 +289,7 @@ async function queryActivities(patterns: string[], year: number): Promise<Search
      and pt.scope = 'activity'
      and pt.object_code is null
     where a.fiscal_year = ${year}
-      and (a.code ilike any(${patterns}) or a.name_ms ilike any(${patterns}))
+      and (a.code ilike any(${anyOf(patterns)}) or a.name_ms ilike any(${anyOf(patterns)}))
     order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
@@ -314,7 +319,7 @@ async function queryProjects(patterns: string[], year: number): Promise<SearchHi
     from development_project p
     join development_vote v on v.fiscal_year = p.fiscal_year and v.code = p.vote_code
     where p.fiscal_year = ${year}
-      and (p.code ilike any(${patterns}) or p.name_ms ilike any(${patterns}))
+      and (p.code ilike any(${anyOf(patterns)}) or p.name_ms ilike any(${anyOf(patterns)}))
     order by actual_sen desc nulls last
     limit ${PER_KIND_LIMIT}
   `;
