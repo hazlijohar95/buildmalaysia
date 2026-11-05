@@ -6,6 +6,7 @@ import { LuReceipt, LuUsersRound } from "react-icons/lu";
 import { PiBank } from "react-icons/pi";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import Findings from "@/components/Findings";
 import { cn } from "@/lib/cn";
 import { formatSen, formatSenCompact, parseSen } from "@/lib/money";
 import { getBudgetTotals, getBudgetYears } from "@/lib/queries/budget";
@@ -182,6 +183,8 @@ export default async function HomePage() {
           </div>
         ))}
       </section>
+
+      {latest && <Findings year={latest} />}
 
       {spending && latest && (
         <>

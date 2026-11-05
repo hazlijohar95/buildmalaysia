@@ -60,7 +60,7 @@ export function debtServiceTemplate(p: DebtServiceTemplateParams): Finding {
     id: p.id,
     kicker: "T.13 · HUTANG NEGARA",
     headline: formatSenCompact(p.actual),
-    body: `Perbelanjaan Kerana Hutang Negara (debt service) consumed ${sharePct}% of total federal spending in ${p.year}. The same vote stood at ${formatSenCompact(p.earliestActual)} in ${p.earliestYear}.`,
+    body: `Perbelanjaan Kerana Hutang Negara (debt service) was ${sharePct}% of total federal spending in ${p.year}. The same vote stood at ${formatSenCompact(p.earliestActual)} in ${p.earliestYear}.`,
     href: `/${p.year}/vote/${voteCodeToSlug("T.13")}`,
     source: { docUrl: p.docUrl, pdfPage: p.pdfPage, bookPage: p.bookPage, year: p.year },
   };
