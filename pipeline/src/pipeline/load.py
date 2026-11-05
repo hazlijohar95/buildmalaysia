@@ -12,6 +12,7 @@ from psycopg.rows import dict_row
 from pipeline.budget import BudgetStatement
 from pipeline.budget_detail import Estimate, OperatingEstimates
 from pipeline.budget_development import DevelopmentEstimates, DroppedProjects
+from pipeline.lineage import require_lineage
 from pipeline.model import Amounts, Citation, CovidFundStatement, DevelopmentStatement, RevenueStatement, Statement
 from pipeline.sources import BudgetSource, SourceDocument, SourceError
 
@@ -185,6 +186,7 @@ def load_year(
             unexplained.append(unbalanced)
         if unexplained:
             raise ReconciliationError(unexplained)
+        require_lineage(cur, "janm", year)
 
     return YearLoad(
         LoadResult(
@@ -704,6 +706,7 @@ def load_budget(
         projects, dev_reconciled = _insert_development_estimates(cur, doc, development) if development else (0, 0)
         if dropped is not None:
             _insert_dropped_projects(cur, doc, dropped)
+        require_lineage(cur, "mof", source.budget_year)
         counts = dict(
             cur.execute(
                 "select result, count(*) from budget_actual_check where document_id = %s group by result", (doc,)
