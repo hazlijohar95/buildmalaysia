@@ -1,6 +1,7 @@
 // Adapted from CanadaSpends' Footer (MIT, Build Canada).
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link href={href} className="text-sm/6 hover:text-kuning no-underline">
@@ -39,6 +40,11 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                   <FooterLink href={l.href}>{l.label}</FooterLink>
                 </li>
               ))}
+              <li>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-sm/6 hover:text-kuning no-underline">
+                  Contact
+                </a>
+              </li>
             </ul>
             <div className="text-sm/6 text-linen-200 space-y-2">
               <p>

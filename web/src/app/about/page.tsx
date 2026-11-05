@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { getCoverage } from "@/lib/queries/coverage";
 import { LuUsersRound } from "react-icons/lu";
 import { SiClaude } from "react-icons/si";
@@ -107,7 +108,13 @@ export default async function AboutPage() {
     },
     {
       q: "How can I contact you?",
-      a: "We don't publish an inbox. Every number on this site can be traced to its source with a little effort, and so can we. If you're serious, you'll find us. Consider it your first assignment as a member of the board.",
+      a: (
+        <>
+          Email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. If a figure looks wrong, send the page you saw
+          it on; we check it against the source document and correct or explain it on the{" "}
+          <Link href="/methodology">methodology page</Link>.
+        </>
+      ),
     },
     {
       q: "Where do the numbers come from?",
