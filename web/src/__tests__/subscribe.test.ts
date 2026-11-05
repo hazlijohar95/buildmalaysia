@@ -175,6 +175,7 @@ describe("POST /api/subscribe/confirm", () => {
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.SUBSCRIBE_SECRET = SECRET;
     process.env.RESEND_SEGMENT_ID = "seg_test_123";
+    process.env.RESEND_TOPIC_ID = "topic_test_456";
   });
 
   afterEach(() => {
@@ -182,6 +183,7 @@ describe("POST /api/subscribe/confirm", () => {
     delete process.env.RESEND_API_KEY;
     delete process.env.SUBSCRIBE_SECRET;
     delete process.env.RESEND_SEGMENT_ID;
+    delete process.env.RESEND_TOPIC_ID;
   });
 
   async function callConfirm(token: string) {
@@ -221,12 +223,14 @@ describe("POST /api/subscribe/confirm", () => {
     expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer re_test_key");
 
     const body = JSON.parse(init.body as string);
-    expect(body.email).toBe("user@example.com");
-    expect(body.unsubscribed).toBe(false);
-    expect(body.segments).toEqual([{ id: "seg_test_123" }]);
+    expect(body).toEqual({
+      email: "user@example.com",
+      segments: [{ id: "seg_test_123" }],
+      topics: [{ id: "topic_test_456", subscription: "opt_in" }],
+    });
   });
 
-  it("re-subscribes and re-adds a contact that already exists", async () => {
+  it("opts an existing contact in to the topic without touching its global unsubscribe flag", async () => {
     const token = await createToken("user@example.com", SECRET);
     const mockFetch = vi
       .fn()
@@ -240,7 +244,11 @@ describe("POST /api/subscribe/confirm", () => {
     expect(res.headers.get("location")).toBe("/subscribe?confirmed=1");
     const calls = (mockFetch.mock.calls as [string, RequestInit][]).map(([url, init]) => [init.method, url, init.body]);
     expect(calls.slice(1)).toEqual([
-      ["PATCH", "https://api.resend.com/contacts/user%40example.com", JSON.stringify({ unsubscribed: false })],
+      [
+        "PATCH",
+        "https://api.resend.com/contacts/user%40example.com/topics",
+        JSON.stringify({ topics: [{ id: "topic_test_456", subscription: "opt_in" }] }),
+      ],
       ["POST", "https://api.resend.com/contacts/user%40example.com/segments/seg_test_123", undefined],
     ]);
   });

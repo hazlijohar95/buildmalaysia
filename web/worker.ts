@@ -26,6 +26,7 @@ declare global {
     RESEND_API_KEY: string;
     SUBSCRIBE_SECRET: string;
     RESEND_SEGMENT_ID: string;
+    RESEND_TOPIC_ID: string;
     SUBSCRIBE_LIMITER: { limit(options: { key: string }): Promise<{ success: boolean }> };
   }
 }

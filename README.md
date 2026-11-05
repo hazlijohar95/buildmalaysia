@@ -6,24 +6,24 @@ Research behind the design: [`specs/`](specs/). Build Canada's repos, cloned for
 
 ## First source
 
-JANM, *Penyata Kewangan Kerajaan Persekutuan* (Federal Government Financial Statements), audited by the National Audit Department. Statements loaded: FY2016 to FY2025 (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`). FY2020's Lampiran 1 has no text layer and is read by OCR (`pipeline/src/pipeline/ocr.py`, readings cached in `data/ocr/`); FY2019's published PDF is missing one page of Lampiran 1, registered as a `KnownGap`, e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
+JANM, _Penyata Kewangan Kerajaan Persekutuan_ (Federal Government Financial Statements), audited by the National Audit Department. Statements loaded: FY2016 to FY2025 (URLs, hashes and page ranges in `pipeline/src/pipeline/sources.py`). FY2020's Lampiran 1 has no text layer and is read by OCR (`pipeline/src/pipeline/ocr.py`, readings cached in `data/ocr/`); FY2019's published PDF is missing one page of Lampiran 1, registered as a `KnownGap`, e.g. <https://www.anm.gov.my/images/JANM/Webmaster/BPOPA/Penyata-Kewangan/2025_Penyata_Kewangan_Kerajaan_Persekutuan.pdf>.
 
-- Lampiran 1, *Penyata Perbelanjaan Mengurus* (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
-- Lampiran 2, *Penyata Perbelanjaan Pembangunan* (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
-- Lampiran 3, *Penyata Perbelanjaan Kumpulan Wang COVID-19* (FY2020-2023): the COVID-19 Fund's programmes, financed outside the operating account.
+- Lampiran 1, _Penyata Perbelanjaan Mengurus_ (operating expenditure), PDF pages 103–212. For every vote → programme → activity → object group: the original estimate (Asal), supplementary (Tambahan/(Kurangan)), virement (Viremen), revised total (Jumlah) and actual spending (Sebenar).
+- Lampiran 2, _Penyata Perbelanjaan Pembangunan_ (development expenditure), PDF pages 214–249. For every development vote → agency group → project: total cost, the year's estimate and actual (direct and loan-funded), and spending under the Twelfth Malaysia Plan (RMKe-12) to date.
+- Lampiran 3, _Penyata Perbelanjaan Kumpulan Wang COVID-19_ (FY2020-2023): the COVID-19 Fund's programmes, financed outside the operating account.
 
 ## Budget source
 
-Kementerian Kewangan, *Anggaran Perbelanjaan Persekutuan* (the federal budget book), Budget 2025, 2026 and 2027, e.g. <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
+Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget book), Budget 2025, 2026 and 2027, e.g. <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
 
 ## Layout
 
-| Path | What |
-|---|---|
-| `supabase/migrations/` | Postgres schema. The contract between pipeline and web. |
-| `pipeline/` | Python (uv). Downloads source PDFs, verifies their hash, parses them, loads Postgres in one transaction that commits only if `reconciliation` has no mismatches. |
-| `web/` | Next.js site. Reads Postgres, server-rendered. |
-| `data/raw/` | Downloaded source PDFs (git-ignored; re-fetched and hash-checked by the pipeline). |
+| Path                   | What                                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/` | Postgres schema. The contract between pipeline and web.                                                                                                          |
+| `pipeline/`            | Python (uv). Downloads source PDFs, verifies their hash, parses them, loads Postgres in one transaction that commits only if `reconciliation` has no mismatches. |
+| `web/`                 | Next.js site. Reads Postgres, server-rendered.                                                                                                                   |
+| `data/raw/`            | Downloaded source PDFs (git-ignored; re-fetched and hash-checked by the pipeline).                                                                               |
 
 ## Data model
 
@@ -67,18 +67,17 @@ cd web && pnpm preview                                     # run the Worker loca
 
 Merging to `main` deploys: the `Deploy` job in `.github/workflows/ci.yml` runs `pnpm run deploy` once the checks pass, with a `CLOUDFLARE_API_TOKEN` secret on the `production` environment (Workers Scripts: Edit on the account). The build needs no database, so `pnpm run deploy` also works from any machine with that token.
 
-Three Worker secrets power the email alert sign-up. Set them once after deploying:
+Email alerts go through Resend, in the same team as other mailing lists. Confirmed subscribers are added to the segment and opted in to the private, opt-out-by-default topic named in `wrangler.jsonc` (`vars`); the sign-up never changes a contact's team-wide unsubscribe flag. Two Worker secrets complete it:
 
 ```bash
 cd web
-wrangler secret put RESEND_API_KEY     # your Resend API key (re_...)
-wrangler secret put SUBSCRIBE_SECRET   # a long random string: openssl rand -hex 32
-wrangler secret put RESEND_SEGMENT_ID  # the Resend segment ID to add confirmed subscribers to
+npx wrangler secret put RESEND_API_KEY                               # a Resend key with full access (it creates contacts)
+openssl rand -hex 32 | npx wrangler secret put SUBSCRIBE_SECRET      # signs the confirmation links
 ```
 
 Sign-ups are rate-limited to 5 a minute per IP by the `SUBSCRIBE_LIMITER` binding in `wrangler.jsonc`; no dashboard setup is needed.
 
-To send an alert when new data is loaded, use a Resend Broadcast to the segment. Each broadcast must include `{{{RESEND_UNSUBSCRIBE_URL}}}` somewhere in the body so recipients can opt out.
+To send an alert when new data is loaded, create a Resend Broadcast to the "Build Malaysia data alerts" segment with the "Build Malaysia data alerts" topic selected, so only people who opted in receive it, and include `{{{RESEND_UNSUBSCRIBE_URL}}}` in the body.
 
 Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Next app: it redirects HTTP and `www.buildmalaysia.com` to `https://buildmalaysia.com`, sets the security headers (HSTS, nosniff, no framing), and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. Next renders every page per request (`dynamic = "force-dynamic"` in the root layout), so that cache is the only one. Browsers keep files under `/_next/static/` for a year (`web/public/_headers`). After reloading the database, pages catch up within the hour; redeploy to show the new data at once. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
 

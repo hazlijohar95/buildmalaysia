@@ -50,22 +50,30 @@ export function sendConfirmEmail(opts: { to: string; confirmUrl: string; apiKey:
 const alreadyDone = (r: ResendResult) =>
   !r.ok && (r.status === 409 || (r.status >= 400 && r.status < 500 && r.body.toLowerCase().includes("already")));
 
+/** Where confirmed subscribers go: the segment alerts are sent to, and the topic they opt in to. */
+export interface AlertList {
+  segmentId: string;
+  topicId: string;
+}
+
 /**
- * Leaves the address subscribed and in the segment whether or not Resend already knows it. A contact that
- * unsubscribed earlier exists already, so creating it fails and it has to be re-subscribed and re-added.
+ * Opts the address in to the alerts topic and adds it to the segment, whether or not Resend already knows it.
+ * The Resend team is shared with other mailing lists, so this never touches a contact's team-wide
+ * `unsubscribed` flag: someone who opted out of everything stays opted out.
  */
-export async function upsertContact(opts: { email: string; segmentId: string; apiKey: string }): Promise<ResendResult> {
+export async function upsertContact(opts: { email: string; list: AlertList; apiKey: string }): Promise<ResendResult> {
+  const optIn = [{ id: opts.list.topicId, subscription: "opt_in" }];
   const created = await post("/contacts", opts.apiKey, {
     email: opts.email,
-    unsubscribed: false,
-    segments: [{ id: opts.segmentId }],
+    segments: [{ id: opts.list.segmentId }],
+    topics: optIn,
   });
   if (created.ok || !alreadyDone(created)) return created;
 
   const contact = `/contacts/${encodeURIComponent(opts.email)}`;
-  const updated = await request("PATCH", contact, opts.apiKey, { unsubscribed: false });
-  if (!updated.ok) return updated;
+  const subscribed = await request("PATCH", `${contact}/topics`, opts.apiKey, { topics: optIn });
+  if (!subscribed.ok) return subscribed;
 
-  const added = await request("POST", `${contact}/segments/${encodeURIComponent(opts.segmentId)}`, opts.apiKey);
+  const added = await request("POST", `${contact}/segments/${encodeURIComponent(opts.list.segmentId)}`, opts.apiKey);
   return alreadyDone(added) ? { ok: true } : added;
 }

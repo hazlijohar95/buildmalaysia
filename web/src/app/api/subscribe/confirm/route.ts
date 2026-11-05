@@ -9,7 +9,7 @@ function redirect(to: string): Response {
 export async function POST(request: Request): Promise<Response> {
   const env = getSubscribeEnv();
 
-  if (!env.resendApiKey || !env.subscribeSecret || !env.resendSegmentId) {
+  if (!env.resendApiKey || !env.subscribeSecret || !env.alertList) {
     return redirect("/subscribe?error=retry");
   }
 
@@ -30,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const result = await upsertContact({
     email: verified.email,
-    segmentId: env.resendSegmentId,
+    list: env.alertList,
     apiKey: env.resendApiKey,
   });
 
