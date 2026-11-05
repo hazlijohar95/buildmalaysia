@@ -189,10 +189,11 @@ describe("topGrowthMinistryTemplate", () => {
     expect(f.headline).toBe("+128.2%");
   });
 
-  it("body mentions vote code and both years", () => {
+  it("body mentions vote code, both years and the reorganisation exclusion", () => {
     expect(f.body).toContain("B.04");
     expect(f.body).toContain("2024");
     expect(f.body).toContain("2025");
+    expect(f.body).toContain("not reorganised between the two years");
   });
 
   it("links to the ministry slug page", () => {

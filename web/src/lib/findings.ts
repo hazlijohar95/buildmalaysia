@@ -174,7 +174,7 @@ export function topGrowthMinistryTemplate(p: TopGrowthMinistryTemplateParams): F
     id: p.id,
     kicker: "PERTUMBUHAN TERTINGGI · FASTEST GROWTH",
     headline: `+${pct}%`,
-    body: `${p.name} (${p.operatingVoteCode}) grew from ${formatSenCompact(p.priorActual)} in ${p.priorYear} to ${formatSenCompact(p.currentActual)} in ${p.year}, the largest percentage increase among votes under the same printed name.`,
+    body: `${p.name} (${p.operatingVoteCode}) grew from ${formatSenCompact(p.priorActual)} in ${p.priorYear} to ${formatSenCompact(p.currentActual)} in ${p.year}, the largest percentage increase among ministries not reorganised between the two years.`,
     href: `/ministries/${slugify(p.name)}`,
     source: { docUrl: p.docUrl, pdfPage: p.pdfPage, bookPage: p.bookPage, year: p.year },
   };
