@@ -1,10 +1,17 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "buildmalaysia",
-  "account_id": "f06c6a7080a4bddf940c20024561d41c",
-  "main": ".open-next/worker.js",
+  "account_id": "9c006d850453ab5c068f5688d138521b",
+  // worker.ts redirects www and caches pages, then hands requests to the Next app.
+  "main": "worker.ts",
+  "alias": { "next-app": "./.open-next/worker.js" },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "routes": [
+    { "pattern": "buildmalaysia.com", "custom_domain": true },
+    { "pattern": "www.buildmalaysia.com", "custom_domain": true },
+  ],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   // The memory queue revalidates ISR pages by calling the worker itself.
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "buildmalaysia" }],
@@ -12,7 +19,7 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "f91da185cf3d46c6a4c940de152e7db8",
+      "id": "b5a46a67958f4fb4b922b16d0db833f3",
       // Local runs and the build use this instead. Override it with
       // CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE if your Postgres differs.
       "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/buildmalaysia",
