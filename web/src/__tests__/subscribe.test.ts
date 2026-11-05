@@ -225,6 +225,25 @@ describe("POST /api/subscribe/confirm", () => {
     expect(body.segments).toEqual([{ id: "seg_test_123" }]);
   });
 
+  it("re-subscribes and re-adds a contact that already exists", async () => {
+    const token = await createToken("user@example.com", SECRET);
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Contact already exists" }), { status: 409 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ object: "contact", id: "cid" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "seg_test_123" }), { status: 200 }));
+    vi.stubGlobal("fetch", mockFetch);
+
+    const res = await callConfirm(token);
+
+    expect(res.headers.get("location")).toBe("/subscribe?confirmed=1");
+    const calls = (mockFetch.mock.calls as [string, RequestInit][]).map(([url, init]) => [init.method, url, init.body]);
+    expect(calls.slice(1)).toEqual([
+      ["PATCH", "https://api.resend.com/contacts/user%40example.com", JSON.stringify({ unsubscribed: false })],
+      ["POST", "https://api.resend.com/contacts/user%40example.com/segments/seg_test_123", undefined],
+    ]);
+  });
+
   it("redirects back to confirm page on an invalid token", async () => {
     const res = await callConfirm("not.a.valid.token");
     expect(res.status).toBe(303);

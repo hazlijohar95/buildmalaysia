@@ -76,7 +76,7 @@ wrangler secret put SUBSCRIBE_SECRET   # a long random string: openssl rand -hex
 wrangler secret put RESEND_SEGMENT_ID  # the Resend segment ID to add confirmed subscribers to
 ```
 
-The rate-limit binding (`SUBSCRIBE_LIMITER`, declared in `wrangler.jsonc`) needs a threshold configured in the Cloudflare dashboard: open the Worker, go to Rate Limiting, and add a rule for `namespace_id 2001` — 5 requests per 60 seconds per IP is a reasonable starting point.
+Sign-ups are rate-limited to 5 a minute per IP by the `SUBSCRIBE_LIMITER` binding in `wrangler.jsonc`; no dashboard setup is needed.
 
 To send an alert when new data is loaded, use a Resend Broadcast to the segment. Each broadcast must include `{{{RESEND_UNSUBSCRIBE_URL}}}` somewhere in the body so recipients can opt out.
 

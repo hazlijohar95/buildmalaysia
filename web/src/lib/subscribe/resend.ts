@@ -6,16 +6,18 @@ const RESEND_BASE = "https://api.resend.com";
 
 export type ResendResult = { ok: true } | { ok: false; status: number; body: string };
 
-async function post(path: string, apiKey: string, body: unknown): Promise<ResendResult> {
+const post = (path: string, apiKey: string, body: unknown) => request("POST", path, apiKey, body);
+
+async function request(method: "POST" | "PATCH", path: string, apiKey: string, body?: unknown): Promise<ResendResult> {
   let res: Response;
   try {
     res = await fetch(`${RESEND_BASE}${path}`, {
-      method: "POST",
+      method,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (err) {
     return { ok: false, status: 0, body: String(err) };
@@ -45,20 +47,25 @@ export function sendConfirmEmail(opts: { to: string; confirmUrl: string; apiKey:
   });
 }
 
+const alreadyDone = (r: ResendResult) =>
+  !r.ok && (r.status === 409 || (r.status >= 400 && r.status < 500 && r.body.toLowerCase().includes("already")));
+
+/**
+ * Leaves the address subscribed and in the segment whether or not Resend already knows it. A contact that
+ * unsubscribed earlier exists already, so creating it fails and it has to be re-subscribed and re-added.
+ */
 export async function upsertContact(opts: { email: string; segmentId: string; apiKey: string }): Promise<ResendResult> {
-  const result = await post("/contacts", opts.apiKey, {
+  const created = await post("/contacts", opts.apiKey, {
     email: opts.email,
     unsubscribed: false,
     segments: [{ id: opts.segmentId }],
   });
+  if (created.ok || !alreadyDone(created)) return created;
 
-  // Resend may return 409 or a "already exists" error for duplicate contacts.
-  // Treat that as success: the address is in the list either way.
-  if (!result.ok && result.status >= 400 && result.status < 500) {
-    if (result.status === 409 || result.body.toLowerCase().includes("already")) {
-      return { ok: true };
-    }
-  }
+  const contact = `/contacts/${encodeURIComponent(opts.email)}`;
+  const updated = await request("PATCH", contact, opts.apiKey, { unsubscribed: false });
+  if (!updated.ok) return updated;
 
-  return result;
+  const added = await request("POST", `${contact}/segments/${encodeURIComponent(opts.segmentId)}`, opts.apiKey);
+  return alreadyDone(added) ? { ok: true } : added;
 }
