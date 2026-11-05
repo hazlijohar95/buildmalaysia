@@ -23,6 +23,10 @@ const SECURITY_HEADERS: Record<string, string> = {
 declare global {
   interface CloudflareEnv {
     CF_VERSION_METADATA: { id: string };
+    RESEND_API_KEY: string;
+    SUBSCRIBE_SECRET: string;
+    RESEND_SEGMENT_ID: string;
+    SUBSCRIBE_LIMITER: { limit(options: { key: string }): Promise<{ success: boolean }> };
   }
 }
 

@@ -26,4 +26,12 @@
   "workers_dev": false,
   "preview_urls": false,
   "observability": { "enabled": true },
+  // Rate limiting for /api/subscribe. Configure the threshold (e.g. 5 requests per 60 s per IP)
+  // in the Cloudflare dashboard under the Worker's Rate Limiting rules after deploying.
+  "ratelimits": [
+    {
+      "binding": "SUBSCRIBE_LIMITER",
+      "namespace_id": "2001",
+    },
+  ],
 }

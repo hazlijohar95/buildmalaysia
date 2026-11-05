@@ -67,6 +67,19 @@ cd web && pnpm preview                                     # run the Worker loca
 
 Merging to `main` deploys: the `Deploy` job in `.github/workflows/ci.yml` runs `pnpm run deploy` once the checks pass, with a `CLOUDFLARE_API_TOKEN` secret on the `production` environment (Workers Scripts: Edit on the account). The build needs no database, so `pnpm run deploy` also works from any machine with that token.
 
+Three Worker secrets power the email alert sign-up. Set them once after deploying:
+
+```bash
+cd web
+wrangler secret put RESEND_API_KEY     # your Resend API key (re_...)
+wrangler secret put SUBSCRIBE_SECRET   # a long random string: openssl rand -hex 32
+wrangler secret put RESEND_SEGMENT_ID  # the Resend segment ID to add confirmed subscribers to
+```
+
+The rate-limit binding (`SUBSCRIBE_LIMITER`, declared in `wrangler.jsonc`) needs a threshold configured in the Cloudflare dashboard: open the Worker, go to Rate Limiting, and add a rule for `namespace_id 2001` — 5 requests per 60 seconds per IP is a reasonable starting point.
+
+To send an alert when new data is loaded, use a Resend Broadcast to the segment. Each broadcast must include `{{{RESEND_UNSUBSCRIBE_URL}}}` somewhere in the body so recipients can opt out.
+
 Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Next app: it redirects HTTP and `www.buildmalaysia.com` to `https://buildmalaysia.com`, sets the security headers (HSTS, nosniff, no framing), and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. Next renders every page per request (`dynamic = "force-dynamic"` in the root layout), so that cache is the only one. Browsers keep files under `/_next/static/` for a year (`web/public/_headers`). After reloading the database, pages catch up within the hour; redeploy to show the new data at once. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
 
 ## Contributing
