@@ -48,10 +48,10 @@ export default async function HomePage() {
           <Arc className="-right-[120px] bottom-[4%] h-[240px] w-[240px]" />
           <div className="relative">
             <h1 className="m-0 text-center font-display font-medium tracking-tight leading-[1.08] text-[2.5rem] sm:text-[4rem] lg:text-[5.5rem]">
-              <span className="block">Building a</span>
+              <span className="block">See where every</span>
               <span className="block border-y border-linen-50/15">
-                <span className="text-transparent [-webkit-text-stroke:1.5px_var(--color-linen-50)]">Better</span>{" "}
-                Malaysia.
+                <span className="text-transparent [-webkit-text-stroke:1.5px_var(--color-linen-50)]">ringgit</span>{" "}
+                goes.
               </span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-center text-lg text-linen-200">
