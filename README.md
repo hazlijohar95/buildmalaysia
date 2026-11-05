@@ -24,6 +24,7 @@ Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget bo
 | `pipeline/`            | Python (uv). Downloads source PDFs, verifies their hash, parses them, loads Postgres in one transaction that commits only if `reconciliation` has no mismatches. |
 | `web/`                 | Next.js site. Reads Postgres, server-rendered.                                                                                                                   |
 | `data/raw/`            | Downloaded source PDFs (git-ignored; re-fetched and hash-checked by the pipeline).                                                                               |
+| `data/lineage/`        | The ministry lineage: bodies, their names and dates, vote holders and reorganisations, each row with a citation. Loaded by `python -m pipeline load-lineage`.    |
 
 ## Data model
 
@@ -34,7 +35,9 @@ Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget bo
 - `development_project`: one row per Lampiran 2 project, nine amounts in sen, citing both pages of its spread. `development_vote` and `development_group` hold the hierarchy; `development_printed_total` and the `development_reconciliation` view work as above.
 - `covid_fund_line`, `covid_fund_total`, `covid_fund_reconciliation`: Lampiran 3.
 - `budget_vote_figure`, `budget_total`: the MOF budget book's vote summary (two years of actuals, the current and the proposed budget). `budget_heading`, `budget_operating_line`, `budget_operating_total`: operating estimates by programme, activity and object group with posts. `budget_development_project`, `budget_development_group`, `budget_development_total`: development estimates by project. Each has a reconciliation view; `budget_actual_check` compares MOF's actuals with JANM's.
-- `federal_spending` (view): the year's total: operating less its transfer to the Development Fund, plus development, plus COVID-19 Fund spending. `ministry_spending` (view): each ministry's supply vote B.nn beside its development vote P.nn.
+- `federal_spending` (view): the year's total: operating less its transfer to the Development Fund, plus development, plus COVID-19 Fund spending. `ministry_spending` (view): each ministry's supply vote B.nn beside its development vote P.nn, with the body behind them.
+- `body`, `body_alias`, `vote_holder`, `lineage_edge`, `citation`: which institution stood behind each vote in each year. A vote number is a funding line, not a ministry: B/P.15 and B/P.33 have each been used by two different ministries, and most ministries have been renamed. `body` is the institution and carries the name the site shows; `body_alias` every name it has carried, printed or gazetted, with the dates; `vote_holder` the body behind each vote code over a range of fiscal years; `lineage_edge` each reorganisation between two bodies, with the date it took effect and the functions that moved. Every alias and edge cites its source in `citation`. `ministry_spending` adds `body_id`, `body_name_ms` and `residual` (true when a number was still printed, with zero, after its body was dissolved). The rows come from the reviewable files in `data/lineage/`, never from a PDF, and carry no amounts; the share of a partial move is computed from the loaded spending.
+- `vote_lineage_check` (view): every printed vote name in the statements and budget books, with the body that held it and a `problem` when the lineage does not cover it. `ingest` and `ingest-budget` roll back a document with a problem row, so the next reshuffle is caught at ingest.
 
 ## Local development
 
@@ -43,6 +46,7 @@ createdb buildmalaysia
 for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -d buildmalaysia -f "$f"; done
 
 cd pipeline && uv sync
+uv run python -m pipeline load-lineage --database-url postgresql:///buildmalaysia   # before any ingest; safe to rerun
 for y in $(seq 2016 2025); do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
 for y in 2025 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
 uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
@@ -54,13 +58,24 @@ DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:/
 
 Prerendered pages refresh hourly; restart or rebuild the site to see a new ingest at once.
 
+## Adding a reshuffle
+
+When a new statement or budget book prints a vote the lineage does not cover, `ingest` and `ingest-budget` stop and list the rows that need a decision, for example `mof 2028 B.33 'KEMENTERIAN X': no vote_holder`. Fix the files in `data/lineage/`, rerun `load-lineage`, then the ingest. Research so far is in [`specs/ministry-lineage.md`](specs/ministry-lineage.md).
+
+1. A new name for the same ministry: add a row to `aliases.csv` (`origin` printed or gazetted, `valid_from` the date the name took effect, `confidence` high when a gazette, a budget-book note or the statement itself shows it and medium when only a secondary source does) with a `citation_id` from `citations.csv`.
+2. A new ministry, or a number reused for a different one: add the body to `bodies.csv` with its `established` date, its names to `aliases.csv`, and a `vote_holders.csv` row (`B/P.nn` covers both votes; `from_year` the first fiscal year it is printed). Close the previous holder's `to_year` at its last printed year, residual zero years included, and set the old body's `dissolved` date.
+3. Functions moving between ministries: add a row to `edges.csv` with the `effective` date, `whole` true only when the entire predecessor became part of the successor (then `functions` is empty), and otherwise the agencies or activities that moved, as the source names them. The site shows the edge on both bodies' pages and leaves both out of the "fastest growth" finding for the years it touches.
+4. A move no source confirms: load it with `confidence` unverified. The site shows it and never uses it to merge or exclude data.
+
+`load-lineage` replaces the five tables in one transaction and is safe to rerun. It rejects a file that references an unknown body or citation, gives two bodies the same slug, gives a vote two holders in a year, or leaves a loaded document uncovered.
+
 ## Hosting
 
 The site runs on Cloudflare Workers through the [OpenNext adapter](https://opennext.js.org/cloudflare) and reads Supabase Postgres through Hyperdrive. Supabase holds a copy of the local database; the pipeline never writes to it.
 
 ```bash
 supabase link --project-ref <ref> && supabase db push    # schema
-SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, checked row for row
+SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage tables included, checked row for row
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
 cd web && pnpm preview                                     # run the Worker locally against local Postgres
 ```
