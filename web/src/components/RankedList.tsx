@@ -35,7 +35,7 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
             {item.note && <span className="block text-sm text-charcoal-700">{item.note}</span>}
           </span>
           <span className="hidden md:block h-2.5 bg-linen-200" aria-hidden>
-            <span className="block h-full bg-auburn-800" style={{ width: `${(item.amount_sen / max) * 100}%` }} />
+            <span className="block h-full bg-merah-600" style={{ width: `${(item.amount_sen / max) * 100}%` }} />
           </span>
           <span
             className="text-right font-display text-lg font-semibold tabular-nums"

@@ -188,7 +188,7 @@ export default async function AboutPage() {
                 href={`#${s.id}`}
                 className={cn(
                   kicker,
-                  "inline-flex min-h-12 items-center text-charcoal-700 no-underline hover:text-auburn-800",
+                  "inline-flex min-h-12 items-center text-charcoal-700 no-underline hover:text-biru-800",
                 )}
               >
                 {s.label}
@@ -240,7 +240,7 @@ export default async function AboutPage() {
         <ol className="m-0 mt-10 grid list-none gap-x-12 p-0 md:grid-cols-2">
           {PRINCIPLES.map((p, i) => (
             <li key={p.title} className="flex gap-6 border-t border-foreground/25 pb-10 pt-6">
-              <span className="font-display text-2xl font-semibold tabular-nums text-auburn-800">
+              <span className="font-display text-2xl font-semibold tabular-nums text-merah-600">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div>
@@ -293,11 +293,11 @@ export default async function AboutPage() {
                     i === 0 ? "first:border-t" : "md:first:border-t",
                   )}
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 font-display text-lg font-semibold tracking-tight [&::-webkit-details-marker]:hidden hover:text-auburn-800">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 font-display text-lg font-semibold tracking-tight [&::-webkit-details-marker]:hidden hover:text-biru-800">
                     {f.q}
                     <span
                       aria-hidden="true"
-                      className="text-xs text-auburn-800 transition-transform duration-200 group-open:rotate-180"
+                      className="text-xs text-biru-800 transition-transform duration-200 group-open:rotate-180"
                     >
                       ▼
                     </span>

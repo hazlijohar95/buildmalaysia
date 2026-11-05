@@ -79,10 +79,7 @@ export default async function HomePage() {
             )}
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <Link
-                href="/tax"
-                className={cn(button, "border-auburn-500 bg-auburn-700 text-linen-50 hover:bg-auburn-800")}
-              >
+              <Link href="/tax" className={cn(button, "border-merah-500 bg-merah-600 text-white hover:bg-merah-700")}>
                 Where your taxes go
               </Link>
               <Link href="/spending" className={cn(button, "border-linen-50/60 text-linen-50 hover:bg-linen-50/10")}>
@@ -124,7 +121,7 @@ export default async function HomePage() {
           </div>
 
           {tabled && budgetYear && (
-            <aside className="bg-auburn-800 text-linen-50 px-5 py-14 sm:px-8 md:px-12 lg:py-20 flex flex-col justify-center gap-6">
+            <aside className="bg-biru-800 text-linen-50 px-5 py-14 sm:px-8 md:px-12 lg:py-20 flex flex-col justify-center gap-6">
               <div className={cn(kicker, "text-linen-200")}>Budget {budgetYear}, as tabled</div>
               <div>
                 <div

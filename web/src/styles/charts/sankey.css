@@ -40,29 +40,29 @@
   */
 
   /* Highlighted Current Node -- "Highlight Current Sankey" => "hcs" */
-  --color-hcs: var(--color-linen-600);
+  --color-hcs: var(--color-merah-600);
   /* Highlighted Nodes in Flow -- "Highlight Block Sankey" => "hbs" */
-  --color-hbs: var(--color-linen-500);
-  --color-hbs-ds: var(--color-linen-500); /* Downstream (further from center) */
+  --color-hbs: var(--color-merah-500);
+  --color-hbs-ds: var(--color-merah-500); /* Downstream (further from center) */
   /* Highlighted Differences in Flow -- "Highlight Difference Sankey" => "hds" */
-  --color-hds: var(--color-linen-700);
+  --color-hds: var(--color-merah-400);
   /* Highlighted Links in Flow -- "Highlight Flow Sankey" => "hfs" */
   --color-hfs: var(--color-charcoal-700);
   --color-hfs-ds: var(--color-charcoal-700);
 
   /* Spending Use */
   /* Highlighted Current Node */
-  --color-hcs-spending: var(--color-auburn-600);
+  --color-hcs-spending: var(--color-merah-600);
   /* Highlighted Nodes in Flow */
-  --color-hbs-spending: var(--color-auburn-500);
+  --color-hbs-spending: var(--color-merah-500);
   /* Unused - Highlighted "downstream" (more right) Nodes in Flow */
-  --color-hbs-spending-ds: var(--color-auburn-500);
+  --color-hbs-spending-ds: var(--color-merah-500);
   /* Highlighted Differences in Flow */
-  --color-hds-spending: var(--color-copper-500);
+  --color-hds-spending: var(--color-merah-400);
   /* Highlighted Links in Flow */
-  --color-hfs-spending: var(--color-copper-700);
+  --color-hfs-spending: var(--color-merah-400);
   /* Unused - Highlighted "downstream" (more right) Links in Flow */
-  --color-hfs-spending-ds: var(--color-copper-700);
+  --color-hfs-spending-ds: var(--color-merah-400);
 
   /* Revenue Use */
   /* Selected/Current node highlight */
@@ -78,20 +78,3 @@
   /* Unused - Highlighted "downstream" (more left) Links in Flow */
   --color-hfs-revenue-ds: var(--color-aurora-800);
 }
-
-/*
-  --color-text-base: #f6ebe3;
-  --color-neg-hover: #19464f;
-  --color-neg-highlight: #19464f;
-  --color-neg-active: #38a0b4;
-  --color-neg-text-active: #f6ebe3;
-  --color-neg-text-base: #38a0b4;
-  --color-short-text: #f6ebe3;
-  --color-difference: #a8a19b;
-  --color-difference-text: #f6ebe3;
-  --color-background: #272727;
-  --color-secondary-active: #932f2f;
-  --color-primary-active: #471717;
-  --color-revenue-secondary-active: #38a0b4;
-  --color-revenue-primary-active: #19464f;
-*/

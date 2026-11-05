@@ -47,7 +47,7 @@ const MISUSE = [
   ["Mirror it.", "The canton stays at the hoist and the crescent opens toward the fly."],
   ["Cut the stripes any other way.", "The 45° edge is the only cut; other lengths read as a chart of made-up data."],
   ["Recolour it.", "There is no one-colour flag. Where only one colour prints, write “Build Malaysia” alone."],
-  ["Set it on red or auburn.", "The red stripes vanish. Use white, Kertas or Biru."],
+  ["Set it on red.", "The red stripes vanish. Use white, Kertas or Biru."],
   ["Stretch, tilt or wave it.", "Carta is a chart, and charts sit level at 1 : 2."],
 ];
 
@@ -193,7 +193,9 @@ export default function BrandPage() {
           </a>
           . The government publishes no screen values; the hex codes are those of{" "}
           <a href={HEX_URL}>Wikimedia&apos;s reference drawing</a>. In code they are the Tailwind colours{" "}
-          <code>biru</code>, <code>merah</code> and <code>kuning</code>.
+          <code>biru</code>, <code>merah</code> and <code>kuning</code>, with full 50–950 scales for the first two.
+          Across the site Biru carries the brand and interaction (links, focus, navigation) and Merah carries action and
+          data (buttons, spending, overspend).
         </p>
         <div className={cn(grid, "mt-8 grid-cols-2 lg:grid-cols-4")}>
           {SECONDARY.map((c) => (

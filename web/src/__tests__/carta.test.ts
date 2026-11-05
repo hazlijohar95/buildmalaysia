@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, readdirSync } from "fs";
+import { join, resolve } from "path";
 import { describe, expect, it } from "vitest";
 import {
   CANTON,
@@ -85,5 +85,14 @@ describe("theme tokens", () => {
     for (const key of ["biru", "merah", "kuning"] as const) {
       expect(css).toContain(`--color-${key}: ${PALETTE[key].hex};`);
     }
+  });
+});
+
+describe("colour system", () => {
+  it("uses no auburn: brand and interaction are biru, data emphasis is merah", () => {
+    const src = resolve(__dirname, "..");
+    const files = readdirSync(src, { recursive: true, encoding: "utf8" }).filter((f) => /\.(tsx?|jsx?|css)$/.test(f));
+    const offenders = files.filter((f) => /auburn|#932f2f/i.test(readFileSync(join(src, f), "utf8")));
+    expect(offenders.filter((f) => !f.endsWith("carta.test.ts"))).toEqual([]);
   });
 });

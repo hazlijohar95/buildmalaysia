@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <Link href={href} className="text-sm/6 hover:text-primary no-underline">
+  <Link href={href} className="text-sm/6 hover:text-kuning no-underline">
     {children}
   </Link>
 );
@@ -47,7 +47,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
               </p>
               <p>
                 Design adapted from Build Canada&apos;s{" "}
-                <a href="https://github.com/BuildCanada/CanadaSpends" className="underline hover:text-primary">
+                <a href="https://github.com/BuildCanada/CanadaSpends" className="underline hover:text-kuning">
                   CanadaSpends
                 </a>{" "}
                 (MIT). Not affiliated with Build Canada.

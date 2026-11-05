@@ -20,13 +20,13 @@ const parseAmount = (text: string) => Number(text.split(".")[0].replace(/\D/g, "
 const PRESETS = [30_000, 60_000, 100_000, 250_000];
 const SLIDER_MAX = 500_000;
 const SEGMENTS = [
-  "var(--color-auburn-800)",
+  "var(--color-merah-600)",
   "var(--color-lake-700)",
-  "var(--color-copper-600)",
+  "var(--color-kuning)",
   "var(--color-pine-700)",
-  "var(--color-auburn-500)",
+  "var(--color-merah-400)",
   "var(--color-lake-400)",
-  "var(--color-sienna-800)",
+  "var(--color-biru-400)",
   "var(--color-charcoal-700)",
 ];
 const REST = "var(--color-charcoal-300)";
@@ -125,7 +125,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </div>
             <h1 className="mt-6 m-0 font-display font-medium tracking-tight leading-[1.1] text-4xl sm:text-6xl lg:text-7xl">
               I earn{" "}
-              <span className="inline-flex items-baseline border-b-2 border-auburn-500 focus-within:border-linen-50">
+              <span className="inline-flex items-baseline border-b-2 border-merah-500 focus-within:border-linen-50">
                 RM&nbsp;
                 <AmountInput
                   value={income}
@@ -144,7 +144,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
               value={Math.min(income, SLIDER_MAX)}
               onChange={(e) => setIncome(Number(e.target.value))}
               aria-label="Annual income"
-              className="mt-10 w-full accent-auburn-500"
+              className="mt-10 w-full accent-merah-500"
             />
             <div className="mt-6 flex flex-wrap items-center gap-2">
               {PRESETS.map((p) => (
@@ -167,7 +167,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                   type="checkbox"
                   checked={epf}
                   onChange={(e) => setEpf(e.target.checked)}
-                  className="h-5 w-5 accent-auburn-500"
+                  className="h-5 w-5 accent-merah-500"
                 />
                 <span className="text-sm text-linen-100">I contribute {SCHEDULE.epf.employee_rate_pct}% to KWSP</span>
               </label>
@@ -279,7 +279,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                     className="block h-full"
                     style={{
                       width: `${max > 0 ? (s.amount / max) * 100 : 0}%`,
-                      background: SEGMENTS[i] ?? "var(--color-auburn-800)",
+                      background: SEGMENTS[i] ?? "var(--color-merah-600)",
                     }}
                   />
                 </span>

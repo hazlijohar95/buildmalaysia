@@ -172,7 +172,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             href={cta.href}
             className={cn(
               cell,
-              "hidden lg:flex border-l border-foreground bg-foreground text-background hover:bg-auburn-800",
+              "hidden lg:flex border-l border-foreground bg-foreground text-background hover:bg-merah-600",
             )}
           >
             {cta.label}
@@ -244,17 +244,17 @@ function MenuPanel({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-auburn-700 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-biru-800 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
                       active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
                     )}
                   />
                   <span className="flex items-baseline justify-between gap-4">
-                    <span className="font-display text-xl font-semibold tracking-tight transition-colors duration-200 group-hover:text-auburn-800">
+                    <span className="font-display text-xl font-semibold tracking-tight transition-colors duration-200 group-hover:text-biru-800">
                       {link.label}
                     </span>
                     <span
                       aria-hidden="true"
-                      className="text-auburn-800 opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0"
+                      className="text-biru-800 opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0"
                     >
                       →
                     </span>
@@ -277,7 +277,7 @@ function MenuPanel({
                     className={cn(
                       "flex min-h-10 w-full items-center justify-center font-mono text-[12px] tabular-nums tracking-[0.08em] no-underline transition-colors duration-150",
                       isActive(link)
-                        ? "bg-auburn-800 text-linen-50"
+                        ? "bg-biru-800 text-linen-50"
                         : "bg-linen-50 text-charcoal-800 hover:bg-foreground hover:text-background",
                     )}
                   >
