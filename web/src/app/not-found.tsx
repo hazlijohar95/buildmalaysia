@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { kicker } from "@/components/Boxed";
+import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
 
 const LINKS = [
@@ -13,12 +14,15 @@ export default function NotFound() {
     <>
       <section className="border-b-2 border-foreground px-5 py-16 sm:px-8 md:px-16 md:py-24">
         <div className="mx-auto max-w-6xl">
+          {/* The flag with every stripe at zero: nothing to rank. */}
+          <Logo lockup="flag" unit={5} ghost decorative className="mb-10 text-charcoal-1000" />
           <div className={cn(kicker, "text-charcoal-700")}>Error 404</div>
           <h1 className="mt-4 m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight">
-            We couldn&apos;t find that page.
+            Nothing ranked here.
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-charcoal-800">
-            The link may be out of date, or the year or vote may not be loaded. These are good places to start.
+            We couldn&apos;t find that page. The link may be out of date, or the year or vote may not be loaded. These
+            are good places to start.
           </p>
         </div>
       </section>

@@ -1,6 +1,6 @@
 "use client";
 
-// Boxed navigation in the style of buildcanada.com: a solid wordmark cell, bordered cells and a dark
+// Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
 import { ChevronDown, Menu, X } from "lucide-react";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { kicker } from "@/components/Boxed";
+import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
 
 export interface NavLink {
@@ -36,16 +37,6 @@ const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal 
 
 // Slugged so any label makes a valid id, and a safe attribute selector for restoring focus on Escape.
 const panelId = (label: string) => `nav-panel-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-
-export function Wordmark({ className = "" }: { className?: string }) {
-  return (
-    <span className={`font-display font-semibold leading-[0.9] tracking-tight ${className}`}>
-      Build
-      <br />
-      Malaysia
-    </span>
-  );
-}
 
 export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink }) {
   const pathname = usePathname();
@@ -104,12 +95,14 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
       )}
       <header className="sticky top-[var(--frame)] z-50 border-y-2 border-foreground bg-background">
         <div className="flex min-h-[var(--bar)] items-stretch">
+          {/* At 1.5px a stripe the logo is 37.5px tall; an 11px top inset puts every stripe edge on a whole
+              device pixel at 2x. The cell is white because the flag's white stripes need a white ground. */}
           <Link
             href="/"
-            className="flex items-center bg-auburn-800 px-4 py-3 text-linen-50 no-underline hover:bg-auburn-900"
+            className="flex items-start bg-white px-4 pt-[11px] no-underline"
             aria-label="Build Malaysia home"
           >
-            <Wordmark className="text-[20px]" />
+            <Logo unit={1.5} intro interactive decorative />
           </Link>
           <nav className="hidden lg:flex items-stretch border-r border-foreground" aria-label="Main navigation">
             {items.map((item) => {

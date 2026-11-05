@@ -20,7 +20,7 @@ import YearNav from "@/components/YearNav";
 import { cn } from "@/lib/cn";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `Development expenditure ${(await params).year}` };
+  return { title: `Development expenditure ${await requireYear((await params).year)}` };
 }
 
 interface Props {

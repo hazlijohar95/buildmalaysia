@@ -41,8 +41,13 @@ The app reads `DATABASE_URL` from `.env.local` (default: `postgresql:///buildmal
 | `/budget/[budgetYear]`             | The MOF budget by vote: two years of actuals, the current and the proposed budget                                                                   |
 | `/budget/[budgetYear]/vote/[code]` | A vote's proposed budget: programmes and activities with posts (T, B), or projects (P)                                                              |
 | `/methodology`                     | Sources and the live reconciliation result for both statements                                                                                      |
+| `/brand`                           | The Carta logo system: construction, colours, lockups, motion and downloadable files (`/brand/files/[name]`)                                        |
 
 Vote codes use a dot-free URL slug: `T.03` → `/2025/vote/T03`. A year that is not loaded returns 404.
+
+## Logo
+
+The Carta logo is drawn once, in `src/brand/carta.ts`; the header, footer, loaders, icons, link previews and `/brand` files all render from it, and `src/__tests__/carta.test.ts` checks it against the government construction sheet. "Build" is outlined from Cal Sans by `scripts/outline-wordmark.py` (run with `uv run --no-project --with fonttools --with brotli --with uharfbuzz python scripts/outline-wordmark.py`), which also writes the static font the link previews use.
 
 ## Data model
 

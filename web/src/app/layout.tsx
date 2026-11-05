@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -8,6 +8,8 @@ import { getLoadedYears } from "@/lib/years";
 import { getCovidYears } from "@/lib/queries/covid";
 import { getTabledBooks } from "@/lib/queries/budget";
 import { formatSenCompact } from "@/lib/money";
+import { PALETTE } from "@/brand/carta";
+import { brandFileUrl } from "@/brand/files";
 
 const body = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 // Cal Sans (calcom/font) and Paper Mono (paper-design/paper-mono), both SIL OFL 1.1.
@@ -29,10 +31,22 @@ const mono = localFont({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://buildmalaysia.com"),
   title: { default: "Build Malaysia: the facts about government spending", template: "%s | Build Malaysia" },
   description:
     "How the Malaysian federal government budgets and spends public money, from the audited statements and the budget books. Every figure links to the page it came from.",
+  icons: {
+    icon: [{ url: brandFileUrl("icon.svg"), type: "image/svg+xml" }],
+    apple: [{ url: brandFileUrl("apple-touch-icon.png"), sizes: "180x180" }],
+  },
+  openGraph: { siteName: "Build Malaysia", locale: "en_MY", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
+
+export const viewport: Viewport = { themeColor: PALETTE.biru.hex };
+
+// Runs before first paint: the logo's intro plays on the first page view of a session, and never on a later one.
+const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStorage.setItem("carta-intro","1");document.documentElement.setAttribute("data-intro","")}}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [years, books, [covidYear]] = await Promise.all([getLoadedYears(), getTabledBooks(), getCovidYears()]);
@@ -102,7 +116,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     { kind: "link", href: "/about", label: "About", match: ["/about"] },
   ];
   return (
-    <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="en" className={`${body.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+      </head>
       <body className="min-h-screen p-[var(--frame)]">
         <div className="min-h-[calc(100vh-2*var(--frame))] border-x-2 border-b-2 border-foreground flex flex-col">
           <div aria-hidden className="fixed inset-x-0 top-0 z-40 h-[var(--frame)] bg-background" />

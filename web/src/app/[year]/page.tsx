@@ -7,7 +7,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `Federal spending ${(await params).year}` };
+  return { title: `Federal spending ${await requireYear((await params).year)}` };
 }
 
 export default async function YearPage({ params }: Props) {

@@ -1,6 +1,6 @@
 // Front door for the Next app that OpenNext builds into .open-next/worker.js.
 // It sends every visitor to https://buildmalaysia.com, adds the security headers
-// to every response, and caches rendered pages.
+// to every response, and caches rendered pages and generated images.
 //
 // Every page is rendered from the database, but the data only changes when the
 // database is reloaded, so a rendered page is cached for an hour in the data
@@ -59,8 +59,10 @@ async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: Ex
   if (hit) return forBrowser(hit, "HIT");
 
   const rendered = await nextApp.fetch(request, env, ctx);
-  const isHtml = rendered.headers.get("content-type")?.startsWith("text/html") ?? false;
-  if (rendered.status !== 200 || !isHtml || rendered.headers.has("set-cookie")) return rendered;
+  // Pages, and the logo files and link previews, which are rendered from the same data and code.
+  const type = rendered.headers.get("content-type") ?? "";
+  const cacheable = type.startsWith("text/html") || type.startsWith("image/");
+  if (rendered.status !== 200 || !cacheable || rendered.headers.has("set-cookie")) return rendered;
 
   const response = forBrowser(rendered, "MISS");
 

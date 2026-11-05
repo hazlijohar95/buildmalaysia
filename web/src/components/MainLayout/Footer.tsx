@@ -1,6 +1,6 @@
 // Adapted from CanadaSpends' Footer (MIT, Build Canada).
 import Link from "next/link";
-import { Wordmark } from "./Header";
+import { Logo } from "@/components/brand/Logo";
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link href={href} className="text-sm/6 hover:text-primary no-underline">
@@ -15,9 +15,9 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
         <div className="mx-auto max-w-7xl px-6 pb-8 pt-20 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
-              <span className="inline-block bg-auburn-800 px-4 py-3 text-linen-50">
-                <Wordmark className="text-[26px]" />
-              </span>
+              <Link href="/" className="inline-block bg-white p-4" aria-label="Build Malaysia home">
+                <Logo unit={2} interactive decorative />
+              </Link>
               <p className="mt-4 text-sm/6 text-linen-200 max-w-xs">
                 How the Malaysian federal government budgets and spends, from the official documents, with every figure
                 linked to its page.
@@ -33,6 +33,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
                 ...(spendingYear ? [{ href: `/${spendingYear}`, label: "By year" }] : []),
                 { href: "/methodology", label: "Methodology" },
                 { href: "/about", label: "About" },
+                { href: "/brand", label: "Brand" },
               ].map((l) => (
                 <li key={l.href}>
                   <FooterLink href={l.href}>{l.label}</FooterLink>

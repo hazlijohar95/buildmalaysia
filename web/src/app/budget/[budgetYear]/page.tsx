@@ -27,7 +27,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `Budget ${(await params).budgetYear}` };
+  return { title: `Budget ${await requireBudgetYear((await params).budgetYear)}` };
 }
 
 const SECTIONS: { letter: string; title: string; note: React.ReactNode }[] = [
