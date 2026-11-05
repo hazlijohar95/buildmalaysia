@@ -278,6 +278,7 @@ function GroupFigures({ year, amounts, source }: { year: number; amounts: Develo
 }
 
 function Projects({ year, plan, projects }: { year: number; plan: string; projects: DevelopmentProjectRow[] }) {
+  const seen = new Set<string>();
   return (
     <div className="table-scroll mt-4">
       <table>
@@ -312,9 +313,11 @@ function Projects({ year, plan, projects }: { year: number; plan: string; projec
         <tbody>
           {projects.map((p, i) => {
             const over = p.actual_sen > p.estimate_sen;
+            const firstOccurrence = !seen.has(p.code);
+            seen.add(p.code);
             return (
               // A code can repeat within a vote in older statements (FY2016, FY2018).
-              <tr key={`${p.code}-${i}`}>
+              <tr key={`${p.code}-${i}`} id={firstOccurrence ? `d${p.code}` : undefined}>
                 <td className="font-mono text-xs">{p.code}</td>
                 <td lang="ms">
                   {p.name_ms}
