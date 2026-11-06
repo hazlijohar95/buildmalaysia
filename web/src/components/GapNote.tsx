@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { NoteBand } from "@/components/Boxed";
 import { gapExtent, type OperatingGap } from "@/lib/queries/gaps";
 
@@ -17,7 +16,7 @@ export default function GapNote({ gaps }: { gaps: OperatingGap[] }) {
         </span>
       ))}
       . Every row that is printed is shown; the vote totals come from where the same statement prints them elsewhere.{" "}
-      <Link href="/methodology#gaps">How this is handled</Link>
+      <a href="/methodology#gaps">How this is handled</a>
     </NoteBand>
   );
 }

@@ -1,6 +1,6 @@
 // Adapted from CanadaSpends (MIT, Build Canada).
 import { useEffect, useRef } from "react";
-import { SankeyChartD3, SankeyChartD3Props } from "./SankeyChartD3";
+import { SankeyChartD3, type SankeyChartD3Props } from "./SankeyChartD3";
 
 export type SankeyChartSingleProps = {
   id: string;

@@ -1,0 +1,9 @@
+---
+import Base from "@/layouts/Base.astro";
+import Static from "@/components/Static";
+import page from "@/views/covid";
+
+const { head, body } = await page({ params: Astro.params, searchParams: Astro.url.searchParams });
+---
+
+<Base {...head}><Static node={body} /></Base>

@@ -1,0 +1,27 @@
+---
+import Base from "@/layouts/Base.astro";
+import Static from "@/components/Static";
+import SpendingSankey from "@/components/Sankey/SpendingSankey";
+import { previews } from "@/lib/previews";
+import {
+  loadSpendingData,
+  SpendingTop,
+  SpendingSankeySection,
+  SpendingSankeyFallback,
+  SpendingCitation,
+  SpendingBottom,
+} from "@/views/spending";
+
+const data = await loadSpendingData(Astro.url.searchParams.get("year"));
+const { spendingTree, revenueTree } = data;
+---
+
+<Base title="Government spending" og={previews.spending}>
+  <Static node={SpendingTop(data)} />
+  <SpendingSankeySection citation={SpendingCitation(data)}>
+    <SpendingSankey client:only="react" spending={spendingTree} revenue={revenueTree}>
+      <Static slot="fallback" node={SpendingSankeyFallback(data)} />
+    </SpendingSankey>
+  </SpendingSankeySection>
+  <Static node={SpendingBottom(data)} />
+</Base>

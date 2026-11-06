@@ -22,7 +22,7 @@ Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget bo
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `supabase/migrations/` | Postgres schema. The contract between pipeline and web.                                                                                                          |
 | `pipeline/`            | Python (uv). Downloads source PDFs, verifies their hash, parses them, loads Postgres in one transaction that commits only if `reconciliation` has no mismatches. |
-| `web/`                 | Next.js site. Reads Postgres, server-rendered.                                                                                                                   |
+| `web/`                 | Astro site on Cloudflare Workers. Reads Postgres, server-rendered.                                                                                               |
 | `data/raw/`            | Downloaded source PDFs (git-ignored; re-fetched and hash-checked by the pipeline).                                                                               |
 | `data/lineage/`        | The ministry lineage: bodies, their names and dates, vote holders and reorganisations, each row with a citation. Loaded by `python -m pipeline load-lineage`.    |
 
@@ -53,10 +53,10 @@ uv run pytest                       # all tests; the integration ones use the PD
 uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
 cd ../web && pnpm install
-DATABASE_URL=postgresql:///buildmalaysia pnpm build && DATABASE_URL=postgresql:///buildmalaysia pnpm start
+pnpm dev       # http://localhost:4321, in the Workers runtime, reading Postgres through the local Hyperdrive binding
 ```
 
-Prerendered pages refresh hourly; restart or rebuild the site to see a new ingest at once.
+`wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`. If your database belongs to another role, set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE`, for example `postgresql://$USER:local@127.0.0.1:5432/buildmalaysia`; the string needs a password even when Postgres ignores it.
 
 ## Adding a reshuffle
 
@@ -71,13 +71,13 @@ When a new statement or budget book prints a vote the lineage does not cover, `i
 
 ## Hosting
 
-The site runs on Cloudflare Workers through the [OpenNext adapter](https://opennext.js.org/cloudflare) and reads Supabase Postgres through Hyperdrive. Supabase holds a copy of the local database; the pipeline never writes to it.
+The site runs on Cloudflare Workers through Astro's [Cloudflare adapter](https://docs.astro.build/en/guides/integrations-guide/cloudflare/) and reads Supabase Postgres through Hyperdrive. Supabase holds a copy of the local database; the pipeline never writes to it.
 
 ```bash
 supabase link --project-ref <ref> && supabase db push    # schema
 SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage tables included, checked row for row
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
-cd web && pnpm preview                                     # run the Worker locally against local Postgres
+cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```
 
 Merging to `main` deploys: the `Deploy` job in `.github/workflows/ci.yml` runs `pnpm run deploy` once the checks pass, with a `CLOUDFLARE_API_TOKEN` secret on the `production` environment (Workers Scripts: Edit on the account). The build needs no database, so `pnpm run deploy` also works from any machine with that token.
@@ -94,7 +94,7 @@ Sign-ups are rate-limited to 5 a minute per IP by the `SUBSCRIBE_LIMITER` bindin
 
 To send an alert when new data is loaded, create a Resend Broadcast to the "Build Malaysia data alerts" segment with the "Build Malaysia data alerts" topic selected, so only people who opted in receive it, and include `{{{RESEND_UNSUBSCRIBE_URL}}}` in the body.
 
-Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Next app: it redirects HTTP and `www.buildmalaysia.com` to `https://buildmalaysia.com`, sets the security headers (HSTS, nosniff, no framing), and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. Next renders every page per request (`dynamic = "force-dynamic"` in the root layout), so that cache is the only one. Browsers keep files under `/_next/static/` for a year (`web/public/_headers`). After reloading the database, pages catch up within the hour; redeploy to show the new data at once. `wrangler.jsonc` points local runs at `postgres:postgres@127.0.0.1/buildmalaysia`; set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if yours differs.
+Hyperdrive connects as `web_reader` straight to the database host (IPv6), not the session pooler, whose 15-client limit Hyperdrive's pool outgrows; its origin connection limit is 20 of the database's 60. The Worker needs the Workers Paid plan: rendering a page takes 250 to 550 ms of CPU, and the free plan allows 10. `web/worker.ts` sits in front of the Astro app: it redirects HTTP and `www.buildmalaysia.com` to `https://buildmalaysia.com`, sets the security headers (HSTS, nosniff, no framing), and caches each rendered page for an hour per Cloudflare data center, keyed to the deployed version, so a deploy is live on the next page load. Astro renders every page per request (`output: "server"`), so that cache is the only one. Browsers keep files under `/_astro/` for a year (the adapter writes the `_headers` rule). After reloading the database, pages catch up within the hour; redeploy to show the new data at once.
 
 ## Contributing
 

@@ -1,3 +1,0 @@
-# Served by Workers static assets. Files under /_next/static are named by content hash, so they never change.
-/_next/static/*
-  Cache-Control: public, max-age=31536000, immutable

@@ -1,0 +1,37 @@
+---
+import Base from "@/layouts/Base.astro";
+import TaxCalculator from "@/components/tax/TaxCalculator";
+import { notFound } from "@/lib/abort";
+import { getSpendingShares } from "@/lib/queries/allocation";
+import { getLoadedYears } from "@/lib/years";
+import { previews } from "@/lib/previews";
+
+const amount = (text: string | null, fallback: number) => {
+  const n = Number(text ?? undefined);
+  return Number.isFinite(n) && n >= 0 && n <= 100_000_000 ? Math.round(n) : fallback;
+};
+
+const [year] = await getLoadedYears();
+if (year === undefined) notFound();
+const spending = await getSpendingShares(year);
+if (!spending) notFound();
+const params = Astro.url.searchParams;
+---
+
+<Base
+  title="Where your taxes go"
+  description="Enter your income to see your Malaysian income tax and how the federal government spent it, ministry by ministry."
+  og={previews.tax}
+>
+  <TaxCalculator
+    client:load
+    year={year}
+    totalSpentSen={spending.total_sen}
+    shares={spending.items}
+    initial={{
+      income: amount(params.get("income"), 60_000),
+      epf: params.get("epf") !== "0",
+      otherReliefs: amount(params.get("other"), 0),
+    }}
+  />
+</Base>

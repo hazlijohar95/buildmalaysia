@@ -1,16 +1,11 @@
-"use client";
-
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
-import { NavProgress } from "./NavProgress";
 
 export interface NavLink {
   href: string;
@@ -39,8 +34,7 @@ const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal 
 // Slugged so any label makes a valid id, and a safe attribute selector for restoring focus on Escape.
 const panelId = (label: string) => `nav-panel-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
-export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink }) {
-  const pathname = usePathname();
+export default function Header({ items, cta, pathname }: { items: NavItem[]; cta: NavLink; pathname: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const openedByHover = useRef(false);
@@ -60,11 +54,17 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
   };
   const hoverClose = () => schedule(() => setOpenMenu(null), CLOSE_DELAY);
 
-  useEffect(() => {
-    setOpenMenu(null);
-    setMobileOpen(false);
-  }, [pathname]);
   useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    // Going back restores the page from the back/forward cache with whatever menu was open when it was left.
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setOpenMenu(null);
+      setMobileOpen(false);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
   useEffect(() => {
     if (!openMenu && !mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -100,18 +100,18 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
         <div className="flex min-h-[var(--bar)] items-stretch">
           {/* At 1.5px a stripe the logo is 37.5px tall; an 11px top inset puts every stripe edge on a whole
               device pixel at 2x. The cell is white because the flag's white stripes need a white ground. */}
-          <Link
+          <a
             href="/"
             className="flex items-start bg-white px-4 pt-[11px] no-underline"
             aria-label="Build Malaysia home"
           >
             <Logo unit={1.5} intro interactive decorative />
-          </Link>
+          </a>
           <nav className="hidden lg:flex items-stretch border-r border-foreground" aria-label="Main navigation">
             {items.map((item) => {
               if (item.kind === "link") {
                 return (
-                  <Link
+                  <a
                     key={item.label}
                     href={item.href}
                     aria-current={isActive(item) ? "page" : undefined}
@@ -122,7 +122,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                     )}
                   >
                     {item.label}
-                  </Link>
+                  </a>
                 );
               }
               const open = openMenu === item.label;
@@ -174,7 +174,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             })}
           </nav>
           <div className="flex-1" />
-          <Link
+          <a
             href="/search"
             aria-label="Search"
             className={cn(
@@ -183,8 +183,8 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             )}
           >
             <LuSearch className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link
+          </a>
+          <a
             href={cta.href}
             className={cn(
               cell,
@@ -192,7 +192,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             )}
           >
             {cta.label}
-          </Link>
+          </a>
           <button
             ref={mobileButton}
             type="button"
@@ -210,9 +210,6 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
           </button>
         </div>
         {mobileOpen && <MobileMenu items={items} cta={cta} isActive={isActive} />}
-        <Suspense fallback={null}>
-          <NavProgress />
-        </Suspense>
       </header>
     </>
   );
@@ -255,7 +252,7 @@ function MenuPanel({
                 // Over three links the first widens to fill the last row, so no cell is left empty.
                 className={cn("flex", i === 0 && count > 3 && count % 3 === 2 && "col-span-2")}
               >
-                <Link
+                <a
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className="group relative flex w-full flex-col bg-linen-50 px-7 py-7 xl:px-9 no-underline text-foreground transition-colors duration-150 ease-out hover:bg-linen-100"
@@ -280,7 +277,7 @@ function MenuPanel({
                     </span>
                   </span>
                   {link.note && <span className="mt-1.5 text-sm leading-snug text-charcoal-700">{link.note}</span>}
-                </Link>
+                </a>
               </li>
             );
           })}
@@ -291,7 +288,7 @@ function MenuPanel({
             <ul className="m-0 mt-5 grid list-none grid-cols-5 gap-px border border-foreground/25 bg-foreground/25 p-0">
               {item.years.map((link) => (
                 <li key={link.href} className="flex">
-                  <Link
+                  <a
                     href={link.href}
                     aria-current={isActive(link) ? "page" : undefined}
                     className={cn(
@@ -302,7 +299,7 @@ function MenuPanel({
                     )}
                   >
                     {link.label}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -323,14 +320,14 @@ function MobileMenu({
   isActive: (link: NavLink) => boolean;
 }) {
   const row = (link: NavLink) => (
-    <Link
+    <a
       key={link.href}
       href={link.href}
       aria-current={isActive(link) ? "page" : undefined}
       className={cn(cell, "py-4 border-b border-foreground/20 text-foreground", isActive(link) && "bg-linen-200")}
     >
       {link.label}
-    </Link>
+    </a>
   );
   return (
     // Capped to the viewport under the sticky header (frame, bar and its two 2px rules), so a long menu scrolls
@@ -351,7 +348,7 @@ function MobileMenu({
               <ul className="m-0 flex list-none flex-wrap gap-0 px-3.5 py-4 pl-[calc(0.875rem+2px)]">
                 {item.years.map((link) => (
                   <li key={link.href} className="-ml-[2px] -mt-[2px]">
-                    <Link
+                    <a
                       href={link.href}
                       aria-current={isActive(link) ? "page" : undefined}
                       className={cn(
@@ -361,7 +358,7 @@ function MobileMenu({
                       )}
                     >
                       {link.label}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>

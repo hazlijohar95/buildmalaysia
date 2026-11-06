@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/abort";
 import { getBudgetYears } from "@/lib/queries/budget";
 
 /** The budget year in a route segment, or a 404 when no budget book for it is loaded. */

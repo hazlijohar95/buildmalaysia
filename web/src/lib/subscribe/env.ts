@@ -1,7 +1,5 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { env } from "cloudflare:workers";
 import type { AlertList } from "@/lib/subscribe/resend";
-
-const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
 
 export interface RateLimiter {
   limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -14,24 +12,13 @@ export interface SubscribeEnv {
   subscribeLimiter: RateLimiter | undefined;
 }
 
-function alertList(segmentId: string | undefined, topicId: string | undefined): AlertList | undefined {
-  return segmentId && topicId ? { segmentId, topicId } : undefined;
-}
-
+/** The sign-up settings from the Worker's bindings. Secrets are unset until `wrangler secret put`. */
 export function getSubscribeEnv(): SubscribeEnv {
-  if (onWorkers) {
-    const env = getCloudflareContext().env;
-    return {
-      resendApiKey: env.RESEND_API_KEY,
-      subscribeSecret: env.SUBSCRIBE_SECRET,
-      alertList: alertList(env.RESEND_SEGMENT_ID, env.RESEND_TOPIC_ID),
-      subscribeLimiter: env.SUBSCRIBE_LIMITER,
-    };
-  }
+  const { RESEND_SEGMENT_ID: segmentId, RESEND_TOPIC_ID: topicId } = env;
   return {
-    resendApiKey: process.env.RESEND_API_KEY,
-    subscribeSecret: process.env.SUBSCRIBE_SECRET,
-    alertList: alertList(process.env.RESEND_SEGMENT_ID, process.env.RESEND_TOPIC_ID),
-    subscribeLimiter: undefined,
+    resendApiKey: env.RESEND_API_KEY || undefined,
+    subscribeSecret: env.SUBSCRIBE_SECRET || undefined,
+    alertList: segmentId && topicId ? { segmentId, topicId } : undefined,
+    subscribeLimiter: env.SUBSCRIBE_LIMITER,
   };
 }

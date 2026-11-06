@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
+      "cloudflare:workers": resolve(__dirname, "src/__tests__/cloudflare-workers.stub.ts"),
     },
   },
 });

@@ -1,0 +1,23 @@
+import type { ReactNode } from "react";
+
+/** What a route's URL gives its page. */
+export interface RouteContext {
+  params: Record<string, string | undefined>;
+  searchParams: URLSearchParams;
+}
+
+/** The page's head; src/layouts/Base.astro fills in the site defaults. */
+export interface Head {
+  /** The page's own title; the site name is appended. Omit on the home page. */
+  title?: string;
+  description?: string;
+  /** The link-preview image route. Pages without one use the site's. */
+  og?: { path: string; alt: string };
+  noindex?: boolean;
+}
+
+/** A page rendered once on the server: its data is loaded before the markup is built. */
+export interface Page {
+  head: Head;
+  body: ReactNode;
+}

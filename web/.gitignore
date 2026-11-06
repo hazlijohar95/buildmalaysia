@@ -1,4 +1,6 @@
-.next/
+dist/
+.astro/
+worker-configuration.d.ts
 node_modules/
 .env.local
 *.tsbuildinfo

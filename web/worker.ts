@@ -1,4 +1,4 @@
-// Front door for the Next app that OpenNext builds into .open-next/worker.js.
+// Front door for the Astro app.
 // It sends every visitor to https://buildmalaysia.com, adds the security headers
 // to every response, and caches rendered pages and generated images.
 //
@@ -6,7 +6,8 @@
 // database is reloaded, so a rendered page is cached for an hour in the data
 // center that served it. The cache key carries the deployed version, so a new
 // deploy never serves HTML that points at the previous build's scripts.
-import nextApp from "next-app";
+import { handle } from "@astrojs/cloudflare/handler";
+import { withRequestScope } from "@/lib/db";
 
 const CANONICAL_HOST = "buildmalaysia.com";
 const PAGE_TTL_SECONDS = 3600;
@@ -20,30 +21,9 @@ const SECURITY_HEADERS: Record<string, string> = {
   "permissions-policy": "camera=(), microphone=(), geolocation=()",
 };
 
-declare global {
-  interface CloudflareEnv {
-    CF_VERSION_METADATA: { id: string };
-    RESEND_API_KEY: string;
-    SUBSCRIBE_SECRET: string;
-    RESEND_SEGMENT_ID: string;
-    RESEND_TOPIC_ID: string;
-    SUBSCRIBE_LIMITER: { limit(options: { key: string }): Promise<{ success: boolean }> };
-  }
-}
-
-interface ExecutionContext {
-  waitUntil(promise: Promise<unknown>): void;
-}
-
-// A full page load: not an asset, and not the RSC payload a client-side navigation asks for.
+// Static assets never reach the Worker, so every GET on the canonical host is a page, an image or a download.
 function isCacheablePageRequest(request: Request, url: URL): boolean {
-  return (
-    request.method === "GET" &&
-    url.hostname === CANONICAL_HOST &&
-    !url.pathname.startsWith("/_next/") &&
-    !request.headers.has("rsc") &&
-    !url.searchParams.has("_rsc")
-  );
+  return request.method === "GET" && url.hostname === CANONICAL_HOST;
 }
 
 // Browsers revalidate every time, so a deploy shows up on the next page load.
@@ -55,7 +35,7 @@ function forBrowser(page: Response, cacheStatus: "HIT" | "MISS"): Response {
   return response;
 }
 
-async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
+async function servePage(request: Request, url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const cache = await caches.open("pages");
   const key = new URL(url);
   key.searchParams.set("__version", env.CF_VERSION_METADATA.id);
@@ -63,7 +43,7 @@ async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: Ex
   const hit = await cache.match(key);
   if (hit) return forBrowser(hit, "HIT");
 
-  const rendered = await nextApp.fetch(request, env, ctx);
+  const rendered = await handle(request, env, ctx);
   // Pages, generated images, and CSV downloads, which all change only when the database is reloaded.
   const type = rendered.headers.get("content-type") ?? "";
   const cacheable = type.startsWith("text/html") || type.startsWith("image/") || type.startsWith("text/csv");
@@ -77,27 +57,26 @@ async function servePage(request: Request, url: URL, env: CloudflareEnv, ctx: Ex
   return response;
 }
 
-async function route(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
+async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
 
-  if (url.protocol === "http:" || url.hostname === `www.${CANONICAL_HOST}`) {
+  const onCanonicalHttp = url.hostname === CANONICAL_HOST && url.protocol === "http:";
+  if (onCanonicalHttp || url.hostname === `www.${CANONICAL_HOST}`) {
     url.protocol = "https:";
     url.hostname = CANONICAL_HOST;
     return Response.redirect(url.toString(), 301);
   }
 
   if (isCacheablePageRequest(request, url)) return servePage(request, url, env, ctx);
-  return nextApp.fetch(request, env, ctx);
+  return handle(request, env, ctx);
 }
 
-const frontDoor = {
-  async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
-    const routed = await route(request, env, ctx);
+export default {
+  async fetch(request, env, ctx) {
+    const routed = await withRequestScope(() => route(request, env, ctx));
     // Copied because redirects and some runtime responses have immutable headers.
     const response = new Response(routed.body, routed);
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
     return response;
   },
-};
-
-export default frontDoor;
+} satisfies ExportedHandler<Env>;

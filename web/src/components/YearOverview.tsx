@@ -1,6 +1,5 @@
 import SourceNotes from "@/components/SourceNotes";
 import { getSourceNotes } from "@/lib/queries/gaps";
-import Link from "next/link";
 import {
   getFederalSpending,
   getMinistrySpending,
@@ -48,7 +47,7 @@ export default async function YearOverview({ year }: { year: number }) {
           <p>
             What the Malaysian federal government actually spent in {year}, from the audited federal financial
             statements. Every figure links to the page it was read from.{" "}
-            <Link href="/methodology">How these numbers are checked.</Link>
+            <a href="/methodology">How these numbers are checked.</a>
           </p>
         }
       >
@@ -62,19 +61,19 @@ export default async function YearOverview({ year }: { year: number }) {
           {
             label: "Operating",
             ...money(spending.operating_net_actual_sen),
-            sub: <Link href={`/${year}/operating`}>Every operating vote</Link>,
+            sub: <a href={`/${year}/operating`}>Every operating vote</a>,
           },
           {
             label: "Development",
             ...money(spending.development_actual_sen),
-            sub: <Link href={`/${year}/development`}>Every development vote</Link>,
+            sub: <a href={`/${year}/development`}>Every development vote</a>,
           },
           ...(showCovid
             ? [
                 {
                   label: "COVID-19 Fund",
                   ...money(covid),
-                  sub: <Link href={`/${year}/covid`}>Every programme</Link>,
+                  sub: <a href={`/${year}/covid`}>Every programme</a>,
                 },
               ]
             : []),
@@ -122,7 +121,7 @@ export default async function YearOverview({ year }: { year: number }) {
             </>
           )}{" "}
           Each part is checked against data.gov.my&apos;s published figures; see the{" "}
-          <Link href="/methodology">methodology</Link>.
+          <a href="/methodology">methodology</a>.
         </p>
       </Band>
 
@@ -134,8 +133,8 @@ export default async function YearOverview({ year }: { year: number }) {
           Each ministry&apos;s <Term id="vote-codes">supply vote (B) and development vote (P)</Term>, actual spending as
           printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
           <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
-          <Link href={`/${year}/operating`}>operating expenditure</Link>. B.12 is transfers into statutory funds,
-          including the Development Fund transfer above.
+          <a href={`/${year}/operating`}>operating expenditure</a>. B.12 is transfers into statutory funds, including
+          the Development Fund transfer above.
         </p>
         <div className="table-scroll mt-8">
           <table>
@@ -192,10 +191,10 @@ function MinistryRow({ year, m, largest }: { year: number; m: MinistrySpending; 
 function VoteAmount({ year, code, amount }: { year: number; code: string | null; amount: Sen | null }) {
   if (code === null || amount === null) return <span className="text-charcoal-600">–</span>;
   return (
-    <Link href={`/${year}/vote/${voteCodeToSlug(code)}`}>
+    <a href={`/${year}/vote/${voteCodeToSlug(code)}`}>
       <Money sen={amount} />
       <span className="font-mono text-xs ml-2 text-charcoal-600">{code}</span>
-    </Link>
+    </a>
   );
 }
 
@@ -229,7 +228,7 @@ function YearTable({ years, current }: { years: YearSpending[]; current: number 
                     {y.fiscal_year === current ? (
                       <span aria-current="page">{y.fiscal_year}</span>
                     ) : (
-                      <Link href={`/${y.fiscal_year}`}>{y.fiscal_year}</Link>
+                      <a href={`/${y.fiscal_year}`}>{y.fiscal_year}</a>
                     )}
                   </td>
                   <td className="num">

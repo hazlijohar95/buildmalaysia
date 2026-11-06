@@ -1,12 +1,12 @@
 # Build Malaysia — Web
 
-Next.js (App Router, TypeScript strict, server components) site over local Postgres.
+Astro site on Cloudflare Workers over Postgres. Pages render on the server; React draws them, and only the header, the tax calculator and the spending chart load JavaScript.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - pnpm
-- PostgreSQL running locally (default socket)
+- PostgreSQL on 127.0.0.1:5432
 
 ## Setup
 
@@ -17,7 +17,7 @@ pnpm install
 pnpm dev
 ```
 
-The app reads `DATABASE_URL` from `.env.local` (default: `postgresql:///buildmalaysia`).
+`pnpm dev` runs the site in the Workers runtime and reads Postgres through the local Hyperdrive binding; see the repository README for the connection string.
 
 ## Commands
 
@@ -25,10 +25,14 @@ The app reads `DATABASE_URL` from `.env.local` (default: `postgresql:///buildmal
 | ---------------- | ---------------------------------- |
 | `pnpm dev`       | Development server with hot reload |
 | `pnpm build`     | Production build                   |
-| `pnpm start`     | Serve the production build         |
+| `pnpm preview`   | Build, then run the built Worker   |
 | `pnpm lint`      | ESLint                             |
-| `pnpm typecheck` | `tsc --noEmit`                     |
+| `pnpm typecheck` | `wrangler types && astro check`    |
 | `pnpm test`      | Vitest unit tests                  |
+
+## Structure
+
+A route is a thin `.astro` file under `src/pages/` that calls its view in `src/views/`: an async function that loads the page's data, decides its 404 and title, and returns `{ head, body }` (`src/lib/route.ts`). `src/layouts/Base.astro` wraps every page. A React component that needs the browser is hydrated from the `.astro` file with a `client:*` directive; React inside `body` renders to HTML only.
 
 ## Pages
 

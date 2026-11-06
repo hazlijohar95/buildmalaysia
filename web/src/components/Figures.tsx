@@ -1,5 +1,4 @@
 // Small pieces the spending and budget data pages share: readable money, glossary links and breadcrumbs.
-import Link from "next/link";
 import { cn } from "@/lib/cn";
 import type { TermId } from "@/lib/glossary";
 import { formatSen, formatSenCompact, type Sen } from "@/lib/money";
@@ -40,12 +39,12 @@ export function Money({ sen, whole = false, className }: { sen: Sen; whole?: boo
 /** A term's first use on a page, linked to its definition in the methodology glossary. */
 export function Term({ id, children }: { id: TermId; children: React.ReactNode }) {
   return (
-    <Link
+    <a
       href={`/methodology#${id}`}
       className="text-inherit underline decoration-dotted decoration-1 underline-offset-[0.18em] hover:decoration-solid"
     >
       {children}
-    </Link>
+    </a>
   );
 }
 
@@ -65,9 +64,9 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
           return (
             <li key={i} lang={c.lang} className="flex gap-x-2">
               {c.href && !last ? (
-                <Link href={c.href} className="text-charcoal-700 no-underline hover:underline">
+                <a href={c.href} className="text-charcoal-700 no-underline hover:underline">
                   {c.label}
-                </Link>
+                </a>
               ) : (
                 <span aria-current={last ? "page" : undefined} className="text-foreground">
                   {c.label}
