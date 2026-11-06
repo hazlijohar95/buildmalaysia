@@ -346,34 +346,36 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </div>
           </dl>
         </div>
-        <div className="px-6 py-14 md:px-12 overflow-x-auto">
+        <div className="px-6 py-14 md:px-12">
           <div className={cn(label, "text-charcoal-700")}>{SCHEDULE.rate_table}</div>
-          <table className="mt-4">
-            <thead>
-              <tr>
-                <th>Band</th>
-                <th>Chargeable income</th>
-                <th className="text-right">Rate</th>
-                <th className="text-right">Yours in band</th>
-                <th className="text-right">Tax</th>
-              </tr>
-            </thead>
-            <tbody>
-              {t.slices.map((b) => (
-                <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-600"}>
-                  <td className="font-mono">{b.band}</td>
-                  <td className="tabular-nums whitespace-nowrap">
-                    {b.upper === null
-                      ? `Over ${rm(b.lower)}`
-                      : `${rm(b.lower === 0 ? 0 : b.lower + 1)} – ${rm(b.upper)}`}
-                  </td>
-                  <td className="num">{b.ratePct}%</td>
-                  <td className="num">{b.taxable > 0 ? rm(b.taxable) : "–"}</td>
-                  <td className="num">{b.taxable > 0 ? rm(b.tax, 2) : "–"}</td>
+          <div className="table-scroll mt-4">
+            <table>
+              <thead>
+                <tr>
+                  <th>Band</th>
+                  <th>Chargeable income</th>
+                  <th className="text-right">Rate</th>
+                  <th className="text-right">Yours in band</th>
+                  <th className="text-right">Tax</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {t.slices.map((b) => (
+                  <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-600"}>
+                    <td className="font-mono">{b.band}</td>
+                    <td className="tabular-nums whitespace-nowrap">
+                      {b.upper === null
+                        ? `Over ${rm(b.lower)}`
+                        : `${rm(b.lower === 0 ? 0 : b.lower + 1)} – ${rm(b.upper)}`}
+                    </td>
+                    <td className="num">{b.ratePct}%</td>
+                    <td className="num">{b.taxable > 0 ? rm(b.taxable) : "–"}</td>
+                    <td className="num">{b.taxable > 0 ? rm(b.tax, 2) : "–"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 

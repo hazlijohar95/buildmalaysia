@@ -57,10 +57,16 @@
   font-family: var(--font-display);
 }
 
-/* Scroll tables horizontally on narrow viewports without page-level overflow */
+/* Scroll tables horizontally on narrow viewports without page-level overflow. A shadow marks each edge with more
+   table beyond it: the shadows stay put while two page-coloured covers scroll with the content and hide the
+   shadow at an edge that is fully scrolled. */
 .table-scroll {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  background:
+    linear-gradient(to right, var(--color-background) 30%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--color-background) 30%, transparent) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 0.18), transparent) left / 0.75rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.18), transparent) right / 0.75rem 100% no-repeat scroll;
 }
 
 /* Table defaults sit in the base layer so utilities such as text-right on a cell win over them. */
