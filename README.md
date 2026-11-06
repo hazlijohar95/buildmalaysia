@@ -80,7 +80,9 @@ psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  
 cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```
 
-Published data reaches readers within about two hours. Hyperdrive caches each query's result for an hour (`--max-age 3600 --swr 600`, so the database in Mumbai is rarely asked twice), and `worker.ts` caches each rendered page for an hour in the data center that served it; a deploy starts the page cache afresh. The Worker is deliberately not placed beside the database: that made a cold page as fast as a cached one, but added about 420 ms to every cached page.
+The hosted database is Supabase project `dfwbiclpcavqgatiyqtt` in Singapore, beside the Cloudflare location most readers reach; Hyperdrive connects to it directly as `web_reader`. Moving it from Mumbai took the server time of an uncached vote page from 224 ms to 61 ms (median of 12 pages each, through Singapore).
+
+Published data reaches readers within about two hours. Hyperdrive caches each query's result for an hour (`--max-age 3600 --swr 600`), and `worker.ts` caches each rendered page for an hour in the data center that served it; a deploy starts the page cache afresh. The Worker is deliberately not placed beside the database: with the database in Mumbai, that made a cold page as fast as a cached one but added about 420 ms to every cached page.
 
 Merging to `main` deploys: the `Deploy` job in `.github/workflows/ci.yml` runs `pnpm run deploy` once the checks pass, with a `CLOUDFLARE_API_TOKEN` secret on the `production` environment (Workers Scripts: Edit on the account). The build needs no database, so `pnpm run deploy` also works from any machine with that token.
 
