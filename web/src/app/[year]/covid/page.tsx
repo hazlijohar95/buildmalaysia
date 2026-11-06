@@ -75,7 +75,7 @@ export default async function CovidFundPage({ params }: Props) {
 
       <Band wide>
         <H2>Every programme</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each programme exactly as printed, to the sen. See the <Link href={`/${year}`}>year&apos;s total</Link> for
           how the fund adds to federal spending.
         </p>

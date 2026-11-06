@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import SourceNotes from "@/components/SourceNotes";
 import { getSourceNotes } from "@/lib/queries/gaps";
 import { notFound } from "next/navigation";
@@ -179,9 +180,8 @@ export default async function VoteDetailPage({ params }: Props) {
 
       <Band wide>
         <H2>By programme</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
-          Each programme&apos;s totals as the statement prints them. Hover a figure for the exact amount, or open an
-          activity below for every line to the sen.
+        <p className="mt-3 max-w-xl text-charcoal-800">
+          Each programme&apos;s totals as the statement prints them. Open an activity below for every line to the sen.
         </p>
         <div className="table-scroll mt-8">
           <table>
@@ -252,7 +252,7 @@ export default async function VoteDetailPage({ params }: Props) {
 
       <Band wide className="group/cols">
         <H2>Every activity, line by line</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the sen, each
           with the page it was read from.
         </p>
@@ -284,7 +284,7 @@ export default async function VoteDetailPage({ params }: Props) {
             ))}
           </section>
         ))}
-        <p className="mt-12 text-sm text-charcoal-700 max-w-3xl">
+        <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
           Operating Expenditure (Lampiran 1). % used and unspent are worked out from the printed columns.
         </p>
@@ -301,12 +301,12 @@ async function budgetFor(voteCode: string): Promise<number | null> {
 }
 
 // Activity rows share one grid so their figures line up like a table's columns.
-const ROW = "grid grid-cols-[1.25rem_minmax(0,1fr)] md:grid-cols-[1.25rem_minmax(0,1fr)_10rem_10rem_9rem] gap-x-4";
+const ROW = "grid grid-cols-[1.25rem_minmax(0,1fr)] lg:grid-cols-[1.25rem_minmax(0,1fr)_10rem_10rem_9rem] gap-x-4";
 
 function ActivityHead() {
   return (
     <div
-      className={`${ROW} mt-4 pb-2 border-b-2 border-foreground font-display text-xs uppercase tracking-[0.04em] text-charcoal-600 max-md:hidden`}
+      className={`${ROW} mt-4 pb-2 border-b-2 border-foreground font-display text-xs uppercase tracking-[0.04em] text-charcoal-600 max-lg:hidden`}
     >
       <span />
       <BiLabel en="Activity" ms="Aktiviti" />
@@ -328,23 +328,24 @@ function Activity({ year, act, lines }: { year: number; act: ActivityTotal; line
       <summary
         className={`${ROW} items-center py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100`}
       >
-        <span aria-hidden="true" className="font-mono text-charcoal-700 group-open/act:rotate-90 transition-transform">
-          ›
-        </span>
+        <LuChevronRight
+          aria-hidden
+          className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/act:rotate-90"
+        />
         <span>
           <span className="font-mono text-xs text-charcoal-700 mr-2">{act.activity_code}</span>
           <span lang="ms">{titleCase(act.activity_name_ms)}</span>
         </span>
-        <span className="col-start-2 md:col-start-auto flex flex-wrap gap-x-4 text-sm md:contents">
-          <span className="md:text-right">
-            <span className="md:hidden text-charcoal-700">Revised </span>
+        <span className="col-start-2 lg:col-start-auto flex flex-wrap gap-x-4 text-sm lg:contents">
+          <span className="lg:text-right">
+            <span className="lg:hidden text-charcoal-700">Revised </span>
             <Money sen={act.revised_sen} />
           </span>
-          <span className={`md:text-right ${over ? "over-budget" : ""}`}>
-            <span className="md:hidden text-charcoal-700">Spent </span>
+          <span className={`lg:text-right ${over ? "over-budget" : ""}`}>
+            <span className="lg:hidden text-charcoal-700">Spent </span>
             <Money sen={act.actual_sen} />
           </span>
-          <span className="max-md:w-28">
+          <span className="max-lg:w-28">
             <UtilBar revised={act.revised_sen} actual={act.actual_sen} />
           </span>
         </span>

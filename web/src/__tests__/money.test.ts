@@ -67,6 +67,11 @@ describe("formatSenCompact", () => {
     expect(result).toBe("RM 100.00 bn");
   });
 
+  it("groups thousands of billions", () => {
+    // RM 1,179,750,000,000 = 117,975,000,000,000 sen
+    expect(formatSenCompact(parseSen("117975000000000"))).toBe("RM 1,179.75 bn");
+  });
+
   it("falls back to full format for small amounts", () => {
     const result = formatSenCompact(parseSen("90040000"));
     // 900,400 RM — less than 1 million, full format

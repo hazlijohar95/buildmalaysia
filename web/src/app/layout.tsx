@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {
                 href: `/${latest}/operating`,
                 label: "Operating votes",
-                note: "Running costs, vote by vote",
+                note: "Operating spending, vote by vote",
                 match: [],
               },
               {

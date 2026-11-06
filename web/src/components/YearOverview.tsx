@@ -82,7 +82,7 @@ export default async function YearOverview({ year }: { year: number }) {
       />
 
       <Band wide>
-        <p className="max-w-3xl text-charcoal-800">
+        <p className="max-w-xl text-charcoal-800">
           <Term id="operating-development">Operating</Term> is the printed operating total of{" "}
           <Money sen={spending.operating_actual_sen} /> (
           <CitationLink
@@ -130,12 +130,12 @@ export default async function YearOverview({ year }: { year: number }) {
 
       <Band wide>
         <H2>By ministry</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each ministry&apos;s <Term id="vote-codes">supply vote (B) and development vote (P)</Term>, actual spending as
           printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
           <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
           <Link href={`/${year}/operating`}>operating expenditure</Link>. B.12 is transfers into statutory funds,
-          including the Development Fund transfer above. Hover a figure for the exact amount.
+          including the Development Fund transfer above.
         </p>
         <div className="table-scroll mt-8">
           <table>

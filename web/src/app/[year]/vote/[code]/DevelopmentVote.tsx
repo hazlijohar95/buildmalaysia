@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import type {
   DevelopmentAmounts,
   DevelopmentGroupTotal,
@@ -143,9 +144,9 @@ export default function DevelopmentVote({
       {grouped && (
         <Band wide>
           <H2>By group</H2>
-          <p className="mt-3 max-w-3xl text-charcoal-800">
-            The statement prints the vote&apos;s projects under these headings, each with its own total. Hover a figure
-            for the exact amount, or open a group below for every project to the sen.
+          <p className="mt-3 max-w-xl text-charcoal-800">
+            The statement prints the vote&apos;s projects under these headings, each with its own total. Open a group
+            below for every project to the sen.
           </p>
           <div className="table-scroll mt-8">
             <table>
@@ -197,7 +198,7 @@ export default function DevelopmentVote({
 
       <Band wide>
         <H2>Every project</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each project exactly as printed, to the sen, with the two-page spread it was read from.
         </p>
         {grouped ? (
@@ -210,12 +211,10 @@ export default function DevelopmentVote({
                   className="group/sec border-b border-border"
                 >
                   <summary className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
-                    <span
-                      aria-hidden="true"
-                      className="font-mono text-charcoal-700 group-open/sec:rotate-90 transition-transform"
-                    >
-                      ›
-                    </span>
+                    <LuChevronRight
+                      aria-hidden
+                      className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/sec:rotate-90"
+                    />
                     <span lang="ms" className="font-medium flex-1 min-w-[16rem]">
                       {s.group ? titleCase(s.group.name_ms) : "Projects printed without a group subtotal"}
                     </span>
@@ -243,7 +242,7 @@ export default function DevelopmentVote({
         ) : (
           <Projects year={year} plan={plan} projects={detail.projects} />
         )}
-        <p className="mt-12 text-sm text-charcoal-700 max-w-3xl">
+        <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
           Development Expenditure (Lampiran 2).
         </p>
