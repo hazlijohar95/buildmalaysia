@@ -16,7 +16,13 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
     body: (
       <>
         <PageHeader eyebrow="Search" title="Find anything">
-          <form action="/search" method="get" className="flex gap-0 max-w-xl">
+          {/* Below lg the form rides just above the tab bar, where a thumb reaches it. */}
+          <form
+            action="/search"
+            method="get"
+            role="search"
+            className="flex gap-0 max-w-xl max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[calc(var(--tabbar)+2px+env(safe-area-inset-bottom,0px))] max-lg:z-40 max-lg:max-w-none max-lg:border-t-2 max-lg:border-foreground max-lg:bg-background max-lg:p-3 max-lg:pl-[max(0.75rem,env(safe-area-inset-left,0px))] max-lg:pr-[max(0.75rem,env(safe-area-inset-right,0px))]"
+          >
             <label htmlFor="q" className="sr-only">
               Search
             </label>
@@ -27,6 +33,7 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
               defaultValue={query}
               maxLength={SEARCH_MAX_LEN}
               placeholder="health, kesihatan or B.42"
+              enterKeyHint="search"
               autoFocus={!query}
               className="min-w-0 flex-1 border-2 border-foreground bg-background px-4 py-3 font-mono text-base placeholder:text-charcoal-600 sm:text-sm"
             />
@@ -66,6 +73,7 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
             {byKind.project.length > 0 && <ResultGroup label="Development projects" hits={byKind.project} />}
           </>
         )}
+        <div aria-hidden="true" className="h-20 lg:hidden" />
       </>
     ),
   };
@@ -82,14 +90,31 @@ function groupByKind(hits: SearchHit[]): Record<SearchHit["kind"], SearchHit[]> 
 }
 
 function ResultGroup({ label, hits }: { label: string; hits: SearchHit[] }) {
+  const id = `results-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`;
   return (
     <Band>
       <h2 className={cn(kicker, "text-charcoal-700")}>{label}</h2>
-      <ul className="mt-6 divide-y divide-border list-none m-0 p-0 max-w-3xl">
+      <ul
+        id={id}
+        data-collapse={hits.length > 4 ? "4" : undefined}
+        className="mt-6 divide-y divide-border list-none m-0 p-0 max-w-3xl"
+      >
         {hits.map((hit, i) => (
           <HitRow key={i} hit={hit} />
         ))}
       </ul>
+      {hits.length > 4 && (
+        <button
+          type="button"
+          data-collapse-toggle
+          data-label={`Show all ${hits.length}`}
+          aria-controls={id}
+          aria-expanded="false"
+          className={cn(kicker, "tap mt-4 min-h-11 items-center border-2 border-foreground px-4")}
+        >
+          Show all {hits.length}
+        </button>
+      )}
     </Band>
   );
 }

@@ -17,16 +17,18 @@ import { formatSen, parseSen, type Sen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
 import { columnLabel, columnLabelMs, requireBudgetYear } from "@/lib/budgetYear";
 import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
+import Segments from "@/components/Segments";
 import CitationLink from "@/components/CitationLink";
 import { Money, Term, change, formatRinggit, money } from "@/components/Figures";
 import YearNav from "@/components/YearNav";
 import { previews } from "@/lib/previews";
 import type { Page, RouteContext } from "@/lib/route";
 
-const SECTIONS: { letter: string; title: string; note: React.ReactNode }[] = [
+const SECTIONS: { letter: string; title: string; tab: string; note: React.ReactNode }[] = [
   {
     letter: "B",
     title: "Supply votes",
+    tab: "Supply",
     note: (
       <>
         <Term id="vote-codes">Bekalan (B)</Term>: <Term id="operating-development">operating</Term> spending voted each
@@ -37,9 +39,15 @@ const SECTIONS: { letter: string; title: string; note: React.ReactNode }[] = [
   {
     letter: "T",
     title: "Charged votes",
+    tab: "Charged",
     note: "Tanggungan (T): operating spending charged on the Consolidated Fund by law, such as debt service and pensions.",
   },
-  { letter: "P", title: "Development votes", note: "Pembangunan (P): spending on projects, one vote per ministry." },
+  {
+    letter: "P",
+    title: "Development votes",
+    tab: "Development",
+    note: "Pembangunan (P): spending on projects, one vote per ministry.",
+  },
 ];
 
 export default async function budgetPage({ params }: RouteContext): Promise<Page> {
@@ -125,51 +133,60 @@ export default async function budgetPage({ params }: RouteContext): Promise<Page
           </p>
         </Band>
 
-        {SECTIONS.map((section) => {
-          const rows = votes.filter((v) => v.vote_code.startsWith(section.letter));
-          if (!rows.length) return null;
-          return (
-            <Band wide key={section.letter}>
-              <H2>{section.title}</H2>
-              <p className="mt-3 max-w-xl text-charcoal-800">{section.note}</p>
-              <div className="table-scroll mt-8">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>
-                        <BiLabel en="Vote" ms="Kod" />
-                      </th>
-                      <th>
-                        <BiLabel en="Ministry or department" ms="Maksud Perbelanjaan" />
-                      </th>
-                      {totals.map((t) => (
-                        <th key={t.fiscal_year} className="text-right">
-                          <BiLabel en={columnLabel(t.fiscal_year, t.basis)} ms={columnLabelMs(t.basis)} />
-                        </th>
-                      ))}
-                      <th className="text-right">Change</th>
-                      <th>
-                        <BiLabel en="Source" ms="Sumber" />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((v) => (
-                      <VoteRow
-                        key={v.vote_code}
-                        year={year}
-                        url={source.url}
-                        vote={v}
-                        name={names.get(v.vote_code) ?? v.heading}
-                        totals={totals}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Band>
-          );
-        })}
+        <Segments
+          label="Votes in this budget"
+          segments={SECTIONS.flatMap((section) => {
+            const rows = votes.filter((v) => v.vote_code.startsWith(section.letter));
+            if (!rows.length) return [];
+            return [
+              {
+                id: `votes-${section.letter}`,
+                label: section.tab,
+                content: (
+                  <Band wide key={section.letter}>
+                    <H2>{section.title}</H2>
+                    <p className="mt-3 max-w-xl text-charcoal-800">{section.note}</p>
+                    <div className="table-scroll mt-8">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>
+                              <BiLabel en="Vote" ms="Kod" />
+                            </th>
+                            <th>
+                              <BiLabel en="Ministry or department" ms="Maksud Perbelanjaan" />
+                            </th>
+                            {totals.map((t) => (
+                              <th key={t.fiscal_year} className="text-right">
+                                <BiLabel en={columnLabel(t.fiscal_year, t.basis)} ms={columnLabelMs(t.basis)} />
+                              </th>
+                            ))}
+                            <th className="text-right">Change</th>
+                            <th>
+                              <BiLabel en="Source" ms="Sumber" />
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((v) => (
+                            <VoteRow
+                              key={v.vote_code}
+                              year={year}
+                              url={source.url}
+                              vote={v}
+                              name={names.get(v.vote_code) ?? v.heading}
+                              totals={totals}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Band>
+                ),
+              },
+            ];
+          })}
+        />
 
         {dropped.length > 0 && <Dropped year={year} url={source.url} rows={dropped} />}
       </>

@@ -1,11 +1,11 @@
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
-// hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
+// hover with a mouse and on click or Enter otherwise. Below the lg breakpoint the menus move to MobileNav.
 //
 // Rendered on the server only. Every menu's panel is in the markup, hidden, and nav.ts opens and closes them by
 // setting `aria-expanded` and `hidden`; the styles below key off those attributes, so the header needs no React
 // in the browser.
-import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
+import { LuChevronDown, LuSearch } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
@@ -122,20 +122,7 @@ export default function Header({ items, cta, pathname }: { items: NavItem[]; cta
           >
             {cta.label}
           </a>
-          <button
-            data-nav-mobile-button
-            type="button"
-            className="group lg:hidden flex items-center border-l border-foreground px-5 text-foreground"
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-          >
-            <span className="sr-only group-aria-expanded:hidden">Open menu</span>
-            <span className="sr-only hidden group-aria-expanded:inline">Close menu</span>
-            <LuMenu className="h-6 w-6 group-aria-expanded:hidden" aria-hidden="true" />
-            <LuX className="hidden h-6 w-6 group-aria-expanded:block" aria-hidden="true" />
-          </button>
         </div>
-        <MobileMenu items={items} cta={cta} isActive={isActive} />
         {/* Runs along the bottom rule while a clicked page loads (nav.ts). */}
         <div data-nav-progress aria-hidden="true" className="nav-progress" />
       </header>
@@ -234,68 +221,5 @@ function MenuPanel({
         ) : null}
       </div>
     </div>
-  );
-}
-
-function MobileMenu({
-  items,
-  cta,
-  isActive,
-}: {
-  items: NavItem[];
-  cta: NavLink;
-  isActive: (link: NavLink) => boolean;
-}) {
-  const row = (link: NavLink) => (
-    <a
-      key={link.href}
-      href={link.href}
-      aria-current={isActive(link) ? "page" : undefined}
-      className={cn(cell, "py-4 border-b border-foreground/20 text-foreground", isActive(link) && "bg-linen-200")}
-    >
-      {link.label}
-    </a>
-  );
-  return (
-    // Capped to the viewport under the sticky header (frame, bar and its two 2px rules), so a long menu scrolls
-    // inside itself instead of running off the screen.
-    <nav
-      id="mobile-menu"
-      hidden
-      className="lg:hidden motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)] max-h-[calc(100dvh-var(--frame)-var(--bar)-4px)] overflow-y-auto overscroll-contain border-t-2 border-foreground"
-      aria-label="Mobile navigation"
-    >
-      {items.map((item) =>
-        item.kind === "link" ? (
-          row(item)
-        ) : (
-          <div key={item.label} className="border-b-2 border-foreground">
-            <div className={cn(kicker, "px-3.5 pt-5 pb-2 text-charcoal-700")}>{item.label}</div>
-            <div className="pl-4">{item.links.map(row)}</div>
-            {item.years?.length ? (
-              <ul className="m-0 flex list-none flex-wrap gap-0 px-3.5 py-4 pl-[calc(0.875rem+2px)]">
-                {item.years.map((link) => (
-                  <li key={link.href} className="-ml-[2px] -mt-[2px]">
-                    <a
-                      href={link.href}
-                      aria-current={isActive(link) ? "page" : undefined}
-                      className={cn(
-                        kicker,
-                        "inline-flex min-h-11 items-center px-3 border-2 border-foreground no-underline",
-                        isActive(link) ? "bg-foreground text-background" : "text-foreground",
-                      )}
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ),
-      )}
-      {row({ href: "/search", label: "Search", match: ["/search"] })}
-      {row(cta)}
-    </nav>
   );
 }

@@ -14,6 +14,7 @@ import { voteCodeToSlug } from "@/lib/citations";
 import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
 import { Money, Term, change, money } from "@/components/Figures";
+import Segments from "@/components/Segments";
 import YearNav from "@/components/YearNav";
 
 /** Federal spending for one fiscal year: the total, its parts, the trend and each ministry. */
@@ -125,42 +126,55 @@ export default async function YearOverview({ year }: { year: number }) {
         </p>
       </Band>
 
-      {byYear.length > 1 && <YearTable years={byYear} current={year} />}
-
-      <Band wide>
-        <H2>By ministry</H2>
-        <p className="mt-3 max-w-xl text-charcoal-800">
-          Each ministry&apos;s <Term id="vote-codes">supply vote (B) and development vote (P)</Term>, actual spending as
-          printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
-          <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
-          <a href={`/${year}/operating`}>operating expenditure</a>. B.12 is transfers into statutory funds, including
-          the Development Fund transfer above.
-        </p>
-        <div className="table-scroll mt-8">
-          <table>
-            <thead>
-              <tr>
-                <th>Ministry or department</th>
-                <th className="text-right">
-                  <BiLabel en="Operating" ms="Mengurus" />
-                </th>
-                <th className="text-right">
-                  <BiLabel en="Development" ms="Pembangunan" />
-                </th>
-                <th className="text-right">Total</th>
-                <th className="relative min-w-[120px]">
-                  <span className="sr-only">Share of the largest</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {ministries.map((m) => (
-                <MinistryRow key={m.body_id} year={year} m={m} largest={largest} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Band>
+      <Segments
+        label="Spending in this year"
+        initial="ministries"
+        segments={[
+          ...(byYear.length > 1
+            ? [{ id: "years", label: "Year by year", content: <YearTable years={byYear} current={year} /> }]
+            : []),
+          {
+            id: "ministries",
+            label: "By ministry",
+            content: (
+              <Band wide>
+                <H2>By ministry</H2>
+                <p className="mt-3 max-w-xl text-charcoal-800">
+                  Each ministry&apos;s <Term id="vote-codes">supply vote (B) and development vote (P)</Term>, actual
+                  spending as printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
+                  <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
+                  <a href={`/${year}/operating`}>operating expenditure</a>. B.12 is transfers into statutory funds,
+                  including the Development Fund transfer above.
+                </p>
+                <div className="table-scroll mt-8">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ministry or department</th>
+                        <th className="text-right">
+                          <BiLabel en="Operating" ms="Mengurus" />
+                        </th>
+                        <th className="text-right">
+                          <BiLabel en="Development" ms="Pembangunan" />
+                        </th>
+                        <th className="text-right">Total</th>
+                        <th className="relative min-w-[120px]">
+                          <span className="sr-only">Share of the largest</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ministries.map((m) => (
+                        <MinistryRow key={m.body_id} year={year} m={m} largest={largest} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Band>
+            ),
+          },
+        ]}
+      />
     </>
   );
 }

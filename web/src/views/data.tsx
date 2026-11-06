@@ -1,4 +1,5 @@
-import { Band, H2, PageHeader } from "@/components/Boxed";
+import { Band, H2, PageHeader, kicker } from "@/components/Boxed";
+import { cn } from "@/lib/cn";
 import { DATASETS } from "@/lib/datasets";
 import type { Page } from "@/lib/route";
 
@@ -31,7 +32,7 @@ export default async function dataPage(): Promise<Page> {
 
             <div className="mt-6">
               <p className="font-semibold">Columns</p>
-              <dl className="mt-3 space-y-1 text-sm text-charcoal-800">
+              <dl id={`${ds.id}-columns`} data-collapse-all className="mt-3 space-y-1 text-sm text-charcoal-800">
                 {ds.columns.map((col) => (
                   <div key={col} className="grid gap-x-3 sm:grid-cols-[14rem_minmax(0,1fr)]">
                     <dt className="break-all pt-0.5 font-mono text-xs text-charcoal-600">{col}</dt>
@@ -39,6 +40,17 @@ export default async function dataPage(): Promise<Page> {
                   </div>
                 ))}
               </dl>
+              <button
+                type="button"
+                data-collapse-toggle
+                data-label={`Show the ${ds.columns.length} columns`}
+                data-label-open="Hide the columns"
+                aria-controls={`${ds.id}-columns`}
+                aria-expanded="false"
+                className={cn(kicker, "tap mt-3 min-h-11 items-center border-2 border-foreground px-4")}
+              >
+                Show the {ds.columns.length} columns
+              </button>
             </div>
 
             {years.length > 0 ? (

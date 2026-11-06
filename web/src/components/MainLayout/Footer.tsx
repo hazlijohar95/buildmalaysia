@@ -12,7 +12,7 @@ const FooterLink = ({ href, children }: { href: string; children: React.ReactNod
 export default function Footer({ spendingYear, budgetYear }: { spendingYear?: number; budgetYear?: number }) {
   return (
     <footer className="border-t-2 border-solid border-t-foreground bg-foreground px-5 text-background [--focus-ring:var(--color-kuning)] sm:px-8 md:px-16">
-      <div className="mx-auto max-w-6xl pb-8 pt-20">
+      <div className="mx-auto max-w-6xl pb-8 pt-20 max-lg:pt-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
             <a href="/" className="inline-block bg-white p-4" aria-label="Build Malaysia home">
@@ -26,7 +26,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
               <SubscribeForm tone="dark" />
             </div>
           </div>
-          <ul role="list" className="space-y-3">
+          <ul role="list" className="footer-links space-y-3">
             {[
               { href: "/spending", label: "Spending" },
               { href: "/revenue", label: "Revenue" },
@@ -63,7 +63,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
             </p>
           </div>
         </div>
-        <div className="mt-16 border-t border-background/20 pt-8 text-sm/6 text-linen-300">
+        <div className="mt-16 border-t border-background/20 pt-8 text-sm/6 text-linen-300 max-lg:mt-10">
           Non-partisan. Every number comes from a public government document and links to the page it was read from.
         </div>
       </div>
