@@ -2,8 +2,7 @@
 // content blocks (MIT, Build Canada). Every figure is read from the loaded documents.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LuReceipt, LuUsersRound } from "react-icons/lu";
-import { PiBank } from "react-icons/pi";
+import { LuLandmark, LuReceipt, LuUsersRound } from "react-icons/lu";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
 import Findings from "@/components/Findings";
@@ -43,7 +42,7 @@ export default async function HomePage() {
   return (
     <>
       <section className="p-2 md:p-4 border-b-2 border-foreground">
-        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 px-5 py-14 sm:px-10 md:py-20">
+        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 px-5 py-14 sm:px-10 md:py-20 [--focus-ring:var(--color-kuning)]">
           <div aria-hidden className="absolute inset-y-0 left-[6%] w-px bg-linen-50/15" />
           <div aria-hidden className="absolute inset-y-0 right-[6%] w-px bg-linen-50/15" />
           <Arc className="-left-[120px] top-[6%] h-[240px] w-[240px]" />
@@ -81,10 +80,19 @@ export default async function HomePage() {
             )}
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <Link href="/tax" className={cn(button, "border-merah-500 bg-merah-600 text-white hover:bg-merah-700")}>
+              <Link
+                href="/tax"
+                className={cn(
+                  button,
+                  "border-merah-500 bg-merah-600 text-white hover:bg-merah-700 active:bg-merah-800",
+                )}
+              >
                 Where your taxes go
               </Link>
-              <Link href="/spending" className={cn(button, "border-linen-50/60 text-linen-50 hover:bg-linen-50/10")}>
+              <Link
+                href="/spending"
+                className={cn(button, "border-linen-50/60 text-linen-50 hover:bg-linen-50/10 active:bg-linen-50/20")}
+              >
                 Where the money went
               </Link>
             </div>
@@ -114,7 +122,7 @@ export default async function HomePage() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={cn(button, "border-foreground text-foreground hover:bg-linen-200")}
+                  className={cn(button, "border-foreground text-foreground hover:bg-linen-200 active:bg-linen-300")}
                 >
                   {l.label}
                 </Link>
@@ -123,7 +131,7 @@ export default async function HomePage() {
           </div>
 
           {tabled && budgetYear && (
-            <aside className="bg-biru-800 text-linen-50 px-5 py-14 sm:px-8 md:px-12 lg:py-20 flex flex-col justify-center gap-6">
+            <aside className="bg-biru-800 text-linen-50 px-5 py-14 sm:px-8 md:px-12 lg:py-20 flex flex-col justify-center gap-6 [--focus-ring:var(--color-kuning)]">
               <div className={cn(kicker, "text-linen-200")}>Budget {budgetYear}, as tabled</div>
               <div>
                 <div
@@ -160,7 +168,7 @@ export default async function HomePage() {
       <section className="border-b-2 border-foreground grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground">
         {[
           {
-            icon: <PiBank />,
+            icon: <LuLandmark />,
             title: "Facts about spending",
             body: "We turn the federal government's accounts into clear figures, ministry by ministry and programme by programme.",
           },

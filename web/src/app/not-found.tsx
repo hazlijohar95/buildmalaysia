@@ -39,7 +39,7 @@ export default function NotFound() {
           <Link
             key={l.href}
             href={l.href}
-            className="bg-background px-6 py-10 md:px-10 no-underline text-foreground hover:bg-linen-200"
+            className="bg-background px-6 py-10 md:px-10 no-underline text-foreground hover:bg-linen-200 active:bg-linen-300"
           >
             <span className="block font-display text-2xl font-semibold tracking-tight">{l.label} →</span>
             <span className="mt-1 block text-charcoal-700">{l.note}</span>
