@@ -24,7 +24,14 @@ export default function StackedBars({
   const scale = (v: number) => (v / max) * (height - 40);
   return (
     <figure className="overflow-x-auto m-0">
-      <svg viewBox={`0 0 ${width} ${height + 40}`} className="w-full max-w-3xl" role="img" aria-label={label}>
+      {/* Never narrower than 3/4 scale, so the 12-unit labels stay legible; a narrow screen scrolls the figure. */}
+      <svg
+        viewBox={`0 0 ${width} ${height + 40}`}
+        className="w-full max-w-3xl"
+        style={{ minWidth: width * 0.75 }}
+        role="img"
+        aria-label={label}
+      >
         {rows.map((r, i) => {
           const x = i * (barWidth + gap) + gap / 2;
           const tops = r.values.map((_, s) => height - scale(r.values.slice(0, s + 1).reduce((a, v) => a + v, 0)));
@@ -39,7 +46,11 @@ export default function StackedBars({
                   width={barWidth}
                   height={scale(v)}
                   fill={series[s].color}
-                />
+                  stroke="var(--color-background)"
+                  strokeWidth={1.5}
+                >
+                  <title>{`${series[s].label}, ${r.year}: ${formatSenCompact(parseSen(v))}`}</title>
+                </rect>
               ))}
               <text
                 x={x + barWidth / 2}
