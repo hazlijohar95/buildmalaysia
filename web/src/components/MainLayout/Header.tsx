@@ -162,7 +162,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                     <LuChevronDown
                       aria-hidden="true"
                       className={cn(
-                        "h-3 w-3 motion-safe:transition-transform duration-150 ease-out",
+                        "h-3 w-3 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
                         open && "rotate-180",
                       )}
                     />
@@ -260,7 +260,7 @@ function MenuPanel({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-biru-800 motion-safe:transition-transform duration-150 ease-out",
+                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-biru-800 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
                       active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
                     )}
                   />
