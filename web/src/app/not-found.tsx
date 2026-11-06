@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
+
+export const metadata: Metadata = {
+  title: "Page not found",
+};
 
 const LINKS = [
   { href: "/spending", label: "Where the money went", note: "Federal spending, year by year" },

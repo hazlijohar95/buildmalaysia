@@ -1,7 +1,7 @@
 import { kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
 
-export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
+export function SubscribeForm({ tone }: { tone: "dark" | "light"; invalid?: boolean }) {
   const dark = tone === "dark";
   return (
     <form method="post" action="/api/subscribe" className="@container max-w-md">
