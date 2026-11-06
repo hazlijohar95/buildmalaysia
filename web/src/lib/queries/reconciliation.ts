@@ -143,8 +143,6 @@ export interface BudgetCheck {
   sha256: string;
   operating_total: number;
   operating_matched: number;
-  operating_misprinted: number; // registered misprints: the load accepts exactly these differences
-  operating_missing_page: number; // totals whose rows are on a page missing from the published PDF
   development_total: number;
   development_matched: number;
   votes_consistent: number;
@@ -159,30 +157,45 @@ export interface BudgetCheck {
 
 /** Each loaded budget book with the live result of its reconciliation views. */
 export async function getBudgetChecks(): Promise<BudgetCheck[]> {
+  // Each view is aggregated once for every book, rather than rescanned per book and per count.
   const rows = await sql<Record<keyof BudgetCheck, string | number>[]>`
+    with operating as (
+      select document_id, count(*) as total, count(*) filter (where matches) as matched
+      from budget_operating_reconciliation group by document_id
+    ), development as (
+      select document_id, count(*) as total, count(*) filter (where matches) as matched
+      from budget_development_reconciliation group by document_id
+    ), consistency as (
+      select document_id, count(*) as total, count(*) filter (where matches) as matched
+      from (select document_id, matches from budget_vote_consistency
+            union all
+            select document_id, matches from budget_development_consistency) c
+      group by document_id
+    ), actual as (
+      select document_id, count(*) as total,
+             count(*) filter (where result in ('matches', 'rounding')) as agree,
+             coalesce(max(abs(diff_sen)), 0) as worst_sen
+      from budget_actual_check group by document_id
+    ), original as (
+      select document_id, count(*) as total, count(*) filter (where matches) as matched,
+             coalesce(sum(diff_sen), 0) as net_diff_sen
+      from budget_original_check group by document_id
+    )
     select b.budget_year, sd.title, sd.url, sd.sha256,
-      (select count(*) from budget_operating_reconciliation r where r.document_id = b.document_id) as operating_total,
-      (select count(*) from budget_operating_reconciliation r where r.document_id = b.document_id and r.matches)
-        as operating_matched,
-      (select count(*) from budget_development_reconciliation r where r.document_id = b.document_id) as development_total,
-      (select count(*) from budget_development_reconciliation r where r.document_id = b.document_id and r.matches)
-        as development_matched,
-      (select count(*) filter (where c.matches) from budget_vote_consistency c where c.document_id = b.document_id)
-        + (select count(*) filter (where c.matches) from budget_development_consistency c where c.document_id = b.document_id)
-        as votes_consistent,
-      (select count(*) from budget_vote_consistency c where c.document_id = b.document_id)
-        + (select count(*) from budget_development_consistency c where c.document_id = b.document_id) as votes,
-      (select count(*) from budget_actual_check c where c.document_id = b.document_id) as actual_figures,
-      (select count(*) from budget_actual_check c where c.document_id = b.document_id
-        and c.result in ('matches', 'rounding')) as actual_agree,
-      (select coalesce(max(abs(c.diff_sen)), 0) from budget_actual_check c where c.document_id = b.document_id)
-        as actual_worst_sen,
-      (select count(*) from budget_original_check c where c.document_id = b.document_id) as original_votes,
-      (select count(*) from budget_original_check c where c.document_id = b.document_id and c.matches)
-        as original_matched,
-      (select coalesce(sum(c.diff_sen), 0) from budget_original_check c where c.document_id = b.document_id)
-        as original_net_diff_sen
-    from budget_document b join source_document sd on sd.id = b.document_id
+           coalesce(o.total, 0) as operating_total, coalesce(o.matched, 0) as operating_matched,
+           coalesce(d.total, 0) as development_total, coalesce(d.matched, 0) as development_matched,
+           coalesce(c.matched, 0) as votes_consistent, coalesce(c.total, 0) as votes,
+           coalesce(a.total, 0) as actual_figures, coalesce(a.agree, 0) as actual_agree,
+           coalesce(a.worst_sen, 0) as actual_worst_sen,
+           coalesce(g.total, 0) as original_votes, coalesce(g.matched, 0) as original_matched,
+           coalesce(g.net_diff_sen, 0) as original_net_diff_sen
+    from budget_document b
+    join source_document sd on sd.id = b.document_id
+    left join operating o on o.document_id = b.document_id
+    left join development d on d.document_id = b.document_id
+    left join consistency c on c.document_id = b.document_id
+    left join actual a on a.document_id = b.document_id
+    left join original g on g.document_id = b.document_id
     order by b.budget_year desc
   `;
   return rows.map((r) => ({
@@ -192,8 +205,6 @@ export async function getBudgetChecks(): Promise<BudgetCheck[]> {
     sha256: String(r.sha256),
     operating_total: Number(r.operating_total),
     operating_matched: Number(r.operating_matched),
-    operating_misprinted: Number(r.operating_misprinted),
-    operating_missing_page: Number(r.operating_missing_page),
     development_total: Number(r.development_total),
     development_matched: Number(r.development_matched),
     votes_consistent: Number(r.votes_consistent),
