@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
-import { StatRow, kicker as label } from "@/components/Boxed";
+import { H2, StatRow, kicker as label } from "@/components/Boxed";
 import { calculateTax, SCHEDULE } from "@/lib/tax";
 import type { SpendingShare } from "@/lib/queries/allocation";
 
@@ -19,14 +19,14 @@ const parseAmount = (text: string) => Number(text.split(".")[0].replace(/\D/g, "
 
 const PRESETS = [30_000, 60_000, 100_000, 250_000];
 const SLIDER_MAX = 500_000;
+// Each at least 4:1 against the linen-200 bar track.
 const SEGMENTS = [
   "var(--color-merah-600)",
   "var(--color-lake-700)",
-  "var(--color-kuning)",
   "var(--color-pine-700)",
-  "var(--color-merah-400)",
-  "var(--color-lake-400)",
-  "var(--color-biru-400)",
+  "var(--color-aurora-700)",
+  "var(--color-biru-600)",
+  "var(--color-copper-700)",
   "var(--color-charcoal-700)",
 ];
 const REST = "var(--color-charcoal-300)";
@@ -153,6 +153,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 <button
                   key={p}
                   type="button"
+                  aria-pressed={income === p}
                   onClick={() => setIncome(p)}
                   className={cn(
                     label,
@@ -183,6 +184,11 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
           </div>
         </div>
       </section>
+
+      {/* Announces the result as the income or reliefs change, without moving focus off the control. */}
+      <p role="status" className="sr-only">
+        {`Income tax ${rm(t.tax)}, an effective rate of ${pct(t.effectiveRatePct)}.`}
+      </p>
 
       <StatRow
         stats={[
@@ -307,7 +313,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
 
       <section className="border-b-2 border-foreground grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="px-6 py-14 md:px-16 lg:border-r-2 border-foreground">
-          <h2 className="m-0 font-display text-3xl font-semibold tracking-tight">How your tax is worked out</h2>
+          <H2>How your tax is worked out</H2>
           <dl className="mt-8 space-y-3 text-base">
             <div className="flex justify-between gap-4">
               <dt>Employment income</dt>
@@ -383,7 +389,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
       <section className="border-b-2 border-foreground px-6 py-14 md:px-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 text-base leading-relaxed">
           <div>
-            <h2 className="m-0 font-display text-2xl font-semibold tracking-tight">What this assumes</h2>
+            <H2>What this assumes</H2>
             <ul className="mt-4 space-y-3 list-disc pl-5">
               <li>You are a Malaysian tax resident under 60, and all your income is employment income.</li>
               <li>
@@ -401,7 +407,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </ul>
           </div>
           <div>
-            <h2 className="m-0 font-display text-2xl font-semibold tracking-tight">Sources</h2>
+            <H2>Sources</H2>
             <ul className="mt-4 space-y-3">
               {[
                 { s: rates, what: "Rates and bands, checked against the tax LHDN prints for each band" },
