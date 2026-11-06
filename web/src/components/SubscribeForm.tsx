@@ -1,24 +1,12 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { kicker } from "@/components/Boxed";
 import { cn } from "@/lib/cn";
 
 /** `invalid` marks the address the server rejected, described by the page's #subscribe-status message. */
 export function SubscribeForm({ tone, invalid = false }: { tone: "dark" | "light"; invalid?: boolean }) {
   const dark = tone === "dark";
-  // Disables the button once the form posts, so a second click cannot send a second confirmation email.
-  const [pending, setPending] = useState(false);
-  useEffect(() => {
-    // Going back to this page can restore it from the back/forward cache with the button still disabled.
-    const onShow = (e: PageTransitionEvent) => {
-      if (e.persisted) setPending(false);
-    };
-    window.addEventListener("pageshow", onShow);
-    return () => window.removeEventListener("pageshow", onShow);
-  }, []);
   return (
-    <form method="post" action="/api/subscribe" onSubmit={() => setPending(true)} className="@container max-w-md">
+    // data-subscribe: SUBSCRIBE_SCRIPT disables the button once the form posts.
+    <form method="post" action="/api/subscribe" data-subscribe className="@container max-w-md">
       <p className={cn("mb-4 text-sm", dark ? "text-charcoal-200" : "text-charcoal-800")}>
         One email when new figures are loaded: a new budget book or audited statement. Nothing else.
       </p>
@@ -45,7 +33,6 @@ export function SubscribeForm({ tone, invalid = false }: { tone: "dark" | "light
         </label>
         <button
           type="submit"
-          disabled={pending}
           className={cn(
             kicker,
             "whitespace-nowrap border-2 px-6 py-2 disabled:cursor-progress disabled:opacity-60",
@@ -54,7 +41,7 @@ export function SubscribeForm({ tone, invalid = false }: { tone: "dark" | "light
               : "border-foreground enabled:hover:bg-foreground enabled:hover:text-background",
           )}
         >
-          {pending ? "Sending…" : "Get alerts"}
+          Get alerts
         </button>
       </div>
       {/* Bots fill every field; the API drops a sign-up that fills this one. */}
@@ -67,3 +54,9 @@ export function SubscribeForm({ tone, invalid = false }: { tone: "dark" | "light
     </form>
   );
 }
+
+/**
+ * Disables a sign-up form's button once it posts, so a second click cannot send a second confirmation email.
+ * Going back can restore the page from the back/forward cache with the button still disabled, so that re-enables it.
+ */
+export const SUBSCRIBE_SCRIPT = `document.addEventListener("submit",function(e){var f=e.target;if(!(f instanceof HTMLFormElement)||!f.hasAttribute("data-subscribe"))return;var b=f.querySelector("button[type=submit]");if(b){b.disabled=true;b.textContent="Sending…"}});addEventListener("pageshow",function(e){if(!e.persisted)return;document.querySelectorAll("form[data-subscribe] button[type=submit]").forEach(function(b){b.disabled=false;b.textContent="Get alerts"})})`;

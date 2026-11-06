@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { kicker } from "@/components/Boxed";
 import { formatSen, formatSenCompact, type Sen } from "@/lib/money";
@@ -27,9 +26,9 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
           <span className={cn(kicker, "text-charcoal-600")}>{String(i + 1).padStart(2, "0")}</span>
           <span className="min-w-0">
             {item.href ? (
-              <Link href={item.href} lang="ms" className="font-medium text-foreground no-underline hover:underline">
+              <a href={item.href} lang="ms" className="font-medium text-foreground no-underline hover:underline">
                 {item.name}
-              </Link>
+              </a>
             ) : (
               <span lang="ms" className="font-medium">
                 {item.name}

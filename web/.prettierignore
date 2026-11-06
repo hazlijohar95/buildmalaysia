@@ -1,10 +1,8 @@
-.next
-.next-build
+dist
+.astro
 node_modules
 pnpm-lock.yaml
 public
-next-env.d.ts
-tsconfig.tsbuildinfo
+worker-configuration.d.ts
 THIRD_PARTY_NOTICES.md
-.open-next
 .wrangler

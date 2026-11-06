@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Band, H2, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
 import { cn } from "@/lib/cn";
@@ -8,9 +7,9 @@ function FindingCard({ finding }: { finding: Finding }) {
   return (
     <div className="bg-background flex flex-col gap-2 px-6 py-10 md:px-8">
       <div className={cn(kicker, "text-charcoal-700")}>{finding.kicker}</div>
-      <Link href={finding.href} className="font-display text-2xl font-semibold tracking-tight hover:underline">
+      <a href={finding.href} className="font-display text-2xl font-semibold tracking-tight hover:underline">
         {finding.headline}
-      </Link>
+      </a>
       <p className="m-0 mt-1 text-charcoal-800">{finding.body}</p>
       {finding.source && (
         <div className="mt-auto pt-3">

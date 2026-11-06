@@ -1,5 +1,3 @@
-"use client";
-
 // Revenue -> spending Sankey, adapted from Build Canada's CanadaSpends (MIT). Changes: ringgit
 // formatting, links to Build Malaysia pages carried on the nodes, and a native search box.
 import { hierarchy } from "d3-hierarchy";

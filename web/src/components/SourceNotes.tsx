@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { NoteBand } from "@/components/Boxed";
 import GapNote from "@/components/GapNote";
 import type { SourceNotes as Notes } from "@/lib/queries/gaps";
@@ -12,7 +11,7 @@ export default function SourceNotes({ notes }: { notes: Notes }) {
         <NoteBand tone="linen" title={`The ${notes.year} operating figures were read by OCR.`}>
           The published statement draws these tables without a text layer, so every amount was read from the page. Each
           printed total equals the sum of its rows or is a misprint confirmed on the page. Programme and activity names
-          are OCR readings. <Link href="/methodology#ocr">How this was done</Link>
+          are OCR readings. <a href="/methodology#ocr">How this was done</a>
         </NoteBand>
       )}
     </>

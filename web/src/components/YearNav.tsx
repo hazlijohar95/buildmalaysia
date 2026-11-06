@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { kicker } from "@/components/Boxed";
 
@@ -29,13 +28,13 @@ export default function YearNav({
               {y}
             </span>
           ) : (
-            <Link
+            <a
               key={y}
               href={hrefFor ? hrefFor(y) : `/${y}${suffix}`}
               className={cn(tab, "text-foreground hover:bg-linen-200")}
             >
               {y}
-            </Link>
+            </a>
           ),
         )}
     </nav>

@@ -1,9 +1,6 @@
-"use client";
-
 // "Where your taxes go", after CanadaSpends' tax visualiser (MIT, Build Canada), laid out in the
 // buildcanada.com boxed style. Rates come from tax-schedule-2025.json; spending shares from the
 // audited statement, passed in by the page.
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { H2, StatRow, kicker as label } from "@/components/Boxed";
@@ -273,9 +270,9 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 <span className={cn(label, "text-charcoal-600")}>{String(i + 1).padStart(2, "0")}</span>
                 <span className="min-w-0">
                   {s.href ? (
-                    <Link href={s.href} className="font-medium text-foreground no-underline hover:underline">
+                    <a href={s.href} className="font-medium text-foreground no-underline hover:underline">
                       {s.name}
-                    </Link>
+                    </a>
                   ) : (
                     <span className="font-medium">{s.name}</span>
                   )}
@@ -402,7 +399,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
               </li>
               <li>
                 Your tax is spread in proportion to {year} spending. That year the government spent more than it raised,
-                and borrowed the difference; see the <Link href={`/spending?year=${year}`}>spending chart</Link>.
+                and borrowed the difference; see the <a href={`/spending?year=${year}`}>spending chart</a>.
               </li>
             </ul>
           </div>
@@ -427,9 +424,9 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 ) : null,
               )}
               <li>
-                <Link href={`/spending?year=${year}`}>
+                <a href={`/spending?year=${year}`}>
                   Jabatan Akauntan Negara, Penyata Kewangan Kerajaan Persekutuan {year}
-                </Link>
+                </a>
                 <span className="block text-sm text-charcoal-700">Spending by ministry and charged expenditure.</span>
               </li>
             </ul>

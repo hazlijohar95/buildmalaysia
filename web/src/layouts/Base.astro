@@ -1,0 +1,88 @@
+---
+import "@fontsource-variable/geist/wght.css";
+import "@/styles/global.css";
+import Footer from "@/components/MainLayout/Footer";
+import Header from "@/components/MainLayout/Header";
+import { SUBSCRIBE_SCRIPT } from "@/components/SubscribeForm";
+import { PALETTE } from "@/brand/carta";
+import { brandFileUrl } from "@/brand/files";
+import { loadNav } from "@/lib/nav";
+import { previews } from "@/lib/previews";
+import type { Head } from "@/lib/route";
+
+type Props = Head;
+
+const SITE_TITLE = "Build Malaysia: the facts about government spending";
+const SITE_DESCRIPTION =
+  "How the Malaysian federal government budgets and spends public money, from the audited statements and the budget books. Every figure links to the page it came from.";
+
+const {
+  title,
+  description = SITE_DESCRIPTION,
+  og = previews.site,
+  noindex = false,
+} = Astro.props;
+const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
+const ogImage = new URL(og.path, Astro.site).href;
+const nav = await loadNav();
+
+// Runs before first paint: the logo's intro plays on the first page view of a session, and never on a later one.
+const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStorage.setItem("carta-intro","1");document.documentElement.setAttribute("data-intro","")}}catch(e){}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content={PALETTE.biru.hex} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="Build Malaysia" />
+    <meta property="og:locale" content="en_MY" />
+    <meta property="og:image:alt" content={og.alt} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image:alt" content={og.alt} />
+    <meta name="twitter:image:type" content="image/png" />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:width" content="1200" />
+    <meta name="twitter:image:height" content="630" />
+    <link rel="icon" href={brandFileUrl("icon.svg")} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={brandFileUrl("apple-touch-icon.png")} sizes="180x180" />
+    <script is:inline set:html={INTRO_SCRIPT} />
+  </head>
+  <body class="min-h-screen p-[var(--frame)]">
+    <div class="min-h-[calc(100vh-2*var(--frame))] border-x-2 border-b-2 border-foreground flex flex-col">
+      <div aria-hidden="true" class="fixed inset-x-0 top-0 z-40 h-[var(--frame)] bg-background"></div>
+      <a
+        href="#main"
+        class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-foreground focus:px-4 focus:py-3 focus:text-background"
+      >
+        Skip to content
+      </a>
+      <Header client:load items={nav.items} cta={nav.cta} pathname={Astro.url.pathname} />
+      <main id="main" class="flex-1">
+        <slot />
+      </main>
+      <Footer spendingYear={nav.latest} budgetYear={nav.budgetYear} />
+    </div>
+    <script is:inline set:html={SUBSCRIBE_SCRIPT} />
+    <!-- Cloudflare Web Analytics: cookie-free page counts. Its automatic injection skips Worker responses. -->
+    <script
+      is:inline
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "5f437fbde63046c9a953e4bede3a550d"}'></script>
+  </body>
+</html>

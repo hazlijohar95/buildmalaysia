@@ -1,10 +1,8 @@
-"use client";
-
-import NoSSR from "@/components/NoSSR";
 import type { SankeyData, SankeyNode } from "./SankeyChartD3";
 import { SankeyChart } from "./SankeyChart";
 
-/** The full-width revenue -> spending chart; with no revenue tree it shows spending only. */
+/** The full-width revenue -> spending chart; with no revenue tree it shows spending only.
+ * Rendered client-only via Astro's client:only="react" directive. */
 export default function SpendingSankey({ spending, revenue }: { spending: SankeyNode; revenue: SankeyNode | null }) {
   const total = (n: SankeyNode): number => n.amount ?? (n.children ?? []).reduce((s, c) => s + total(c), 0);
   const spent = total(spending);
@@ -18,9 +16,7 @@ export default function SpendingSankey({ spending, revenue }: { spending: Sankey
   };
   return (
     <div className={`sankey-chart-container ${revenue ? "" : "spending-only"}`}>
-      <NoSSR>
-        <SankeyChart data={data} amountScalingFactor={1} />
-      </NoSSR>
+      <SankeyChart data={data} amountScalingFactor={1} />
     </div>
   );
 }

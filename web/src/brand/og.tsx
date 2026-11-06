@@ -1,5 +1,9 @@
 // Link previews: 1200 × 630, the logo, the page's title and, where the page has one, its headline figure.
-import { ImageResponse } from "next/og";
+import { initWasm, Resvg } from "@resvg/resvg-wasm";
+import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
+import type { ReactNode } from "react";
+import satori, { init as initSatori } from "satori/standalone";
+import yogaWasm from "satori/yoga.wasm";
 import { colours } from "@/styles/colours";
 import { PALETTE, svgDataUri, svgImage } from "./carta";
 import { OG_FONT_BASE64 } from "./og-font";
@@ -21,45 +25,78 @@ export interface OgContent {
   note?: string;
 }
 
-export function ogImage({ kicker, title, figure, note }: OgContent): ImageResponse {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          display: "flex",
-          width: "100%",
-          height: "100%",
-          background: "#ffffff",
-          fontFamily: "Cal Sans",
-          color: INK,
-          position: "relative",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- satori renders <img>, not next/image */}
-        <img
-          src={svgDataUri(LOGO.svg)}
-          width={LOGO.width}
-          height={LOGO.height}
-          alt=""
-          style={{ position: "absolute", right: 72, top: 72 }}
-        />
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 72 }}>
-          <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
-            <div style={{ fontSize: 22, letterSpacing: 3, textTransform: "uppercase", color: MUTED }}>{kicker}</div>
-            <div style={{ fontSize: figure ? 52 : 72, lineHeight: 1.05, marginTop: 14, letterSpacing: -1 }}>
-              {title}
+// Workers can't compile WebAssembly at run time, so both engines start from modules compiled at build time.
+// A failed start is not remembered, so the next image retries it.
+let engines: Promise<void> | undefined;
+const startEngines = () =>
+  (engines ??= Promise.all([initSatori(yogaWasm), initWasm(resvgWasm)]).then(
+    () => undefined,
+    (error: unknown) => {
+      engines = undefined;
+      throw error;
+    },
+  ));
+
+type Fonts = Parameters<typeof satori>[1]["fonts"];
+
+/** Renders satori-flavoured JSX (inline styles, flexbox only) to a PNG response. */
+export async function pngResponse(node: ReactNode, size: { width: number; height: number }, fonts: Fonts = []) {
+  await startEngines();
+  const svg = await satori(node, { ...size, fonts });
+  // WebAssembly memory never shrinks, so each render frees its buffers at once instead of waiting for GC.
+  const resvg = new Resvg(svg);
+  const image = resvg.render();
+  const png = image.asPng();
+  image.free();
+  resvg.free();
+  return new Response(png, { headers: { "content-type": OG_CONTENT_TYPE } });
+}
+
+export function ogImage({ kicker, title, figure, note }: OgContent): Promise<Response> {
+  return pngResponse(
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        background: "#ffffff",
+        fontFamily: "Cal Sans",
+        color: INK,
+        position: "relative",
+      }}
+    >
+      <img
+        src={svgDataUri(LOGO.svg)}
+        width={LOGO.width}
+        height={LOGO.height}
+        alt=""
+        style={{ position: "absolute", right: 72, top: 72 }}
+      />
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 72 }}>
+        <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
+          <div style={{ fontSize: 22, letterSpacing: 3, textTransform: "uppercase", color: MUTED }}>{kicker}</div>
+          <div style={{ fontSize: figure ? 52 : 72, lineHeight: 1.05, marginTop: 14, letterSpacing: -1 }}>{title}</div>
+          {figure && (
+            <div style={{ fontSize: 88, lineHeight: 1, marginTop: 22, color: PALETTE.biru.hex, letterSpacing: -2 }}>
+              {figure}
             </div>
-            {figure && (
-              <div style={{ fontSize: 88, lineHeight: 1, marginTop: 22, color: PALETTE.biru.hex, letterSpacing: -2 }}>
-                {figure}
-              </div>
-            )}
-            {figure && note && <div style={{ fontSize: 26, marginTop: 10, color: MUTED }}>{note}</div>}
-          </div>
+          )}
+          {figure && note && <div style={{ fontSize: 26, marginTop: 10, color: MUTED }}>{note}</div>}
         </div>
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 10, background: PALETTE.biru.hex }} />
       </div>
-    ),
-    { ...OG_SIZE, fonts: [{ name: "Cal Sans", data: font, weight: 600, style: "normal" }] },
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 10, background: PALETTE.biru.hex }} />
+    </div>,
+    OG_SIZE,
+    [{ name: "Cal Sans", data: font, weight: 600, style: "normal" }],
+  );
+}
+
+/** A PNG of an SVG drawn at its own size, for the brand downloads. */
+export function svgPng(svg: string, size: { width: number; height: number }): Promise<Response> {
+  return pngResponse(
+    <div style={{ display: "flex", width: "100%", height: "100%" }}>
+      <img src={svgDataUri(svg)} width={size.width} height={size.height} alt="" />
+    </div>,
+    size,
   );
 }

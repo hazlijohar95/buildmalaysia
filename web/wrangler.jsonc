@@ -2,9 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "buildmalaysia",
   "account_id": "9c006d850453ab5c068f5688d138521b",
-  // worker.ts redirects www and caches pages, then hands requests to the Next app.
-  "main": "worker.ts",
-  "alias": { "next-app": "./.open-next/worker.js" },
+  // worker.ts redirects www and caches pages, then hands requests to Astro.
+  "main": "./worker.ts",
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -12,7 +11,7 @@
     { "pattern": "buildmalaysia.com", "custom_domain": true },
     { "pattern": "www.buildmalaysia.com", "custom_domain": true },
   ],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "assets": { "binding": "ASSETS" },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
@@ -31,6 +30,8 @@
     "RESEND_SEGMENT_ID": "14fa098d-760b-48d3-920e-374c78508ee8",
     "RESEND_TOPIC_ID": "990c84d1-4480-4a6e-9043-571d699b8509",
   },
+  // Set with `wrangler secret put`; listed so `wrangler types` declares them.
+  "secrets": { "required": ["RESEND_API_KEY", "SUBSCRIBE_SECRET"] },
   // Sign-ups per client IP: 5 a minute. Counted per Cloudflare location, so approximate.
   "ratelimits": [
     {

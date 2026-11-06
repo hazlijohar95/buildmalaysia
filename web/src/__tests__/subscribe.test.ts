@@ -1,8 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { createToken, verifyToken } from "@/lib/subscribe/token";
 import { isValidEmail, normalizeEmail } from "@/lib/subscribe/email";
+import type { SubscribeEnv } from "@/lib/subscribe/env";
+import { confirm, subscribe } from "@/lib/subscribe/handlers";
 
 const SECRET = "test-secret-for-subscribe";
+
+const ENV: SubscribeEnv = {
+  resendApiKey: "re_test_key",
+  subscribeSecret: SECRET,
+  alertList: { segmentId: "seg_test_123", topicId: "topic_test_456" },
+  subscribeLimiter: undefined,
+};
 
 // ── Token ────────────────────────────────────────────────────────────────────
 
@@ -85,26 +94,18 @@ describe("email validation", () => {
 // ── POST /api/subscribe ───────────────────────────────────────────────────────
 
 describe("POST /api/subscribe", () => {
-  beforeEach(() => {
-    process.env.RESEND_API_KEY = "re_test_key";
-    process.env.SUBSCRIBE_SECRET = SECRET;
-    delete process.env.RESEND_SEGMENT_ID;
-  });
-
   afterEach(() => {
     vi.unstubAllGlobals();
-    delete process.env.RESEND_API_KEY;
-    delete process.env.SUBSCRIBE_SECRET;
   });
 
-  async function callPost(fields: Record<string, string>, headers?: Record<string, string>) {
-    const { POST } = await import("@/app/api/subscribe/route");
-    return POST(
+  async function callPost(fields: Record<string, string>, env: SubscribeEnv = ENV) {
+    return subscribe(
       new Request("http://localhost/api/subscribe", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", ...headers },
+        headers: { "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(fields).toString(),
       }),
+      env,
     );
   }
 
@@ -155,8 +156,7 @@ describe("POST /api/subscribe", () => {
   });
 
   it("says sign-up is unavailable when RESEND_API_KEY is missing", async () => {
-    delete process.env.RESEND_API_KEY;
-    const res = await callPost({ email: "user@example.com", _honey: "" });
+    const res = await callPost({ email: "user@example.com", _honey: "" }, { ...ENV, resendApiKey: undefined });
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("/subscribe?error=unavailable");
   });
@@ -171,29 +171,18 @@ describe("POST /api/subscribe", () => {
 // ── POST /api/subscribe/confirm ───────────────────────────────────────────────
 
 describe("POST /api/subscribe/confirm", () => {
-  beforeEach(() => {
-    process.env.RESEND_API_KEY = "re_test_key";
-    process.env.SUBSCRIBE_SECRET = SECRET;
-    process.env.RESEND_SEGMENT_ID = "seg_test_123";
-    process.env.RESEND_TOPIC_ID = "topic_test_456";
-  });
-
   afterEach(() => {
     vi.unstubAllGlobals();
-    delete process.env.RESEND_API_KEY;
-    delete process.env.SUBSCRIBE_SECRET;
-    delete process.env.RESEND_SEGMENT_ID;
-    delete process.env.RESEND_TOPIC_ID;
   });
 
-  async function callConfirm(token: string) {
-    const { POST } = await import("@/app/api/subscribe/confirm/route");
-    return POST(
+  async function callConfirm(token: string, env: SubscribeEnv = ENV) {
+    return confirm(
       new Request("http://localhost/api/subscribe/confirm", {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ token }).toString(),
       }),
+      env,
     );
   }
 
@@ -274,9 +263,8 @@ describe("POST /api/subscribe/confirm", () => {
   });
 
   it("redirects to ?error=retry when config is missing", async () => {
-    delete process.env.RESEND_SEGMENT_ID;
     const token = await createToken("user@example.com", SECRET);
-    const res = await callConfirm(token);
+    const res = await callConfirm(token, { ...ENV, alertList: undefined });
     expect(res.headers.get("location")).toBe("/subscribe?error=retry");
   });
 });
