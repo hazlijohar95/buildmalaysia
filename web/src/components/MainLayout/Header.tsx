@@ -3,10 +3,10 @@
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
-import { ChevronDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
@@ -157,7 +157,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                     )}
                   >
                     {item.label}
-                    <ChevronDown
+                    <LuChevronDown
                       aria-hidden="true"
                       className={cn("h-3 w-3 transition-transform duration-150", open && "rotate-180")}
                     />
@@ -176,7 +176,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
               "hidden lg:flex border-l border-foreground text-foreground hover:bg-foreground hover:text-background",
             )}
           >
-            <Search className="h-4 w-4" aria-hidden="true" />
+            <LuSearch className="h-4 w-4" aria-hidden="true" />
           </Link>
           <Link
             href={cta.href}
@@ -196,9 +196,9 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
           >
             <span className="sr-only">{mobileOpen ? "Close menu" : "Open menu"}</span>
             {mobileOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
+              <LuX className="h-6 w-6" aria-hidden="true" />
             ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
+              <LuMenu className="h-6 w-6" aria-hidden="true" />
             )}
           </button>
         </div>
