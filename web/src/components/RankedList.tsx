@@ -21,7 +21,7 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
           key={item.key}
           className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] md:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(0,1fr)_7.5rem] items-center gap-x-4 gap-y-2 py-3.5 border-b border-foreground/15"
         >
-          <span className={cn(kicker, "text-charcoal-500")}>{String(i + 1).padStart(2, "0")}</span>
+          <span className={cn(kicker, "text-charcoal-600")}>{String(i + 1).padStart(2, "0")}</span>
           <span className="min-w-0">
             {item.href ? (
               <Link href={item.href} lang="ms" className="font-medium text-foreground no-underline hover:underline">

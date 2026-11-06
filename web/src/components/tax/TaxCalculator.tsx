@@ -263,7 +263,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 key={s.id}
                 className="grid grid-cols-[2.5rem_1fr_auto] md:grid-cols-[3rem_minmax(0,1.2fr)_minmax(0,1fr)_8rem] items-center gap-x-4 gap-y-2 py-4 border-b border-foreground/15"
               >
-                <span className={cn(label, "text-charcoal-500")}>{String(i + 1).padStart(2, "0")}</span>
+                <span className={cn(label, "text-charcoal-600")}>{String(i + 1).padStart(2, "0")}</span>
                 <span className="min-w-0">
                   {s.href ? (
                     <Link href={s.href} className="font-medium text-foreground no-underline hover:underline">
@@ -360,7 +360,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </thead>
             <tbody>
               {t.slices.map((b) => (
-                <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-500"}>
+                <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-600"}>
                   <td className="font-mono">{b.band}</td>
                   <td className="tabular-nums whitespace-nowrap">
                     {b.upper === null

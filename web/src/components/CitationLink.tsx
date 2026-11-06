@@ -28,7 +28,10 @@ export default function CitationLink({
       href={citationHref(docUrl, pdfPage)}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("text-[0.7rem] whitespace-nowrap text-charcoal-600", className)}
+      className={cn(
+        "text-xs whitespace-nowrap text-charcoal-600 underline decoration-1 underline-offset-[0.18em] hover:decoration-2",
+        className,
+      )}
     >
       {citationLabel(year, bookPage, spread, source)}
     </a>

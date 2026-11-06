@@ -17,10 +17,10 @@ export function SubscribeForm({ tone }: { tone: "dark" | "light" }) {
             required
             placeholder="you@example.com"
             className={cn(
-              "w-full min-w-0 border-2 bg-transparent px-4 py-2 font-mono text-sm placeholder:text-charcoal-500",
+              "w-full min-w-0 border-2 bg-transparent px-4 py-2 font-mono text-sm",
               dark
-                ? "border-charcoal-300 text-background"
-                : "border-foreground",
+                ? "border-charcoal-300 text-background placeholder:text-charcoal-300"
+                : "border-foreground placeholder:text-charcoal-600",
             )}
           />
         </label>
