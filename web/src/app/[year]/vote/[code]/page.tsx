@@ -180,8 +180,7 @@ export default async function VoteDetailPage({ params }: Props) {
       <Band wide>
         <H2>By programme</H2>
         <p className="mt-3 max-w-3xl text-charcoal-800">
-          Each programme&apos;s totals as the statement prints them. Hover a figure for the exact amount, or open an
-          activity below for every line to the sen.
+          Each programme&apos;s totals as the statement prints them. Open an activity below for every line to the sen.
         </p>
         <div className="table-scroll mt-8">
           <table>

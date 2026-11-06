@@ -144,8 +144,8 @@ export default function DevelopmentVote({
         <Band wide>
           <H2>By group</H2>
           <p className="mt-3 max-w-3xl text-charcoal-800">
-            The statement prints the vote&apos;s projects under these headings, each with its own total. Hover a figure
-            for the exact amount, or open a group below for every project to the sen.
+            The statement prints the vote&apos;s projects under these headings, each with its own total. Open a group
+            below for every project to the sen.
           </p>
           <div className="table-scroll mt-8">
             <table>

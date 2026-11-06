@@ -172,9 +172,6 @@ export default async function BudgetPage({ params }: Props) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-6 text-sm text-charcoal-700">
-              Hover a figure for the exact amount in whole ringgit, as the book prints it.
-            </p>
           </Band>
         );
       })}

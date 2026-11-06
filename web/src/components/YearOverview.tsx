@@ -135,7 +135,7 @@ export default async function YearOverview({ year }: { year: number }) {
           printed. Charged expenditure (T votes, such as debt service and pensions,{" "}
           <Money sen={operating.charged_actual_sen} />) is not voted to a ministry and is listed under{" "}
           <Link href={`/${year}/operating`}>operating expenditure</Link>. B.12 is transfers into statutory funds,
-          including the Development Fund transfer above. Hover a figure for the exact amount.
+          including the Development Fund transfer above.
         </p>
         <div className="table-scroll mt-8">
           <table>

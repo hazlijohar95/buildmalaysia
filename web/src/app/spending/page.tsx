@@ -82,7 +82,7 @@ export default async function SpendingPage({ searchParams }: Props) {
         <div className="px-8 py-6 md:px-16">
           <p className="mx-auto max-w-6xl text-charcoal-800">
             Money comes in on the left and goes out on the right. The hatched block is the gap between spending and
-            revenue, which was borrowed. Hover a block for its share; click a name to open its page.
+            revenue, which was borrowed. Select a name to open its page.
           </p>
         </div>
         <div className="sankey-chart-container relative overflow-hidden border-t-2 border-foreground min-h-[1040px]">

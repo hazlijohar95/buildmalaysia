@@ -144,8 +144,8 @@ export default async function OperatingPage({ params, searchParams }: Props) {
       <Band wide>
         <H2>Every operating vote</H2>
         <p className="mt-3 max-w-3xl text-charcoal-800">
-          <Term id="vote-codes">B votes</Term> are ministries&apos; supply votes; T votes are charged expenditure. Hover
-          a figure for the exact amount, or open a vote for every line to the sen.
+          <Term id="vote-codes">B votes</Term> are ministries&apos; supply votes; T votes are charged expenditure. Open
+          a vote for every line to the sen.
         </p>
         <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span className="text-charcoal-700">Sort by:</span>
