@@ -95,7 +95,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
       />
 
       <Band wide>
-        <p className="max-w-3xl text-charcoal-800">
+        <p className="max-w-xl text-charcoal-800">
           Totals as printed (<span lang="ms">Jumlah Perbelanjaan Pembangunan</span>),{" "}
           <CitationLink year={year} docUrl={total.doc_url} pdfPage={total.pdf_page} bookPage={total.book_page} spread />
           .{" "}
@@ -128,9 +128,7 @@ export default async function DevelopmentPage({ params, searchParams }: Props) {
 
       <Band wide>
         <H2>Every development vote</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
-          Hover a figure for the exact amount, or open a vote for every project to the sen.
-        </p>
+        <p className="mt-3 max-w-xl text-charcoal-800">Open a vote for every project to the sen.</p>
         <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span className="text-charcoal-700">Sort by:</span>
           <SortLink year={year} col="code" current={sort} label="Vote code" />

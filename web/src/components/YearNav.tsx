@@ -16,10 +16,11 @@ export default function YearNav({
 }) {
   const tab = cn(
     kicker,
-    "inline-flex items-center min-h-11 px-4 border-2 border-foreground -ml-[2px] first:ml-0 no-underline",
+    "inline-flex items-center min-h-11 px-4 border-2 border-foreground -ml-[2px] -mt-[2px] no-underline",
   );
   return (
-    <nav className="flex flex-wrap" aria-label="Year">
+    // Each tab overlaps its neighbours' borders by 2px, and the padding takes that back, so wrapped rows line up.
+    <nav className="flex flex-wrap pl-[2px] pt-[2px]" aria-label="Year">
       {[...years]
         .sort((a, b) => a - b)
         .map((y) =>

@@ -81,7 +81,7 @@ export function emolumenTemplate(p: EmolumenTemplateParams): Finding {
   return {
     id: p.id,
     kicker: "10000 · EMOLUMEN",
-    headline: `${sharePct}% of operating spending`,
+    headline: `${sharePct}% of gross operating spending`,
     body: `Object group 10000 (Emolumen — salaries and allowances for federal employees) totalled ${formatSenCompact(p.actual)} in ${p.year}, out of ${formatSenCompact(p.operatingActual)} in gross operating expenditure.`,
     href: `/${p.year}/operating`,
     source: { docUrl: p.docUrl, pdfPage: p.pdfPage, bookPage: p.bookPage, year: p.year },
@@ -147,7 +147,7 @@ export function supplementaryTemplate(p: SupplementaryTemplateParams): Finding {
   const direction = p.supplementary >= 0 ? "increased" : "reduced";
   return {
     id: p.id,
-    kicker: "TAMBAHAN/(KURANGAN) · SUPPLEMENTARY",
+    kicker: "TAMBAHAN/(KURANGAN) · NET CHANGE",
     headline: formatSenCompact(p.supplementary),
     body: `The operating budget was ${direction} by ${absFormatted} through the Tambahan/(Kurangan) column in ${p.year}, reflecting net adjustments after the original budget was passed.`,
     href: "/spending",
@@ -174,7 +174,7 @@ export function topGrowthMinistryTemplate(p: TopGrowthMinistryTemplateParams): F
     id: p.id,
     kicker: "PERTUMBUHAN TERTINGGI · FASTEST GROWTH",
     headline: `+${pct}%`,
-    body: `${p.name} (${p.operatingVoteCode}) grew from ${formatSenCompact(p.priorActual)} in ${p.priorYear} to ${formatSenCompact(p.currentActual)} in ${p.year}, the largest percentage increase among ministries not reorganised between the two years.`,
+    body: `${p.name} (${p.operatingVoteCode}) grew from ${formatSenCompact(p.priorActual)} in ${p.priorYear} to ${formatSenCompact(p.currentActual)} in ${p.year}, the largest percentage increase among ministries and departments not reorganised between the two years.`,
     href: `/ministries/${slugify(p.name)}`,
     source: { docUrl: p.docUrl, pdfPage: p.pdfPage, bookPage: p.bookPage, year: p.year },
   };

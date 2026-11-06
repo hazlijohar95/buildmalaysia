@@ -32,13 +32,13 @@ export default async function SearchPage({ searchParams }: Props) {
             type="search"
             defaultValue={query}
             maxLength={SEARCH_MAX_LEN}
-            placeholder="Ministry, vote, programme, or project name or code"
+            placeholder="health, kesihatan or B.42"
             autoFocus={!query}
-            className="min-w-0 flex-1 border-2 border-foreground bg-background px-4 py-3 font-mono text-sm placeholder:text-charcoal-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-biru-800"
+            className="min-w-0 flex-1 border-2 border-foreground bg-background px-4 py-3 font-mono text-base placeholder:text-charcoal-600 sm:text-sm"
           />
           <button
             type="submit"
-            className="border-2 border-l-0 border-foreground bg-foreground px-6 py-3 font-mono text-sm uppercase tracking-[0.14em] text-background transition-colors hover:bg-merah-600"
+            className="border-2 border-l-0 border-foreground bg-foreground px-6 py-3 font-mono text-sm uppercase tracking-[0.14em] text-background transition-colors hover:bg-merah-600 active:bg-merah-700"
           >
             Search
           </button>
@@ -56,8 +56,9 @@ export default async function SearchPage({ searchParams }: Props) {
 
       {query && !hasResults && (
         <Band>
-          <p className="text-charcoal-800">
-            No results for <strong>{query}</strong>.
+          <p className="max-w-xl text-charcoal-800">
+            No results for &ldquo;{query}&rdquo;. Search a name in English or Bahasa Malaysia, such as health or
+            kesihatan, or a vote code such as B.42.
           </p>
         </Band>
       )}

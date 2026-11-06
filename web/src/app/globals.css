@@ -43,6 +43,7 @@
   h5,
   h6 {
     font-family: var(--font-display);
+    text-wrap: balance;
   }
   code,
   pre,
@@ -57,15 +58,16 @@
   font-family: var(--font-display);
 }
 
-/* Tabular numerals for data cells */
-.tabnum {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Scroll tables horizontally on narrow viewports without page-level overflow */
+/* Scroll tables horizontally on narrow viewports without page-level overflow. A shadow marks each edge with more
+   table beyond it: the shadows stay put while two page-coloured covers scroll with the content and hide the
+   shadow at an edge that is fully scrolled. */
 .table-scroll {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  background:
+    linear-gradient(to right, var(--color-background) 30%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--color-background) 30%, transparent) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgb(0 0 0 / 0.18), transparent) left / 0.75rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.18), transparent) right / 0.75rem 100% no-repeat scroll;
 }
 
 /* Table defaults sit in the base layer so utilities such as text-right on a cell win over them. */
@@ -117,9 +119,13 @@ main a:not([class]):hover {
   text-decoration-thickness: 2px;
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-biru-800);
-  outline-offset: 2px;
+/* In the base layer so outline utilities can override it. A dark surface sets --focus-ring to a colour that
+   shows against it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-biru-800));
+    outline-offset: 2px;
+  }
 }
 
 .over-budget {

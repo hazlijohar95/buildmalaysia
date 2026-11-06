@@ -136,6 +136,15 @@ export class SankeyChartD3 {
       .style("height", () => {
         return this.params.margin.top + "px";
       });
+    // Hover and keyboard focus on a block (its label link) both highlight its path and show the tooltip.
+    const show = (e, d, pointer) => {
+      this.highlightNode(d);
+      this.params.onMouseOver({ ...d, blockRect: e.currentTarget.getBoundingClientRect() }, pointer);
+    };
+    const hide = (e, d) => {
+      this.highlightNode(null);
+      this.params.onMouseOut(d);
+    };
     // Create blocks within each group
     const blocks = groups
       .selectAll(".block")
@@ -160,16 +169,10 @@ export class SankeyChartD3 {
         }
         return 0;
       })
-      .on("mouseover", (e, d) => {
-        const target = e.currentTarget;
-        const rect = target.getBoundingClientRect();
-        this.highlightNode(d);
-        this.params.onMouseOver({ ...d, blockRect: rect }, e);
-      })
-      .on("mouseout", (e, d) => {
-        this.highlightNode(null);
-        this.params.onMouseOut(d);
-      });
+      .on("mouseover", (e, d) => show(e, d, e))
+      .on("focusin", (e, d) => show(e, d))
+      .on("mouseout", hide)
+      .on("focusout", hide);
     blocks
       .selectAll(".label")
       .data(
@@ -313,7 +316,7 @@ export class SankeyChartD3 {
         elementsToScroll.forEach((element) => {
           setTimeout(() => {
             element.scrollIntoView({
-              behavior: "smooth",
+              behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
               block: "nearest",
             });
           }, 0);

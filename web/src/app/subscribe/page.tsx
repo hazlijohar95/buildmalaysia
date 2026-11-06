@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { Band, PageHeader } from "@/components/Boxed";
 import { SubscribeForm } from "@/components/SubscribeForm";
 import { STATUS_COPY, type SubscribeStatus } from "@/lib/subscribe/types";
+
+export const metadata: Metadata = {
+  title: "Get alerts",
+};
 
 function pickStatus(params: { sent?: string; confirmed?: string; error?: string }): SubscribeStatus | null {
   if (params.sent) return "sent";
@@ -22,18 +27,14 @@ export default async function SubscribePage({
 
   return (
     <>
-      <PageHeader
-        eyebrow="Alerts"
-        title="Get notified"
-        intro={<p>One email when new figures are loaded: a new budget book or audited statement. Nothing else.</p>}
-      />
+      <PageHeader eyebrow="Alerts" title="Get alerts" />
       <Band>
         {status && (
-          <div className="mb-8 max-w-lg border-2 border-foreground p-4 text-sm" role="status">
+          <div id="subscribe-status" className="mb-8 max-w-lg border-2 border-foreground p-4 text-sm" role="status">
             {STATUS_COPY[status]}
           </div>
         )}
-        <SubscribeForm tone="light" />
+        {status !== "unavailable" && <SubscribeForm tone="light" invalid={status === "invalid"} />}
       </Band>
     </>
   );

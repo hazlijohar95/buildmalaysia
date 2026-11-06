@@ -3,10 +3,10 @@
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
-import { ChevronDown, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
@@ -30,7 +30,7 @@ export type NavItem =
 // Sizes from buildcanada.com's nav: a 60px bar, 12px labels at 0.14em, 20px cell padding, 1px dividers,
 // and hover that inverts the cell.
 const cell =
-  "flex items-center whitespace-nowrap px-5 font-mono text-[12px] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors";
+  "flex items-center whitespace-nowrap px-5 font-mono text-[0.75rem] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors duration-150 ease-out";
 
 const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
 const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
@@ -44,6 +44,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const openedByHover = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const mobileButton = useRef<HTMLButtonElement>(null);
 
   const isActive = (link: NavLink) => link.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
 
@@ -68,6 +69,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (openMenu) document.querySelector<HTMLButtonElement>(`[aria-controls="${panelId(openMenu)}"]`)?.focus();
+      if (mobileOpen) mobileButton.current?.focus();
       setOpenMenu(null);
       setMobileOpen(false);
     };
@@ -137,7 +139,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                   <button
                     type="button"
                     aria-expanded={open}
-                    aria-controls={panelId(item.label)}
+                    aria-controls={open ? panelId(item.label) : undefined}
                     onClick={() => {
                       clearTimeout(timer.current);
                       // A click right after hover opened the menu keeps it open instead of closing it.
@@ -157,9 +159,12 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
                     )}
                   >
                     {item.label}
-                    <ChevronDown
+                    <LuChevronDown
                       aria-hidden="true"
-                      className={cn("h-3 w-3 transition-transform duration-150", open && "rotate-180")}
+                      className={cn(
+                        "h-3 w-3 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
+                        open && "rotate-180",
+                      )}
                     />
                   </button>
                   {open && <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} entering={entering} />}
@@ -176,7 +181,7 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
               "hidden lg:flex border-l border-foreground text-foreground hover:bg-foreground hover:text-background",
             )}
           >
-            <Search className="h-4 w-4" aria-hidden="true" />
+            <LuSearch className="h-4 w-4" aria-hidden="true" />
           </Link>
           <Link
             href={cta.href}
@@ -188,17 +193,18 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
             {cta.label}
           </Link>
           <button
+            ref={mobileButton}
             type="button"
             className="lg:hidden flex items-center border-l border-foreground px-5 text-foreground"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
-            aria-controls="mobile-menu"
+            aria-controls={mobileOpen ? "mobile-menu" : undefined}
           >
             <span className="sr-only">{mobileOpen ? "Close menu" : "Open menu"}</span>
             {mobileOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
+              <LuX className="h-6 w-6" aria-hidden="true" />
             ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
+              <LuMenu className="h-6 w-6" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -248,23 +254,23 @@ function MenuPanel({
                 <Link
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  className="group relative flex w-full flex-col bg-linen-50 px-7 py-7 xl:px-9 no-underline text-foreground transition-colors duration-200 hover:bg-linen-100"
+                  className="group relative flex w-full flex-col bg-linen-50 px-7 py-7 xl:px-9 no-underline text-foreground transition-colors duration-150 ease-out hover:bg-linen-100"
                 >
                   {/* A line that draws across the top on hover, and stays drawn for the current page. */}
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-biru-800 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                      "absolute inset-x-0 top-0 h-[2px] origin-left bg-biru-800 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
                       active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
                     )}
                   />
                   <span className="flex items-baseline justify-between gap-4">
-                    <span className="font-display text-xl font-semibold tracking-tight transition-colors duration-200 group-hover:text-biru-800">
+                    <span className="font-display text-xl font-semibold tracking-tight transition-colors duration-150 ease-out group-hover:text-biru-800">
                       {link.label}
                     </span>
                     <span
                       aria-hidden="true"
-                      className="text-biru-800 opacity-0 -translate-x-1.5 transition-[opacity,transform] duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0"
+                      className="text-biru-800 opacity-0 -translate-x-1.5 transition-opacity motion-safe:transition-[opacity,translate] duration-150 ease-out group-hover:opacity-100 group-hover:translate-x-0"
                     >
                       →
                     </span>
@@ -277,7 +283,7 @@ function MenuPanel({
         </ul>
         {item.years?.length ? (
           <div className="bg-linen-50 px-7 py-7 xl:px-9">
-            <div className={cn(kicker, "text-[11px] text-charcoal-600")}>By year</div>
+            <div className={cn(kicker, "text-charcoal-600")}>By year</div>
             <ul className="m-0 mt-5 grid list-none grid-cols-5 gap-px border border-foreground/25 bg-foreground/25 p-0">
               {item.years.map((link) => (
                 <li key={link.href} className="flex">
@@ -285,7 +291,7 @@ function MenuPanel({
                     href={link.href}
                     aria-current={isActive(link) ? "page" : undefined}
                     className={cn(
-                      "flex min-h-10 w-full items-center justify-center font-mono text-[12px] tabular-nums tracking-[0.08em] no-underline transition-colors duration-150",
+                      "flex min-h-10 w-full items-center justify-center font-mono text-[0.75rem] tabular-nums tracking-[0.08em] no-underline transition-colors duration-150 ease-out",
                       isActive(link)
                         ? "bg-biru-800 text-linen-50"
                         : "bg-linen-50 text-charcoal-800 hover:bg-foreground hover:text-background",
@@ -323,7 +329,13 @@ function MobileMenu({
     </Link>
   );
   return (
-    <nav id="mobile-menu" className="lg:hidden border-t-2 border-foreground" aria-label="Mobile navigation">
+    // Capped to the viewport under the sticky header (frame, bar and its two 2px rules), so a long menu scrolls
+    // inside itself instead of running off the screen.
+    <nav
+      id="mobile-menu"
+      className="lg:hidden max-h-[calc(100dvh-var(--frame)-var(--bar)-4px)] overflow-y-auto overscroll-contain border-t-2 border-foreground"
+      aria-label="Mobile navigation"
+    >
       {items.map((item) =>
         item.kind === "link" ? (
           row(item)

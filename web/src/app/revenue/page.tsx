@@ -20,9 +20,9 @@ export const metadata: Metadata = {
 const COLOR: Record<(typeof REVENUE_CATEGORIES)[number]["category"], string> = {
   direct_tax: colours.lake[800],
   indirect_tax: colours.lake[500],
-  tax: colours.lake[700],
-  non_tax: colours.biru["400"],
-  non_revenue_receipts: colours.charcoal[500],
+  tax: colours.lake[300],
+  non_tax: colours.biru["700"],
+  non_revenue_receipts: colours.charcoal[400],
   federal_territory: colours.pine[600],
 };
 
@@ -146,7 +146,7 @@ export default async function RevenuePage({ searchParams }: Props) {
 
       <Band wide>
         <H2>Every item, {year}</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           As printed in the statement, with the estimate as revised during the year and the previous year&apos;s actual
           from the same page. Item names change between years, so each year is shown on its own.
         </p>
@@ -218,7 +218,7 @@ export default async function RevenuePage({ searchParams }: Props) {
             </tfoot>
           </table>
         </div>
-        <p className="mt-8 text-sm text-charcoal-700 max-w-3xl">
+        <p className="mt-8 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em>Penyata Kewangan Kerajaan Persekutuan {year}</em>, Note 5(a). See how
           this revenue was spent on the <Link href={`/spending?year=${year}`}>spending chart</Link>, or how your own
           income tax is spread on <Link href="/tax">Where your taxes go</Link>.

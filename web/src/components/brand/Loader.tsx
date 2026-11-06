@@ -42,7 +42,9 @@ export function Loader({
       <Logo lockup={s.lockup} unit={s.unit} decorative className={s.className} />
       {text !== null && (
         <span
-          className={size === "sm" ? "sr-only" : "font-mono text-[11px] uppercase tracking-[0.14em] text-charcoal-700"}
+          className={
+            size === "sm" ? "sr-only" : "font-mono text-[0.75rem] uppercase tracking-[0.14em] text-charcoal-700"
+          }
         >
           {text}
         </span>

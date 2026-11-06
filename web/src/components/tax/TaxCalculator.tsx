@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
-import { StatRow, kicker as label } from "@/components/Boxed";
+import { H2, StatRow, kicker as label } from "@/components/Boxed";
 import { calculateTax, SCHEDULE } from "@/lib/tax";
 import type { SpendingShare } from "@/lib/queries/allocation";
 
@@ -19,14 +19,14 @@ const parseAmount = (text: string) => Number(text.split(".")[0].replace(/\D/g, "
 
 const PRESETS = [30_000, 60_000, 100_000, 250_000];
 const SLIDER_MAX = 500_000;
+// Each at least 4:1 against the linen-200 bar track.
 const SEGMENTS = [
   "var(--color-merah-600)",
   "var(--color-lake-700)",
-  "var(--color-kuning)",
   "var(--color-pine-700)",
-  "var(--color-merah-400)",
-  "var(--color-lake-400)",
-  "var(--color-biru-400)",
+  "var(--color-aurora-700)",
+  "var(--color-biru-600)",
+  "var(--color-copper-700)",
   "var(--color-charcoal-700)",
 ];
 const REST = "var(--color-charcoal-300)";
@@ -70,7 +70,7 @@ function AmountInput({
           setText(e.target.value === "" ? "" : n.toLocaleString("en-MY"));
           onChange(n);
         }}
-        className={cn("col-start-1 row-start-1 w-full min-w-0 bg-transparent outline-none tabular-nums", className)}
+        className={cn("col-start-1 row-start-1 w-full min-w-0 bg-transparent tabular-nums", className)}
       />
     </span>
   );
@@ -106,6 +106,8 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
   const max = yours[0]?.amount ?? 0;
   const top = yours.slice(0, SEGMENTS.length);
   const restShare = 1 - top.reduce((s, i) => s + i.share, 0);
+  const figure = (name: string, amount: number) => `${name}: ${rm(amount, perHundred ? 2 : 0)}`;
+  const restFigure = figure("Everything else", base * restShare);
   const visible = showAll ? yours : yours.slice(0, SHOWN);
   const rates = SCHEDULE.sources.find((s) => s.id === "lhdn-kadar-cukai");
   const reliefsPage = SCHEDULE.sources.find((s) => s.id === "lhdn-pelepasan-cukai");
@@ -115,7 +117,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
   return (
     <>
       <section className="p-2 md:p-4 border-b-2 border-foreground">
-        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 px-6 py-14 md:px-16 md:py-20">
+        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 [--focus-ring:var(--color-kuning)] px-6 py-14 md:px-16 md:py-20">
           <div aria-hidden className="absolute inset-y-0 left-[5%] w-px bg-linen-50/10" />
           <div aria-hidden className="absolute inset-y-0 right-[5%] w-px bg-linen-50/10" />
           <div aria-hidden className="absolute -right-24 -top-24 h-72 w-72 rounded-full border border-linen-50/15" />
@@ -151,6 +153,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 <button
                   key={p}
                   type="button"
+                  aria-pressed={income === p}
                   onClick={() => setIncome(p)}
                   className={cn(
                     label,
@@ -173,7 +176,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
               </label>
               <label className="flex items-center gap-2 text-sm text-linen-100">
                 Other reliefs
-                <span className="border-b border-linen-50/40 px-1">
+                <span className="border-b border-linen-50/40 px-1 text-base sm:text-sm">
                   RM <AmountInput value={otherReliefs} onChange={setOtherReliefs} label="Other reliefs in ringgit" />
                 </span>
               </label>
@@ -181,6 +184,11 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
           </div>
         </div>
       </section>
+
+      {/* Announces the result as the income or reliefs change, without moving focus off the control. */}
+      <p role="status" className="sr-only">
+        {`Income tax ${rm(t.tax)}, an effective rate of ${pct(t.effectiveRatePct)}.`}
+      </p>
 
       <StatRow
         stats={[
@@ -206,21 +214,20 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             <div
               className="flex h-14 w-full overflow-hidden border-2 border-foreground"
               role="img"
-              aria-label="Your tax by destination"
+              aria-label={`${perHundred ? "Each RM 100 of spending" : "Your tax"} by destination. ${[
+                ...top.map((s) => figure(s.name, s.amount)),
+                restFigure,
+              ].join("; ")}.`}
             >
               {top.map((s, i) => (
                 <div
                   key={s.id}
-                  title={`${s.name}: ${rm(s.amount, perHundred ? 2 : 0)}`}
+                  title={figure(s.name, s.amount)}
                   style={{ width: `${s.share * 100}%`, background: SEGMENTS[i] }}
                   className="h-full border-r border-linen-50/60 last:border-r-0"
                 />
               ))}
-              <div
-                title="Everything else"
-                style={{ width: `${restShare * 100}%`, background: REST }}
-                className="h-full"
-              />
+              <div title={restFigure} style={{ width: `${restShare * 100}%`, background: REST }} className="h-full" />
             </div>
             <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
               {top.map((s, i) => (
@@ -263,7 +270,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 key={s.id}
                 className="grid grid-cols-[2.5rem_1fr_auto] md:grid-cols-[3rem_minmax(0,1.2fr)_minmax(0,1fr)_8rem] items-center gap-x-4 gap-y-2 py-4 border-b border-foreground/15"
               >
-                <span className={cn(label, "text-charcoal-500")}>{String(i + 1).padStart(2, "0")}</span>
+                <span className={cn(label, "text-charcoal-600")}>{String(i + 1).padStart(2, "0")}</span>
                 <span className="min-w-0">
                   {s.href ? (
                     <Link href={s.href} className="font-medium text-foreground no-underline hover:underline">
@@ -306,7 +313,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
 
       <section className="border-b-2 border-foreground grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="px-6 py-14 md:px-16 lg:border-r-2 border-foreground">
-          <h2 className="m-0 font-display text-3xl font-semibold tracking-tight">How your tax is worked out</h2>
+          <H2>How your tax is worked out</H2>
           <dl className="mt-8 space-y-3 text-base">
             <div className="flex justify-between gap-4">
               <dt>Employment income</dt>
@@ -346,41 +353,43 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </div>
           </dl>
         </div>
-        <div className="px-6 py-14 md:px-12 overflow-x-auto">
+        <div className="px-6 py-14 md:px-12">
           <div className={cn(label, "text-charcoal-700")}>{SCHEDULE.rate_table}</div>
-          <table className="mt-4">
-            <thead>
-              <tr>
-                <th>Band</th>
-                <th>Chargeable income</th>
-                <th className="text-right">Rate</th>
-                <th className="text-right">Yours in band</th>
-                <th className="text-right">Tax</th>
-              </tr>
-            </thead>
-            <tbody>
-              {t.slices.map((b) => (
-                <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-500"}>
-                  <td className="font-mono">{b.band}</td>
-                  <td className="tabular-nums whitespace-nowrap">
-                    {b.upper === null
-                      ? `Over ${rm(b.lower)}`
-                      : `${rm(b.lower === 0 ? 0 : b.lower + 1)} – ${rm(b.upper)}`}
-                  </td>
-                  <td className="num">{b.ratePct}%</td>
-                  <td className="num">{b.taxable > 0 ? rm(b.taxable) : "–"}</td>
-                  <td className="num">{b.taxable > 0 ? rm(b.tax, 2) : "–"}</td>
+          <div className="table-scroll mt-4">
+            <table>
+              <thead>
+                <tr>
+                  <th>Band</th>
+                  <th>Chargeable income</th>
+                  <th className="text-right">Rate</th>
+                  <th className="text-right">Yours in band</th>
+                  <th className="text-right">Tax</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {t.slices.map((b) => (
+                  <tr key={b.band} className={b.taxable > 0 ? "font-semibold" : "text-charcoal-600"}>
+                    <td className="font-mono">{b.band}</td>
+                    <td className="tabular-nums whitespace-nowrap">
+                      {b.upper === null
+                        ? `Over ${rm(b.lower)}`
+                        : `${rm(b.lower === 0 ? 0 : b.lower + 1)} – ${rm(b.upper)}`}
+                    </td>
+                    <td className="num">{b.ratePct}%</td>
+                    <td className="num">{b.taxable > 0 ? rm(b.taxable) : "–"}</td>
+                    <td className="num">{b.taxable > 0 ? rm(b.tax, 2) : "–"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
       <section className="border-b-2 border-foreground px-6 py-14 md:px-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 text-base leading-relaxed">
           <div>
-            <h2 className="m-0 font-display text-2xl font-semibold tracking-tight">What this assumes</h2>
+            <H2>What this assumes</H2>
             <ul className="mt-4 space-y-3 list-disc pl-5">
               <li>You are a Malaysian tax resident under 60, and all your income is employment income.</li>
               <li>
@@ -398,7 +407,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             </ul>
           </div>
           <div>
-            <h2 className="m-0 font-display text-2xl font-semibold tracking-tight">Sources</h2>
+            <H2>Sources</H2>
             <ul className="mt-4 space-y-3">
               {[
                 { s: rates, what: "Rates and bands, checked against the tax LHDN prints for each band" },

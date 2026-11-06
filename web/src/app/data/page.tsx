@@ -30,15 +30,15 @@ export default async function DataPage() {
       {datasetsWithYears.map(({ ds, years }) => (
         <Band key={ds.id} id={ds.id} wide>
           <H2>{ds.title}</H2>
-          <p className="mt-4 max-w-3xl text-charcoal-800">{ds.description}</p>
+          <p className="mt-4 max-w-xl text-charcoal-800">{ds.description}</p>
 
           <div className="mt-6">
             <p className="font-semibold">Columns</p>
             <dl className="mt-3 space-y-1 text-sm text-charcoal-800">
               {ds.columns.map((col) => (
-                <div key={col} className="flex gap-3">
-                  <dt className="shrink-0 font-mono text-xs text-charcoal-600 w-56 pt-0.5">{col}</dt>
-                  <dd className="m-0">{ds.columnDescriptions[col]}</dd>
+                <div key={col} className="grid gap-x-3 sm:grid-cols-[14rem_minmax(0,1fr)]">
+                  <dt className="break-all pt-0.5 font-mono text-xs text-charcoal-600">{col}</dt>
+                  <dd className="m-0 min-w-0">{ds.columnDescriptions[col]}</dd>
                 </div>
               ))}
             </dl>
@@ -52,6 +52,7 @@ export default async function DataPage() {
                   href={`/data/${ds.id}/${year}.csv`}
                   className="inline-block border-2 border-foreground px-3 py-1 text-sm font-mono hover:bg-kuning no-underline"
                 >
+                  <span className="sr-only">{ds.title}, </span>
                   {year}.csv
                 </Link>
               ))}
@@ -63,7 +64,7 @@ export default async function DataPage() {
       ))}
 
       <Band>
-        <div className="max-w-3xl text-sm text-charcoal-800 space-y-3">
+        <div className="max-w-lg text-sm text-charcoal-800 space-y-3">
           <p>
             Files open in Excel without a wizard (UTF-8 BOM, RFC 4180 quoting). The{" "}
             <code className="font-mono text-xs">doc_url</code> and <code className="font-mono text-xs">pdf_page</code>{" "}
@@ -71,10 +72,8 @@ export default async function DataPage() {
           </p>
           <p>
             Source code and pipeline are MIT-licensed at{" "}
-            <a href="https://github.com/hazlijohar95/buildmalaysia" className="underline hover:text-kuning">
-              github.com/hazlijohar95/buildmalaysia
-            </a>
-            . The figures come from Malaysian government publications.
+            <a href="https://github.com/hazlijohar95/buildmalaysia">github.com/hazlijohar95/buildmalaysia</a>. The
+            figures come from Malaysian government publications.
           </p>
         </div>
       </Band>

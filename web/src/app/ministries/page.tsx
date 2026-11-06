@@ -40,7 +40,7 @@ export default async function MinistriesPage({ searchParams }: Props) {
             note: `${(m.share * 100).toFixed(1)}% of federal spending`,
           }))}
         />
-        <p className="mt-8 max-w-3xl text-sm text-charcoal-700">
+        <p className="mt-8 max-w-lg text-sm text-charcoal-700">
           Shares are of total federal spending, which also includes charged expenditure (debt service, pensions and
           grants to states) paid outside any ministry. Peruntukan Kepada Kumpulan Wang Terkanun is transfers into
           statutory funds, including the Development Fund that pays for development spending.

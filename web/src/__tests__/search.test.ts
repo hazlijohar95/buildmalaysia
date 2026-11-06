@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { escapeWildcard, expandSynonyms, rankHits, SYNONYMS, type SearchHit } from "@/lib/search";
+import { escapeWildcard, expandSynonyms, rankHits, searchTerms, SYNONYMS, type SearchHit } from "@/lib/search";
 import { parseSen } from "@/lib/money";
 
 describe("escapeWildcard", () => {
@@ -70,6 +70,23 @@ describe("expandSynonyms", () => {
     for (const key of Object.keys(SYNONYMS)) {
       expect(() => expandSynonyms(key)).not.toThrow();
     }
+  });
+});
+
+describe("searchTerms", () => {
+  it("adds the dotted vote code for a code typed without its dot", () => {
+    expect(searchTerms("B42")).toContain("B.42");
+    expect(searchTerms("b42")).toContain("B.42");
+    expect(searchTerms("t 03")).toContain("T.03");
+  });
+
+  it("leaves a dotted code and plain words alone", () => {
+    expect(searchTerms("B.42")).toEqual(["B.42"]);
+    expect(searchTerms("b42 hospital")).toEqual(["b42 hospital", "hospital"]);
+  });
+
+  it("keeps the synonym expansion", () => {
+    expect(searchTerms("health")).toEqual(["health", "kesihatan"]);
   });
 });
 

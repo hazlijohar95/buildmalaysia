@@ -1,26 +1,31 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Band, PageHeader, kicker } from "@/components/Boxed";
 import { getSubscribeEnv } from "@/lib/subscribe/env";
 import { STATUS_COPY } from "@/lib/subscribe/types";
-import { verifyToken } from "@/lib/subscribe/token";
+import { verifyToken, type TokenResult } from "@/lib/subscribe/token";
 import { cn } from "@/lib/cn";
+
+export const metadata: Metadata = {
+  title: "Confirm subscription",
+};
 
 export default async function ConfirmPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
-  const env = getSubscribeEnv();
+  const { subscribeSecret } = getSubscribeEnv();
 
-  if (!token || !env.subscribeSecret) {
+  if (!subscribeSecret) {
     return (
       <>
         <PageHeader eyebrow="Alerts" title="Confirm subscription" />
         <Band>
-          <p>{STATUS_COPY["token-invalid"]}</p>
+          <p className="max-w-lg">{STATUS_COPY.unavailable}</p>
         </Band>
       </>
     );
   }
 
-  const result = await verifyToken(token, env.subscribeSecret);
+  const result: TokenResult = token ? await verifyToken(token, subscribeSecret) : { ok: false, reason: "invalid" };
 
   if (!result.ok) {
     const copy = result.reason === "expired" ? STATUS_COPY["token-expired"] : STATUS_COPY["token-invalid"];
@@ -29,11 +34,9 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
         <PageHeader eyebrow="Alerts" title="Confirm subscription" />
         <Band>
           <p className="mb-6 max-w-lg">{copy}</p>
-          {result.reason === "expired" && (
-            <Link href="/subscribe" className={cn(kicker, "inline-block border-2 border-foreground px-5 py-2")}>
-              Subscribe again
-            </Link>
-          )}
+          <Link href="/subscribe" className={cn(kicker, "inline-block border-2 border-foreground px-5 py-2")}>
+            Get a new link
+          </Link>
         </Band>
       </>
     );
@@ -44,7 +47,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
       <PageHeader
         eyebrow="Alerts"
         title="Confirm subscription"
-        intro={<p>Click below to confirm. We will email you when new budget figures are published.</p>}
+        intro={<p>We will email you when new figures are loaded.</p>}
       />
       <Band>
         <form method="post" action="/api/subscribe/confirm">

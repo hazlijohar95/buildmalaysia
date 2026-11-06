@@ -16,12 +16,23 @@ export function money(sen: Sen, whole = false): { value: string; title?: string 
   return { value: formatSenCompact(sen), title: exact };
 }
 
-/** A compact figure with the exact one on hover. `whole` for budget-book figures, printed in whole ringgit. */
+/**
+ * A compact figure with the exact one on hover; screen readers hear only the exact one. `whole` for budget-book
+ * figures, printed in whole ringgit.
+ */
 export function Money({ sen, whole = false, className }: { sen: Sen; whole?: boolean; className?: string }) {
   const { value, title } = money(sen, whole);
   return (
-    <span title={title} className={cn("tabular-nums whitespace-nowrap", className)}>
-      {value}
+    // relative anchors the screen-reader copy here, so inside a scrolling table it cannot widen the page.
+    <span title={title} className={cn("relative tabular-nums whitespace-nowrap", className)}>
+      {title ? (
+        <>
+          <span aria-hidden="true">{value}</span>
+          <span className="sr-only">{title}</span>
+        </>
+      ) : (
+        value
+      )}
     </span>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import { notFound } from "next/navigation";
 import {
   getBudgetYears,
@@ -107,7 +108,7 @@ export default async function BudgetPage({ params }: Props) {
       />
 
       <Band wide>
-        <p className="max-w-3xl text-charcoal-800">
+        <p className="max-w-xl text-charcoal-800">
           Totals as printed (<span lang="ms">Jumlah Besar</span>,{" "}
           <CitationLink
             year={year}
@@ -136,7 +137,7 @@ export default async function BudgetPage({ params }: Props) {
         return (
           <Band wide key={section.letter}>
             <H2>{section.title}</H2>
-            <p className="mt-3 max-w-3xl text-charcoal-800">{section.note}</p>
+            <p className="mt-3 max-w-xl text-charcoal-800">{section.note}</p>
             <div className="table-scroll mt-8">
               <table>
                 <thead>
@@ -172,9 +173,6 @@ export default async function BudgetPage({ params }: Props) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-6 text-sm text-charcoal-700">
-              Hover a figure for the exact amount in whole ringgit, as the book prints it.
-            </p>
           </Band>
         );
       })}
@@ -190,7 +188,7 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
   return (
     <Band wide>
       <H2>Projects dropped from Budget {year}</H2>
-      <p className="mt-3 max-w-3xl text-charcoal-800">
+      <p className="mt-3 max-w-xl text-charcoal-800">
         {rows.length} development projects of {year - 1} that this budget does not continue (Lampiran F), holding{" "}
         <Money sen={allocation} whole /> of {year - 1} allocation. None of them appears in the budget&apos;s project
         tables.
@@ -204,12 +202,10 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
       </p>
       <details className="group/drop mt-8 border-t-2 border-foreground">
         <summary className="flex items-baseline gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
-          <span
-            aria-hidden="true"
-            className="font-mono text-charcoal-700 group-open/drop:rotate-90 transition-transform"
-          >
-            ›
-          </span>
+          <LuChevronRight
+            aria-hidden
+            className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/drop:rotate-90"
+          />
           <span className="font-medium">Show the {rows.length} projects</span>
         </summary>
         <div className="table-scroll pb-4">
