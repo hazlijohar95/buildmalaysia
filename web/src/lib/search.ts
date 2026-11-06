@@ -66,6 +66,16 @@ export function expandSynonyms(q: string): string[] {
   return [...new Set(terms)];
 }
 
+/**
+ * The terms a query searches for: its synonym expansion, plus the printed form of a vote code typed
+ * without its dot ("b42" finds B.42).
+ */
+export function searchTerms(q: string): string[] {
+  const terms = expandSynonyms(q);
+  const code = /^([btp])\s*(\d{2})$/i.exec(q);
+  return code ? [...terms, `${code[1].toUpperCase()}.${code[2]}`] : terms;
+}
+
 export type SearchHit =
   | {
       kind: "ministry";
@@ -136,7 +146,7 @@ export async function searchHits(raw: string): Promise<SearchHit[]> {
   const q = raw.replaceAll(SEPARATOR, "").trim().slice(0, SEARCH_MAX_LEN);
   if (!q) return [];
 
-  const terms = expandSynonyms(q);
+  const terms = searchTerms(q);
   const patterns = terms.map((t) => `%${escapeWildcard(t)}%`);
   const [latest] = await getLoadedYears();
   if (!latest) return [];
