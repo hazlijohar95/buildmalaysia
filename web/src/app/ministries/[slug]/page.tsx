@@ -386,7 +386,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
             </ul>
           )}
           {sharedNumbers.map((n) => (
-            <p key={n} className="mt-6 max-w-3xl">
+            <p key={n} className="mt-6 max-w-xl">
               {tenureSentence(
                 n,
                 tenures.filter((t) => t.number === n),

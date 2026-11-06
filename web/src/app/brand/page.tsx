@@ -125,7 +125,7 @@ function Swatch({ colour }: { colour: FlagColour }) {
 }
 
 const grid = "grid gap-[2px] border-2 border-foreground bg-foreground";
-const cap = "text-sm text-charcoal-700 max-w-3xl";
+const cap = "text-sm text-charcoal-700 max-w-lg";
 
 export default function BrandPage() {
   return (
@@ -331,7 +331,7 @@ export default function BrandPage() {
       <Band>
         <div className={cn(kicker, "text-charcoal-700")}>Use</div>
         <H2 className="mt-3">Don&apos;t</H2>
-        <ul className="mt-6 grid max-w-3xl gap-2 pl-5">
+        <ul className="mt-6 grid max-w-xl gap-2 pl-5">
           {MISUSE.map(([rule, why]) => (
             <li key={rule}>
               <strong>{rule}</strong> {why}

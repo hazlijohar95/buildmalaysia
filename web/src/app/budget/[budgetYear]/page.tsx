@@ -108,7 +108,7 @@ export default async function BudgetPage({ params }: Props) {
       />
 
       <Band wide>
-        <p className="max-w-3xl text-charcoal-800">
+        <p className="max-w-xl text-charcoal-800">
           Totals as printed (<span lang="ms">Jumlah Besar</span>,{" "}
           <CitationLink
             year={year}
@@ -137,7 +137,7 @@ export default async function BudgetPage({ params }: Props) {
         return (
           <Band wide key={section.letter}>
             <H2>{section.title}</H2>
-            <p className="mt-3 max-w-3xl text-charcoal-800">{section.note}</p>
+            <p className="mt-3 max-w-xl text-charcoal-800">{section.note}</p>
             <div className="table-scroll mt-8">
               <table>
                 <thead>
@@ -188,7 +188,7 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
   return (
     <Band wide>
       <H2>Projects dropped from Budget {year}</H2>
-      <p className="mt-3 max-w-3xl text-charcoal-800">
+      <p className="mt-3 max-w-xl text-charcoal-800">
         {rows.length} development projects of {year - 1} that this budget does not continue (Lampiran F), holding{" "}
         <Money sen={allocation} whole /> of {year - 1} allocation. None of them appears in the budget&apos;s project
         tables.

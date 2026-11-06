@@ -123,7 +123,7 @@ export default async function BudgetVotePage({ params }: Props) {
       )}
 
       <Band wide>
-        <p className="max-w-3xl text-sm text-charcoal-700">
+        <p className="max-w-lg text-sm text-charcoal-700">
           Vote figures as printed in the budget summary. Activities and projects are listed as the {year} budget defines
           them; codes are reused across years for different activities, so they are not matched to past spending line by
           line. Source: Kementerian Kewangan, <em lang="ms">Anggaran Perbelanjaan Persekutuan {year}</em>.
@@ -191,7 +191,7 @@ function Headings({
     <>
       <Band wide>
         <H2>By programme</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each <Term id="programme-activity">programme</Term>&apos;s total as the book prints it, in whole ringgit, with
           its established <Term id="posts">posts</Term>. Open a programme below for its activities.
         </p>
@@ -276,7 +276,7 @@ function Projects({
   return (
     <Band wide>
       <H2>Every project</H2>
-      <p className="mt-3 max-w-3xl text-charcoal-800">Each project as the book prints it, in whole ringgit.</p>
+      <p className="mt-3 max-w-xl text-charcoal-800">Each project as the book prints it, in whole ringgit.</p>
       <div className="table-scroll mt-8">
         <table>
           <thead>

@@ -124,7 +124,7 @@ export default async function OperatingPage({ params, searchParams }: Props) {
       )}
 
       <Band wide>
-        <p className="max-w-3xl text-charcoal-800">
+        <p className="max-w-xl text-charcoal-800">
           Totals as printed in the statement (<span lang="ms">Jumlah Keseluruhan Mengurus</span>),{" "}
           <CitationLink year={year} docUrl={totals.doc_url} pdfPage={totals.pdf_page} bookPage={totals.book_page} />.
           Spending here includes the <Money sen={spending.development_fund_transfer_sen} /> transfer to the Development
@@ -143,7 +143,7 @@ export default async function OperatingPage({ params, searchParams }: Props) {
 
       <Band wide>
         <H2>Every operating vote</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           <Term id="vote-codes">B votes</Term> are ministries&apos; supply votes; T votes are charged expenditure. Open
           a vote for every line to the sen.
         </p>

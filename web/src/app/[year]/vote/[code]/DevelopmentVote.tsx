@@ -144,7 +144,7 @@ export default function DevelopmentVote({
       {grouped && (
         <Band wide>
           <H2>By group</H2>
-          <p className="mt-3 max-w-3xl text-charcoal-800">
+          <p className="mt-3 max-w-xl text-charcoal-800">
             The statement prints the vote&apos;s projects under these headings, each with its own total. Open a group
             below for every project to the sen.
           </p>
@@ -198,7 +198,7 @@ export default function DevelopmentVote({
 
       <Band wide>
         <H2>Every project</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each project exactly as printed, to the sen, with the two-page spread it was read from.
         </p>
         {grouped ? (
@@ -242,7 +242,7 @@ export default function DevelopmentVote({
         ) : (
           <Projects year={year} plan={plan} projects={detail.projects} />
         )}
-        <p className="mt-12 text-sm text-charcoal-700 max-w-3xl">
+        <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
           Development Expenditure (Lampiran 2).
         </p>

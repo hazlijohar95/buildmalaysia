@@ -101,7 +101,7 @@ export default async function SpendingPage({ searchParams }: Props) {
 
       <Band>
         <H2>Who spent it</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Every ministry, with its operating and development spending together, and the charges paid outside any
           ministry.
         </p>
@@ -119,7 +119,7 @@ export default async function SpendingPage({ searchParams }: Props) {
 
       <Band>
         <H2>How the total is counted</H2>
-        <div className="mt-4 max-w-3xl space-y-3 text-charcoal-800">
+        <div className="mt-4 max-w-xl space-y-3 text-charcoal-800">
           <p>
             Operating spending is the operating statement&apos;s total less the{" "}
             <span title={formatSen(spending.development_fund_transfer_sen)}>

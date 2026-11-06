@@ -42,7 +42,7 @@ export default async function MethodologyPage() {
 
       <Band wide>
         <H2>Where the numbers come from</H2>
-        <div className="mt-8 max-w-3xl space-y-4 text-charcoal-800">
+        <div className="mt-8 max-w-xl space-y-4 text-charcoal-800">
           <p>
             Every number on this site comes from the <strong>Penyata Kewangan Kerajaan Persekutuan</strong> (Federal
             Government Financial Statements), published each year by Jabatan Akauntan Negara Malaysia (JANM) and audited
@@ -163,7 +163,7 @@ export default async function MethodologyPage() {
       {budgets.map((b) => (
         <Band wide key={b.budget_year}>
           <H2>Budget {b.budget_year}</H2>
-          <div className="mt-8 max-w-3xl space-y-4 text-charcoal-800">
+          <div className="mt-8 max-w-xl space-y-4 text-charcoal-800">
             <p>
               The budget pages come from the Ministry of Finance&apos;s{" "}
               <a href={b.url} target="_blank" rel="noopener noreferrer">
@@ -222,7 +222,7 @@ export default async function MethodologyPage() {
       {ocr.length > 0 && (
         <Band wide id="ocr">
           <H2>Statements read by OCR</H2>
-          <div className="mt-3 max-w-3xl space-y-4 text-charcoal-800">
+          <div className="mt-3 max-w-xl space-y-4 text-charcoal-800">
             <p>
               The published {ocr.map((s) => s.fiscal_year).join(", ")} Statement of Operating Expenditure (Lampiran 1)
               has no text layer, so its figures were read from the page. The PDF still draws every character as a vector
@@ -249,7 +249,7 @@ export default async function MethodologyPage() {
       {gaps.length > 0 && (
         <Band wide id="gaps">
           <H2>Pages missing from a published statement</H2>
-          <p className="mt-3 max-w-3xl text-charcoal-800">
+          <p className="mt-3 max-w-xl text-charcoal-800">
             The FY2019 PDF skips one page of Lampiran 1, and no complete copy is published anywhere we could find. Every
             row that is printed is loaded. A total whose rows were on the missing page cannot be recomputed, so it is
             checked against the totals printed above and below it instead, and the vote totals come from the same
@@ -274,7 +274,7 @@ export default async function MethodologyPage() {
       {misprints.length > 0 && (
         <Band wide>
           <H2>Totals the statements misprint</H2>
-          <p className="mt-3 max-w-3xl text-charcoal-800">
+          <p className="mt-3 max-w-xl text-charcoal-800">
             These printed totals disagree with the rows under them in the published statement itself: errors in the
             document, not in the load. Each is registered in the pipeline with the evidence, the load accepts exactly
             this difference and no other, and the site shows the printed figure. A misprint in one row repeats in every

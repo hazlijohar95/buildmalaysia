@@ -180,7 +180,7 @@ export default async function VoteDetailPage({ params }: Props) {
 
       <Band wide>
         <H2>By programme</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Each programme&apos;s totals as the statement prints them. Open an activity below for every line to the sen.
         </p>
         <div className="table-scroll mt-8">
@@ -252,7 +252,7 @@ export default async function VoteDetailPage({ params }: Props) {
 
       <Band wide className="group/cols">
         <H2>Every activity, line by line</H2>
-        <p className="mt-3 max-w-3xl text-charcoal-800">
+        <p className="mt-3 max-w-xl text-charcoal-800">
           Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the sen, each
           with the page it was read from.
         </p>
@@ -284,7 +284,7 @@ export default async function VoteDetailPage({ params }: Props) {
             ))}
           </section>
         ))}
-        <p className="mt-12 text-sm text-charcoal-700 max-w-3xl">
+        <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
           Operating Expenditure (Lampiran 1). % used and unspent are worked out from the printed columns.
         </p>

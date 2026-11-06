@@ -30,7 +30,7 @@ export default async function DataPage() {
       {datasetsWithYears.map(({ ds, years }) => (
         <Band key={ds.id} id={ds.id} wide>
           <H2>{ds.title}</H2>
-          <p className="mt-4 max-w-3xl text-charcoal-800">{ds.description}</p>
+          <p className="mt-4 max-w-xl text-charcoal-800">{ds.description}</p>
 
           <div className="mt-6">
             <p className="font-semibold">Columns</p>
@@ -64,7 +64,7 @@ export default async function DataPage() {
       ))}
 
       <Band>
-        <div className="max-w-3xl text-sm text-charcoal-800 space-y-3">
+        <div className="max-w-lg text-sm text-charcoal-800 space-y-3">
           <p>
             Files open in Excel without a wizard (UTF-8 BOM, RFC 4180 quoting). The{" "}
             <code className="font-mono text-xs">doc_url</code> and <code className="font-mono text-xs">pdf_page</code>{" "}
