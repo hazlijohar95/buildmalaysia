@@ -6,6 +6,7 @@ import { CONTACT_EMAIL } from "@/lib/contact";
 import { getCoverage } from "@/lib/queries/coverage";
 import { LuUsersRound } from "react-icons/lu";
 import { SiClaude } from "react-icons/si";
+import Segments from "@/components/Segments";
 import type { Page } from "@/lib/route";
 
 const PRINCIPLES = [
@@ -187,7 +188,7 @@ export default async function aboutPage(): Promise<Page> {
           </div>
         </Band>
 
-        <nav aria-label="On this page" className="border-b-2 border-foreground px-5 sm:px-8 md:px-16">
+        <nav aria-label="On this page" className="border-b-2 border-foreground px-5 sm:px-8 md:px-16 max-lg:hidden">
           <ul className="mx-auto m-0 flex max-w-7xl list-none flex-wrap gap-x-8 p-0">
             {sections.map((s) => (
               <li key={s.id}>
@@ -205,116 +206,152 @@ export default async function aboutPage(): Promise<Page> {
           </ul>
         </nav>
 
-        <Band id="team" wide>
-          <H2>Core team</H2>
-          <ul className="m-0 mt-10 grid list-none gap-6 p-0 lg:grid-cols-2 xl:grid-cols-3">
-            {TEAM.map((m) => (
-              <li key={m.name} className="flex border border-foreground/40">
-                <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">{m.portrait}</div>
-                <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
-                  <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
-                  <span className="mt-1 text-sm text-charcoal-700">
-                    {m.role}
-                    {m.aside && <span className="mt-0.5 block text-xs text-charcoal-600">{m.aside}</span>}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Band>
-
-        <Band id="board" wide>
-          <H2>Board</H2>
-          <div className="mt-10 flex flex-col border border-foreground/40 sm:flex-row">
-            <div className="flex h-28 shrink-0 items-center justify-center bg-foreground text-linen-50 sm:h-auto sm:w-56">
-              <LuUsersRound aria-hidden="true" className="h-12 w-12" />
-            </div>
-            <div className="px-6 py-6 md:px-8 md:py-8">
-              <span className="font-display text-2xl font-semibold tracking-tight">The Rakyat</span>
-              <span className="mt-1 block text-charcoal-700">Every Malaysian · Board of journalists</span>
-              <p className="m-0 mt-5 max-w-3xl text-lg leading-relaxed text-charcoal-800">
-                Our board is every one of us. We believe every Malaysian has a fiduciary duty to the truth: to report
-                what happened, and to count what should be counted. That makes all of us journalists, held to a
-                journalist&apos;s ethics. This site is our part of the count.
-              </p>
-            </div>
-          </div>
-        </Band>
-
-        <Band id="principles" wide>
-          <H2>Principles</H2>
-          <ol className="m-0 mt-10 grid list-none gap-x-12 p-0 md:grid-cols-2">
-            {PRINCIPLES.map((p, i) => (
-              <li key={p.title} className="flex gap-6 border-t border-foreground/25 pb-10 pt-6">
-                <span className="font-display text-2xl font-semibold tabular-nums text-merah-600">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">{p.title}</h3>
-                  <p className="m-0 mt-2 text-lg leading-relaxed text-charcoal-700">{p.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Band>
-
-        <Band id="coverage" wide className="pb-10 md:pb-12">
-          <H2>What we&apos;ve read</H2>
-          <p className="m-0 mt-4 max-w-3xl text-lg text-charcoal-800">
-            Everything loaded so far, counted live. Each check is listed on the{" "}
-            <a href="/methodology">methodology page</a>.
-          </p>
-        </Band>
-        <StatRow
-          stats={[
+        <Segments
+          label="About"
+          segments={[
             {
-              label: "Audited statements",
-              value: c.statements,
-              sub: c.years ? `FY${c.years.first} to FY${c.years.last}` : "None loaded yet",
-            },
-            { label: "Budget books", value: c.budgetBooks, sub: "As tabled in Parliament" },
-            {
-              label: "Line items",
-              value: c.lineItems.toLocaleString("en-MY"),
-              sub: "Read from the statements, to the sen",
+              id: "team",
+              label: "Team",
+              content: (
+                <>
+                  <Band id="team" wide>
+                    <H2>Core team</H2>
+                    <ul className="m-0 mt-10 grid list-none gap-6 p-0 lg:grid-cols-2 xl:grid-cols-3">
+                      {TEAM.map((m) => (
+                        <li key={m.name} className="flex border border-foreground/40">
+                          <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">
+                            {m.portrait}
+                          </div>
+                          <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
+                            <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
+                            <span className="mt-1 text-sm text-charcoal-700">
+                              {m.role}
+                              {m.aside && <span className="mt-0.5 block text-xs text-charcoal-600">{m.aside}</span>}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </Band>
+
+                  <Band id="board" wide>
+                    <H2>Board</H2>
+                    <div className="mt-10 flex flex-col border border-foreground/40 sm:flex-row">
+                      <div className="flex h-28 shrink-0 items-center justify-center bg-foreground text-linen-50 sm:h-auto sm:w-56">
+                        <LuUsersRound aria-hidden="true" className="h-12 w-12" />
+                      </div>
+                      <div className="px-6 py-6 md:px-8 md:py-8">
+                        <span className="font-display text-2xl font-semibold tracking-tight">The Rakyat</span>
+                        <span className="mt-1 block text-charcoal-700">Every Malaysian · Board of journalists</span>
+                        <p className="m-0 mt-5 max-w-3xl text-lg leading-relaxed text-charcoal-800">
+                          Our board is every one of us. We believe every Malaysian has a fiduciary duty to the truth: to
+                          report what happened, and to count what should be counted. That makes all of us journalists,
+                          held to a journalist&apos;s ethics. This site is our part of the count.
+                        </p>
+                      </div>
+                    </div>
+                  </Band>
+                </>
+              ),
             },
             {
-              label: "Totals recomputed",
-              value: c.totalsChecked.toLocaleString("en-MY"),
-              sub: "Every printed total, from its own rows",
+              id: "principles",
+              label: "Principles",
+              content: (
+                <>
+                  <Band id="principles" wide>
+                    <H2>Principles</H2>
+                    <ol className="m-0 mt-10 grid list-none gap-x-12 p-0 md:grid-cols-2">
+                      {PRINCIPLES.map((p, i) => (
+                        <li key={p.title} className="flex gap-6 border-t border-foreground/25 pb-10 pt-6">
+                          <span className="font-display text-2xl font-semibold tabular-nums text-merah-600">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <div>
+                            <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">{p.title}</h3>
+                            <p className="m-0 mt-2 text-lg leading-relaxed text-charcoal-700">{p.body}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </Band>
+                </>
+              ),
+            },
+            {
+              id: "coverage",
+              label: "Coverage",
+              content: (
+                <>
+                  <Band id="coverage" wide className="pb-10 md:pb-12">
+                    <H2>What we&apos;ve read</H2>
+                    <p className="m-0 mt-4 max-w-3xl text-lg text-charcoal-800">
+                      Everything loaded so far, counted live. Each check is listed on the{" "}
+                      <a href="/methodology">methodology page</a>.
+                    </p>
+                  </Band>
+                  <StatRow
+                    stats={[
+                      {
+                        label: "Audited statements",
+                        value: c.statements,
+                        sub: c.years ? `FY${c.years.first} to FY${c.years.last}` : "None loaded yet",
+                      },
+                      { label: "Budget books", value: c.budgetBooks, sub: "As tabled in Parliament" },
+                      {
+                        label: "Line items",
+                        value: c.lineItems.toLocaleString("en-MY"),
+                        sub: "Read from the statements, to the sen",
+                      },
+                      {
+                        label: "Totals recomputed",
+                        value: c.totalsChecked.toLocaleString("en-MY"),
+                        sub: "Every printed total, from its own rows",
+                      },
+                    ]}
+                  />
+                </>
+              ),
+            },
+            {
+              id: "faqs",
+              label: "FAQs",
+              content: (
+                <>
+                  <Band id="faqs" wide>
+                    <H2>FAQs</H2>
+                    <div className="mt-10 grid gap-x-12 md:grid-cols-2">
+                      {[faqs.slice(0, half), faqs.slice(half)].map((column, i) => (
+                        <div key={i}>
+                          {column.map((f) => (
+                            <details
+                              key={f.q}
+                              className={cn(
+                                "reveal group border-b border-foreground/25",
+                                i === 0 ? "first:border-t" : "md:first:border-t",
+                              )}
+                            >
+                              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 font-display text-lg font-semibold tracking-tight [&::-webkit-details-marker]:hidden hover:text-biru-800">
+                                {f.q}
+                                <span
+                                  aria-hidden="true"
+                                  className="text-xs text-biru-800 motion-safe:transition-transform motion-safe:duration-200 group-open:rotate-180"
+                                >
+                                  ▼
+                                </span>
+                              </summary>
+                              <div className="pb-6 text-lg leading-relaxed text-charcoal-800">{f.a}</div>
+                            </details>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </Band>
+                </>
+              ),
             },
           ]}
         />
-
-        <Band id="faqs" wide>
-          <H2>FAQs</H2>
-          <div className="mt-10 grid gap-x-12 md:grid-cols-2">
-            {[faqs.slice(0, half), faqs.slice(half)].map((column, i) => (
-              <div key={i}>
-                {column.map((f) => (
-                  <details
-                    key={f.q}
-                    className={cn(
-                      "reveal group border-b border-foreground/25",
-                      i === 0 ? "first:border-t" : "md:first:border-t",
-                    )}
-                  >
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 font-display text-lg font-semibold tracking-tight [&::-webkit-details-marker]:hidden hover:text-biru-800">
-                      {f.q}
-                      <span
-                        aria-hidden="true"
-                        className="text-xs text-biru-800 motion-safe:transition-transform motion-safe:duration-200 group-open:rotate-180"
-                      >
-                        ▼
-                      </span>
-                    </summary>
-                    <div className="pb-6 text-lg leading-relaxed text-charcoal-800">{f.a}</div>
-                  </details>
-                ))}
-              </div>
-            ))}
-          </div>
-        </Band>
       </>
     ),
   };

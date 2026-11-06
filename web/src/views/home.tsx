@@ -3,6 +3,7 @@
 import { LuLandmark, LuReceipt, LuUsersRound } from "react-icons/lu";
 import { Band, H2, StatRow, kicker } from "@/components/Boxed";
 import CitationLink from "@/components/CitationLink";
+import Carousel, { carouselItem } from "@/components/Carousel";
 import Findings from "@/components/Findings";
 import { SubscribeForm } from "@/components/SubscribeForm";
 import { cn } from "@/lib/cn";
@@ -168,32 +169,37 @@ async function HomeBody() {
         </div>
       </section>
 
-      <section className="border-b-2 border-foreground grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground">
-        {[
-          {
-            icon: <LuLandmark />,
-            title: "Facts about spending",
-            body: "We turn the federal government's accounts into clear figures, ministry by ministry and programme by programme.",
-          },
-          {
-            icon: <LuReceipt />,
-            title: "Based on official documents",
-            body: "Every figure comes from Jabatan Akauntan Negara's audited statements or Kementerian Kewangan's budget books, and links to the exact page.",
-          },
-          {
-            icon: <LuUsersRound />,
-            title: "Non-partisan",
-            body: "We don't judge policies or debate spending decisions. Our only goal is that everyone can see how the federal government spends money.",
-          },
-        ].map((p) => (
-          <div key={p.title} className="bg-background flex flex-col gap-3 px-6 py-12 md:px-8">
-            <div className="text-4xl mb-2" aria-hidden>
-              {p.icon}
+      <section className="border-b-2 border-foreground">
+        <Carousel count={3} className="grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground">
+          {[
+            {
+              icon: <LuLandmark />,
+              title: "Facts about spending",
+              body: "We turn the federal government's accounts into clear figures, ministry by ministry and programme by programme.",
+            },
+            {
+              icon: <LuReceipt />,
+              title: "Based on official documents",
+              body: "Every figure comes from Jabatan Akauntan Negara's audited statements or Kementerian Kewangan's budget books, and links to the exact page.",
+            },
+            {
+              icon: <LuUsersRound />,
+              title: "Non-partisan",
+              body: "We don't judge policies or debate spending decisions. Our only goal is that everyone can see how the federal government spends money.",
+            },
+          ].map((p) => (
+            <div
+              key={p.title}
+              className={cn("bg-background flex flex-col gap-3 px-6 py-12 md:px-8 max-md:py-8", carouselItem)}
+            >
+              <div className="text-4xl mb-2" aria-hidden>
+                {p.icon}
+              </div>
+              <h3 className="m-0 font-display text-xl font-semibold">{p.title}</h3>
+              <p className="m-0 text-charcoal-800">{p.body}</p>
             </div>
-            <h3 className="m-0 font-display text-xl font-semibold">{p.title}</h3>
-            <p className="m-0 text-charcoal-800">{p.body}</p>
-          </div>
-        ))}
+          ))}
+        </Carousel>
       </section>
 
       {latest && <Findings year={latest} />}

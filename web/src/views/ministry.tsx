@@ -3,6 +3,7 @@
 import { notFound, permanentRedirect } from "@/lib/abort";
 import { Band, H2, PageHeader, StatRow, kicker } from "@/components/Boxed";
 import StackedBars from "@/components/StackedBars";
+import Segments from "@/components/Segments";
 import YearNav from "@/components/YearNav";
 import SourceNotes from "@/components/SourceNotes";
 import { getSourceNotes } from "@/lib/queries/gaps";
@@ -242,170 +243,207 @@ export default async function ministryPage({ params, searchParams }: RouteContex
           </div>
         </Band>
 
-        {programmes.length > 0 && current.operating_vote_code && (
-          <Band>
-            <H2>Where its operating budget went in {year}</H2>
-            <div className="table-scroll mt-8">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Programme</th>
-                    <th className="text-right">Revised budget</th>
-                    <th className="text-right">Spent</th>
-                    <th className="text-right">Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {programmes.map((p) => (
-                    <tr key={p.code}>
-                      <td lang="ms">{titleCase(p.name_ms)}</td>
-                      <td className="num">
-                        <Amount sen={p.revised_sen} />
-                      </td>
-                      <td className="num">
-                        <Amount sen={p.actual_sen} />
-                      </td>
-                      <td className="num">
-                        {current.operating_actual_sen > 0
-                          ? `${((p.actual_sen / current.operating_actual_sen) * 100).toFixed(1)}%`
-                          : "–"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-4 text-sm">
-              <a href={`/${year}/vote/${voteCodeToSlug(current.operating_vote_code)}`}>
-                Every activity and spending category in {current.operating_vote_code}, with sources
-              </a>
-            </p>
-          </Band>
-        )}
-
-        {devCode && (groups.length > 0 || projects.length > 0) && (
-          <Band>
-            <H2>
-              {projects.length > 0 ? `Largest development projects in ${year}` : `Development spending in ${year}`}
-            </H2>
-            <div className="table-scroll mt-8">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{projects.length > 0 ? "Project" : "Agency or programme"}</th>
-                    <th className="text-right">Budget</th>
-                    <th className="text-right">Spent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(projects.length > 0
-                    ? projects.map((p, i) => ({
-                        key: `${p.code}-${i}`,
-                        name: p.name_ms,
-                        estimate: p.estimate_sen,
-                        actual: p.actual_sen,
-                      }))
-                    : groups.map((g) => ({
-                        key: g.name,
-                        name: titleCase(g.name),
-                        estimate: g.estimate_sen,
-                        actual: g.actual_sen,
-                      }))
-                  ).map((r) => (
-                    <tr key={r.key}>
-                      <td lang="ms">{r.name}</td>
-                      <td className="num">
-                        <Amount sen={r.estimate} />
-                      </td>
-                      <td className="num">
-                        <Amount sen={r.actual} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-4 text-sm">
-              <a href={`/${year}/vote/${voteCodeToSlug(devCode)}`}>Every project in {devCode}, with sources</a>
-            </p>
-          </Band>
-        )}
-
-        <Band>
-          <H2>Names</H2>
-          <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
-            {aliases.map((a, i) => (
-              <li key={i} className="py-3">
-                <span lang="ms" className="font-medium">
-                  {aliasText(a)}
-                </span>
-                <span className="block mt-0.5 text-sm text-charcoal-700">
-                  {aliasPeriod(a, firstLoadedYear)} · {a.origin}
-                  <Confidence level={a.confidence} /> · <Source citation={a.citation} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Band>
-
-        {(lineage.length > 0 || sharedNumbers.length > 0) && (
-          <Band>
-            <H2>Lineage</H2>
-            {lineage.length > 0 && (
-              <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
-                {lineage.map((e, i) => (
-                  <li key={i} className="py-3">
-                    {e.whole ? (
-                      e.direction === "predecessor" ? (
-                        <>
-                          All of <BodyLink body={e.body} /> became part of this ministry
-                        </>
-                      ) : (
-                        <>
-                          All of this ministry became part of <BodyLink body={e.body} />
-                        </>
-                      )
-                    ) : (
+        <Segments
+          label="This ministry"
+          segments={[
+            ...((programmes.length > 0 && current.operating_vote_code) ||
+            (devCode && (groups.length > 0 || projects.length > 0))
+              ? [
+                  {
+                    id: "spending",
+                    label: "Spending",
+                    content: (
                       <>
-                        <span lang="ms">{e.functions}</span> moved {e.direction === "predecessor" ? "from" : "to"}{" "}
-                        <BodyLink body={e.body} />
-                      </>
-                    )}{" "}
-                    on {formatDate(e.effective)}
-                    <Confidence level={e.confidence} />.
-                    <span className="block mt-0.5 text-sm text-charcoal-700">
-                      <Source citation={e.citation} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {sharedNumbers.map((n) => (
-              <p key={n} className="mt-6 max-w-xl">
-                {tenureSentence(
-                  n,
-                  tenures.filter((t) => t.number === n),
-                  body.id,
-                )}
-              </p>
-            ))}
-          </Band>
-        )}
+                        {programmes.length > 0 && current.operating_vote_code && (
+                          <Band>
+                            <H2>Where its operating budget went in {year}</H2>
+                            <div className="table-scroll mt-8">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Programme</th>
+                                    <th className="text-right">Revised budget</th>
+                                    <th className="text-right">Spent</th>
+                                    <th className="text-right">Share</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {programmes.map((p) => (
+                                    <tr key={p.code}>
+                                      <td lang="ms">{titleCase(p.name_ms)}</td>
+                                      <td className="num">
+                                        <Amount sen={p.revised_sen} />
+                                      </td>
+                                      <td className="num">
+                                        <Amount sen={p.actual_sen} />
+                                      </td>
+                                      <td className="num">
+                                        {current.operating_actual_sen > 0
+                                          ? `${((p.actual_sen / current.operating_actual_sen) * 100).toFixed(1)}%`
+                                          : "–"}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-4 text-sm">
+                              <a href={`/${year}/vote/${voteCodeToSlug(current.operating_vote_code)}`}>
+                                Every activity and spending category in {current.operating_vote_code}, with sources
+                              </a>
+                            </p>
+                          </Band>
+                        )}
 
-        {budget && tabled > 0 && latestCodes[0] && (
-          <Band>
-            <H2>Budget {budget.budget_year}</H2>
-            <p className="mt-4 max-w-3xl text-lg">
-              Budget {budget.budget_year} as tabled allocates <Amount sen={parseSen(tabled)} /> to{" "}
-              <span lang="ms">{name}</span>, against <Amount sen={parseSen(budgetFor(budget.budget_year - 1))} /> in the{" "}
-              {budget.budget_year - 1} budget.{" "}
-              <a href={`/budget/${budget.budget_year}/vote/${voteCodeToSlug(latestCodes[0])}`}>
-                See the budget by programme
-              </a>
-              .
-            </p>
-          </Band>
-        )}
+                        {devCode && (groups.length > 0 || projects.length > 0) && (
+                          <Band>
+                            <H2>
+                              {projects.length > 0
+                                ? `Largest development projects in ${year}`
+                                : `Development spending in ${year}`}
+                            </H2>
+                            <div className="table-scroll mt-8">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>{projects.length > 0 ? "Project" : "Agency or programme"}</th>
+                                    <th className="text-right">Budget</th>
+                                    <th className="text-right">Spent</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(projects.length > 0
+                                    ? projects.map((p, i) => ({
+                                        key: `${p.code}-${i}`,
+                                        name: p.name_ms,
+                                        estimate: p.estimate_sen,
+                                        actual: p.actual_sen,
+                                      }))
+                                    : groups.map((g) => ({
+                                        key: g.name,
+                                        name: titleCase(g.name),
+                                        estimate: g.estimate_sen,
+                                        actual: g.actual_sen,
+                                      }))
+                                  ).map((r) => (
+                                    <tr key={r.key}>
+                                      <td lang="ms">{r.name}</td>
+                                      <td className="num">
+                                        <Amount sen={r.estimate} />
+                                      </td>
+                                      <td className="num">
+                                        <Amount sen={r.actual} />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-4 text-sm">
+                              <a href={`/${year}/vote/${voteCodeToSlug(devCode)}`}>
+                                Every project in {devCode}, with sources
+                              </a>
+                            </p>
+                          </Band>
+                        )}
+                      </>
+                    ),
+                  },
+                ]
+              : []),
+            {
+              id: "history",
+              label: "History",
+              content: (
+                <>
+                  <Band>
+                    <H2>Names</H2>
+                    <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
+                      {aliases.map((a, i) => (
+                        <li key={i} className="py-3">
+                          <span lang="ms" className="font-medium">
+                            {aliasText(a)}
+                          </span>
+                          <span className="block mt-0.5 text-sm text-charcoal-700">
+                            {aliasPeriod(a, firstLoadedYear)} · {a.origin}
+                            <Confidence level={a.confidence} /> · <Source citation={a.citation} />
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Band>
+
+                  {(lineage.length > 0 || sharedNumbers.length > 0) && (
+                    <Band>
+                      <H2>Lineage</H2>
+                      {lineage.length > 0 && (
+                        <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
+                          {lineage.map((e, i) => (
+                            <li key={i} className="py-3">
+                              {e.whole ? (
+                                e.direction === "predecessor" ? (
+                                  <>
+                                    All of <BodyLink body={e.body} /> became part of this ministry
+                                  </>
+                                ) : (
+                                  <>
+                                    All of this ministry became part of <BodyLink body={e.body} />
+                                  </>
+                                )
+                              ) : (
+                                <>
+                                  <span lang="ms">{e.functions}</span> moved{" "}
+                                  {e.direction === "predecessor" ? "from" : "to"} <BodyLink body={e.body} />
+                                </>
+                              )}{" "}
+                              on {formatDate(e.effective)}
+                              <Confidence level={e.confidence} />.
+                              <span className="block mt-0.5 text-sm text-charcoal-700">
+                                <Source citation={e.citation} />
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {sharedNumbers.map((n) => (
+                        <p key={n} className="mt-6 max-w-xl">
+                          {tenureSentence(
+                            n,
+                            tenures.filter((t) => t.number === n),
+                            body.id,
+                          )}
+                        </p>
+                      ))}
+                    </Band>
+                  )}
+                </>
+              ),
+            },
+            ...(budget && tabled > 0 && latestCodes[0]
+              ? [
+                  {
+                    id: "budget",
+                    label: `Budget ${budget.budget_year}`,
+                    content: (
+                      <Band>
+                        <H2>Budget {budget.budget_year}</H2>
+                        <p className="mt-4 max-w-3xl text-lg">
+                          Budget {budget.budget_year} as tabled allocates <Amount sen={parseSen(tabled)} /> to{" "}
+                          <span lang="ms">{name}</span>, against{" "}
+                          <Amount sen={parseSen(budgetFor(budget.budget_year - 1))} /> in the {budget.budget_year - 1}{" "}
+                          budget.{" "}
+                          <a href={`/budget/${budget.budget_year}/vote/${voteCodeToSlug(latestCodes[0])}`}>
+                            See the budget by programme
+                          </a>
+                          .
+                        </p>
+                      </Band>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+        />
 
         <nav
           className="grid grid-cols-1 sm:grid-cols-2 border-b-2 border-foreground bg-foreground gap-[2px]"

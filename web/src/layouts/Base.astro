@@ -3,6 +3,7 @@ import "@fontsource-variable/geist/wght.css";
 import "@/styles/global.css";
 import Footer from "@/components/MainLayout/Footer";
 import Header from "@/components/MainLayout/Header";
+import { MenuSheet, Sheet, TabBar } from "@/components/MainLayout/MobileNav";
 import PageSkeleton from "@/components/PageSkeleton";
 import { SUBSCRIBE_SCRIPT } from "@/components/SubscribeForm";
 import { PALETTE } from "@/brand/carta";
@@ -49,15 +50,17 @@ const SPECULATION_RULES = JSON.stringify({
   ],
 });
 
-// Runs before first paint: the logo's intro plays on the first page view of a session, and never on a later one.
-const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStorage.setItem("carta-intro","1");document.documentElement.setAttribute("data-intro","")}}catch(e){}`;
+// Runs before first paint. It marks the page as scripted, which the mobile patterns key off (and unmarks it if
+// mobile.ts never runs, so nothing stays hidden behind a dead button), and plays the logo's intro on the first page
+// view of a session, never on a later one.
+const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListener("load",function(){setTimeout(function(){if(!document.documentElement.dataset.mobile)document.documentElement.classList.remove("js")},3000)});try{if(!sessionStorage.getItem("carta-intro")){sessionStorage.setItem("carta-intro","1");document.documentElement.setAttribute("data-intro","")}}catch(e){}`;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     {noindex && <meta name="robots" content="noindex" />}
     <meta name="theme-color" content={PALETTE.biru.hex} />
     <title>{fullTitle}</title>
@@ -102,9 +105,20 @@ const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStor
       </main>
       <Footer spendingYear={nav.latest} budgetYear={nav.budgetYear} />
     </div>
+    <TabBar pathname={Astro.url.pathname} budgetYear={nav.budgetYear} />
+    <MenuSheet
+      items={nav.items}
+      pathname={Astro.url.pathname}
+      extra={[
+        { href: "/data", label: "Download data", match: ["/data"] },
+        { href: "/brand", label: "Brand", match: ["/brand"] },
+      ]}
+    />
+    <Sheet id="row-sheet" title="" />
     <script is:inline set:html={SUBSCRIBE_SCRIPT} />
     <script>
       import "@/components/MainLayout/nav";
+      import "@/components/MainLayout/mobile";
     </script>
     <!-- Cloudflare Web Analytics: cookie-free page counts. Its automatic injection skips Worker responses. -->
     <script

@@ -19,7 +19,7 @@ export default function YearNav({
   );
   return (
     // Each tab overlaps its neighbours' borders by 2px, and the padding takes that back, so wrapped rows line up.
-    <nav className="flex flex-wrap pl-[2px] pt-[2px]" aria-label="Year">
+    <nav className="year-nav flex flex-wrap pl-[2px] pt-[2px]" aria-label="Year">
       {[...years]
         .sort((a, b) => a - b)
         .map((y) =>
@@ -31,7 +31,7 @@ export default function YearNav({
             <a
               key={y}
               href={hrefFor ? hrefFor(y) : `/${y}${suffix}`}
-              className={cn(tab, "text-foreground hover:bg-linen-200")}
+              className={cn(tab, "tap text-foreground hover:bg-linen-200")}
             >
               {y}
             </a>

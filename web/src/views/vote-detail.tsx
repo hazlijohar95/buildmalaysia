@@ -25,6 +25,7 @@ import DevelopmentVote from "@/components/DevelopmentVote";
 import { getLoadedYears, requireYear } from "@/lib/years";
 import { getBudgetVotes, getBudgetYears } from "@/lib/queries/budget";
 import { previews } from "@/lib/previews";
+import Segments from "@/components/Segments";
 import type { Page, RouteContext } from "@/lib/route";
 
 export default async function voteDetailPage({ params }: RouteContext): Promise<Page> {
@@ -173,117 +174,142 @@ export default async function voteDetailPage({ params }: RouteContext): Promise<
           ]}
         />
 
-        <Band wide>
-          <H2>By programme</H2>
-          <p className="mt-3 max-w-xl text-charcoal-800">
-            Each programme&apos;s totals as the statement prints them. Open an activity below for every line to the sen.
-          </p>
-          <div className="table-scroll mt-8">
-            <table>
-              <thead>
-                <tr>
-                  <th>
-                    <BiLabel en="Code" ms="Kod" />
-                  </th>
-                  <th>
-                    <BiLabel en="Programme" ms="Program" />
-                  </th>
-                  <th className="text-right">
-                    <BiLabel en="Original budget" ms="Asal" />
-                  </th>
-                  <th className="text-right">
-                    <BiLabel en="Revised budget" ms="Jumlah" />
-                  </th>
-                  <th className="text-right">
-                    <BiLabel en="Spent" ms="Sebenar" />
-                  </th>
-                  <th>
-                    <BiLabel en="% used" ms="Prestasi" />
-                  </th>
-                  <th className="text-right">
-                    <BiLabel en="Unspent" ms="Varian" />
-                  </th>
-                  <th>
-                    <BiLabel en="Source" ms="Sumber" />
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {programmes.map((p) => {
-                  const pOver = p.actual_sen > p.revised_sen;
-                  return (
-                    <tr key={p.programme_code}>
-                      <td className="font-mono text-xs">{p.programme_code}</td>
-                      <td>
-                        <a href={`#p${p.programme_code}`}>
-                          <ProgrammeName name={p.programme_name_ms} />
-                        </a>
-                      </td>
-                      <td className="num">
-                        <Money sen={p.original_sen} />
-                      </td>
-                      <td className="num">
-                        <Money sen={p.revised_sen} />
-                      </td>
-                      <td className={`num ${pOver ? "over-budget" : ""}`}>
-                        <Money sen={p.actual_sen} />
-                      </td>
-                      <td>
-                        <UtilBar revised={p.revised_sen} actual={p.actual_sen} />
-                      </td>
-                      <td className={`num ${pOver ? "over-budget" : ""}`}>
-                        <Money sen={(p.revised_sen - p.actual_sen) as Sen} />
-                      </td>
-                      <td>
-                        <CitationLink year={year} docUrl={p.doc_url} pdfPage={p.pdf_page} bookPage={p.book_page} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Band>
-
-        <Band wide className="group/cols">
-          <H2>Every activity, line by line</H2>
-          <p className="mt-3 max-w-xl text-charcoal-800">
-            Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the sen,
-            each with the page it was read from.
-          </p>
-          {printsExtras ? (
-            <label className="mt-6 inline-flex min-h-11 items-center gap-3 text-sm cursor-pointer">
-              <input type="checkbox" className="h-5 w-5 accent-foreground" />
-              Show the supplementary (Tambahan) and virement (Viremen) columns
-            </label>
-          ) : (
-            <p className="mt-6 text-sm text-charcoal-700">
-              The {year} statement prints the original budget, the revised budget and actual spending only, with no
-              supplementary or virement columns.
-            </p>
-          )}
-          {programmes.map((prog) => (
-            <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12">
-              <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
-                <span className="font-mono text-sm font-normal text-charcoal-700 mr-3">{prog.programme_code}</span>
-                <ProgrammeName name={prog.programme_name_ms} />
-              </h3>
-              <ActivityHead />
-              {(actsByProg[prog.programme_code] ?? []).map((act) => (
-                <Activity
-                  key={act.activity_code}
-                  year={year}
-                  act={act}
-                  lines={linesByActivity[act.activity_code] ?? []}
-                />
-              ))}
-            </section>
-          ))}
-          <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
-            Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement
-            of Operating Expenditure (Lampiran 1). % used and unspent are worked out from the printed columns.
-          </p>
-        </Band>
+        <Segments
+          label="This vote's spending"
+          segments={[
+            {
+              id: "programmes",
+              label: "By programme",
+              content: (
+                <Band wide>
+                  <H2>By programme</H2>
+                  <p className="mt-3 max-w-xl text-charcoal-800">
+                    Each programme&apos;s totals as the statement prints them. Open an activity below for every line to
+                    the sen.
+                  </p>
+                  <div className="table-scroll mt-8">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>
+                            <BiLabel en="Code" ms="Kod" />
+                          </th>
+                          <th>
+                            <BiLabel en="Programme" ms="Program" />
+                          </th>
+                          <th className="text-right">
+                            <BiLabel en="Original budget" ms="Asal" />
+                          </th>
+                          <th className="text-right">
+                            <BiLabel en="Revised budget" ms="Jumlah" />
+                          </th>
+                          <th className="text-right">
+                            <BiLabel en="Spent" ms="Sebenar" />
+                          </th>
+                          <th>
+                            <BiLabel en="% used" ms="Prestasi" />
+                          </th>
+                          <th className="text-right">
+                            <BiLabel en="Unspent" ms="Varian" />
+                          </th>
+                          <th>
+                            <BiLabel en="Source" ms="Sumber" />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {programmes.map((p) => {
+                          const pOver = p.actual_sen > p.revised_sen;
+                          return (
+                            <tr key={p.programme_code}>
+                              <td className="font-mono text-xs">{p.programme_code}</td>
+                              <td>
+                                <a href={`#p${p.programme_code}`}>
+                                  <ProgrammeName name={p.programme_name_ms} />
+                                </a>
+                              </td>
+                              <td className="num">
+                                <Money sen={p.original_sen} />
+                              </td>
+                              <td className="num">
+                                <Money sen={p.revised_sen} />
+                              </td>
+                              <td className={`num ${pOver ? "over-budget" : ""}`}>
+                                <Money sen={p.actual_sen} />
+                              </td>
+                              <td>
+                                <UtilBar revised={p.revised_sen} actual={p.actual_sen} />
+                              </td>
+                              <td className={`num ${pOver ? "over-budget" : ""}`}>
+                                <Money sen={(p.revised_sen - p.actual_sen) as Sen} />
+                              </td>
+                              <td>
+                                <CitationLink
+                                  year={year}
+                                  docUrl={p.doc_url}
+                                  pdfPage={p.pdf_page}
+                                  bookPage={p.book_page}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Band>
+              ),
+            },
+            {
+              id: "activities",
+              label: "Every activity",
+              content: (
+                <Band wide className="group/cols">
+                  <H2>Every activity, line by line</H2>
+                  <p className="mt-3 max-w-xl text-charcoal-800">
+                    Open an activity to see its <Term id="objects">spending categories</Term> exactly as printed, to the
+                    sen, each with the page it was read from.
+                  </p>
+                  {printsExtras ? (
+                    <label className="mt-6 inline-flex min-h-11 items-center gap-3 text-sm cursor-pointer">
+                      <input type="checkbox" className="h-5 w-5 accent-foreground" />
+                      Show the supplementary (Tambahan) and virement (Viremen) columns
+                    </label>
+                  ) : (
+                    <p className="mt-6 text-sm text-charcoal-700">
+                      The {year} statement prints the original budget, the revised budget and actual spending only, with
+                      no supplementary or virement columns.
+                    </p>
+                  )}
+                  {programmes.map((prog) => (
+                    <section key={prog.programme_code} id={`p${prog.programme_code}`} className="mt-12">
+                      <h3 className="m-0 font-display text-2xl font-semibold tracking-tight">
+                        <span className="font-mono text-sm font-normal text-charcoal-700 mr-3">
+                          {prog.programme_code}
+                        </span>
+                        <ProgrammeName name={prog.programme_name_ms} />
+                      </h3>
+                      <ActivityHead />
+                      {(actsByProg[prog.programme_code] ?? []).map((act) => (
+                        <Activity
+                          key={act.activity_code}
+                          year={year}
+                          act={act}
+                          lines={linesByActivity[act.activity_code] ?? []}
+                        />
+                      ))}
+                    </section>
+                  ))}
+                  <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
+                    Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>,
+                    Statement of Operating Expenditure (Lampiran 1). % used and unspent are worked out from the printed
+                    columns.
+                  </p>
+                </Band>
+              ),
+            },
+          ]}
+        />
       </>
     ),
   };

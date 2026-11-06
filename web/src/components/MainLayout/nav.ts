@@ -1,5 +1,5 @@
 // The header's behaviour (Header.tsx renders the markup): menus that open on hover with a mouse and on click or
-// Enter otherwise, the mobile menu, and the progress bar while a clicked page loads.
+// Enter otherwise, and the progress bar while a clicked page loads.
 
 const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
 const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
@@ -14,8 +14,6 @@ function required<T extends Element>(root: Document | HTMLElement, selector: str
 
 function setUpMenus(header: HTMLElement) {
   const backdrop = required(document, "[data-nav-backdrop]", HTMLElement);
-  const mobileButton = required(header, "[data-nav-mobile-button]", HTMLButtonElement);
-  const mobileMenu = required(header, "#mobile-menu", HTMLElement);
   const menus = [...header.querySelectorAll<HTMLElement>("[data-nav-menu]")].map((cell) => ({
     cell,
     button: required(cell, "button", HTMLButtonElement),
@@ -49,11 +47,6 @@ function setUpMenus(header: HTMLElement) {
     backdrop.hidden = next === null;
   };
 
-  const setMobileOpen = (value: boolean) => {
-    mobileButton.setAttribute("aria-expanded", String(value));
-    mobileMenu.hidden = !value;
-  };
-
   for (const menu of menus) {
     menu.cell.addEventListener("pointerenter", (e) => {
       if (e.pointerType !== "mouse") return;
@@ -77,21 +70,16 @@ function setUpMenus(header: HTMLElement) {
   }
 
   backdrop.addEventListener("click", () => setOpen(null));
-  mobileButton.addEventListener("click", () => setMobileOpen(mobileMenu.hidden));
 
   window.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || (!open && mobileMenu.hidden)) return;
-    if (open) open.button.focus();
-    if (!mobileMenu.hidden) mobileButton.focus();
+    if (e.key !== "Escape" || !open) return;
+    open.button.focus();
     setOpen(null);
-    setMobileOpen(false);
   });
 
   // Going back restores the page from the back/forward cache with whatever menu was open when it was left.
   window.addEventListener("pageshow", (e) => {
-    if (!e.persisted) return;
-    setOpen(null);
-    setMobileOpen(false);
+    if (e.persisted) setOpen(null);
   });
 }
 

@@ -9,6 +9,7 @@ import { REVENUE_CATEGORIES, getRevenueDetail, getRevenueHistory } from "@/lib/q
 import { getFederalSpending } from "@/lib/queries/spending";
 import { colours } from "@/styles/colours";
 import { previews } from "@/lib/previews";
+import Segments from "@/components/Segments";
 import type { Page, RouteContext } from "@/lib/route";
 
 const COLOR: Record<(typeof REVENUE_CATEGORIES)[number]["category"], string> = {
@@ -90,142 +91,172 @@ export default async function revenuePage({ searchParams }: RouteContext): Promi
           ]}
         />
 
-        <Band>
-          <H2>Revenue by type, {year}</H2>
-          <div
-            className="mt-8 flex h-14 w-full overflow-hidden border-2 border-foreground"
-            role="img"
-            aria-label={`Revenue by type, ${year}`}
-          >
-            {present.map((c) => (
-              <div
-                key={c.category}
-                title={`${c.en}: ${formatSenCompact(now.byCategory[c.category])}`}
-                style={{
-                  width: `${share(now.byCategory[c.category])}%`,
-                  background: COLOR[c.category],
-                }}
-                className="h-full border-r border-linen-50/60 last:border-r-0"
-              />
-            ))}
-          </div>
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-6">
-            {present.map((c) => (
-              <div key={c.category} className="border-t-[6px] pt-3" style={{ borderColor: COLOR[c.category] }}>
-                <div className="font-display text-2xl font-semibold tabular-nums">
-                  {share(now.byCategory[c.category]).toFixed(1)}%
-                </div>
-                <div className="font-medium">{c.en}</div>
-                <div className="text-sm text-charcoal-700 tabular-nums">
-                  {formatSenCompact(now.byCategory[c.category])}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <H2 className="mt-16">Over the years</H2>
-          <div className="mt-8">
-            <StackedBars
-              label="Federal revenue by type and year"
-              series={everPresent.map((c) => ({
-                label: c.en,
-                color: COLOR[c.category],
-              }))}
-              rows={[...history]
-                .sort((a, b) => a.year - b.year)
-                .map((h) => ({
-                  year: h.year,
-                  values: everPresent.map((c) => h.byCategory[c.category]),
-                }))}
-            />
-          </div>
-        </Band>
-
-        <Band wide>
-          <H2>Every item, {year}</H2>
-          <p className="mt-3 max-w-xl text-charcoal-800">
-            As printed in the statement, with the estimate as revised during the year and the previous year&apos;s
-            actual from the same page. Item names change between years, so each year is shown on its own.
-          </p>
-          <div className="table-scroll mt-8">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th className="text-right">Revised estimate</th>
-                  <th className="text-right">Actual</th>
-                  <th className="text-right">{year - 1}</th>
-                  <th className="text-right">Change</th>
-                  <th className="text-right">Share</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              {detail.groups.map((g) => {
-                const en = REVENUE_CATEGORIES.find((c) => c.category === g.category)?.en;
-                return (
-                  <tbody key={g.category}>
-                    <tr className="bg-linen-200 font-semibold">
-                      <td>
-                        <span
-                          className="inline-block h-3 w-3 mr-2 align-middle"
-                          style={{ background: COLOR[g.category] }}
+        <Segments
+          label="Revenue"
+          segments={[
+            {
+              id: "summary",
+              label: "By type",
+              content: (
+                <>
+                  <Band>
+                    <H2>Revenue by type, {year}</H2>
+                    <div
+                      className="mt-8 flex h-14 w-full overflow-hidden border-2 border-foreground"
+                      role="img"
+                      aria-label={`Revenue by type, ${year}`}
+                    >
+                      {present.map((c) => (
+                        <div
+                          key={c.category}
+                          title={`${c.en}: ${formatSenCompact(now.byCategory[c.category])}`}
+                          style={{
+                            width: `${share(now.byCategory[c.category])}%`,
+                            background: COLOR[c.category],
+                          }}
+                          className="h-full border-r border-linen-50/60 last:border-r-0"
                         />
-                        {en} <span className="font-normal text-charcoal-700">({g.name_ms})</span>
-                        {!g.printed && (
-                          <span className="block text-xs font-normal text-charcoal-700">
-                            Printed as a heading without an amount; the figure is the sum of its items.
-                          </span>
-                        )}
-                      </td>
-                      <td className="num">{g.revised_sen === null ? "–" : formatSen(g.revised_sen)}</td>
-                      <td className="num">{formatSen(g.actual_sen)}</td>
-                      <td className="num">{g.prior_sen === null ? "–" : formatSen(g.prior_sen)}</td>
-                      <td className="num">{change(g.actual_sen, g.prior_sen)}</td>
-                      <td className="num">{share(g.actual_sen).toFixed(1)}%</td>
-                      <td>
-                        <CitationLink year={year} docUrl={detail.doc_url} pdfPage={g.pdf_page} bookPage={g.book_page} />
-                      </td>
-                    </tr>
-                    {g.items.map((i) => (
-                      <tr key={i.ordinal}>
-                        <td className="pl-8">{i.name_ms}</td>
-                        <td className="num">{i.revised_sen === null ? "–" : formatSen(i.revised_sen)}</td>
-                        <td className="num">{formatSen(i.actual_sen)}</td>
-                        <td className="num">{i.prior_sen === null ? "–" : formatSen(i.prior_sen)}</td>
-                        <td className="num">{change(i.actual_sen, i.prior_sen)}</td>
-                        <td className="num">{share(i.actual_sen).toFixed(1)}%</td>
-                        <td>
-                          <CitationLink
-                            year={year}
-                            docUrl={detail.doc_url}
-                            pdfPage={i.pdf_page}
-                            bookPage={i.book_page}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                );
-              })}
-              <tfoot>
-                <tr className="font-semibold border-t-2 border-foreground">
-                  <td>Total revenue (HASIL)</td>
-                  <td />
-                  <td className="num">{formatSen(now.total)}</td>
-                  <td className="num">{before ? formatSen(before.total) : "–"}</td>
-                  <td className="num">{before ? change(now.total, before.total) : "–"}</td>
-                  <td className="num">100%</td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <p className="mt-8 text-sm text-charcoal-700 max-w-lg">
-            Source: Jabatan Akauntan Negara, <em>Penyata Kewangan Kerajaan Persekutuan {year}</em>, Note 5(a). See how
-            this revenue was spent on the <a href={`/spending?year=${year}`}>spending chart</a>, or how your own income
-            tax is spread on <a href="/tax">Where your taxes go</a>.
-          </p>
-        </Band>
+                      ))}
+                    </div>
+                    <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-6">
+                      {present.map((c) => (
+                        <div
+                          key={c.category}
+                          className="border-t-[6px] pt-3"
+                          style={{ borderColor: COLOR[c.category] }}
+                        >
+                          <div className="font-display text-2xl font-semibold tabular-nums">
+                            {share(now.byCategory[c.category]).toFixed(1)}%
+                          </div>
+                          <div className="font-medium">{c.en}</div>
+                          <div className="text-sm text-charcoal-700 tabular-nums">
+                            {formatSenCompact(now.byCategory[c.category])}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <H2 className="mt-16">Over the years</H2>
+                    <div className="mt-8">
+                      <StackedBars
+                        label="Federal revenue by type and year"
+                        series={everPresent.map((c) => ({
+                          label: c.en,
+                          color: COLOR[c.category],
+                        }))}
+                        rows={[...history]
+                          .sort((a, b) => a.year - b.year)
+                          .map((h) => ({
+                            year: h.year,
+                            values: everPresent.map((c) => h.byCategory[c.category]),
+                          }))}
+                      />
+                    </div>
+                  </Band>
+                </>
+              ),
+            },
+            {
+              id: "items",
+              label: "Every item",
+              content: (
+                <>
+                  <Band wide>
+                    <H2>Every item, {year}</H2>
+                    <p className="mt-3 max-w-xl text-charcoal-800">
+                      As printed in the statement, with the estimate as revised during the year and the previous
+                      year&apos;s actual from the same page. Item names change between years, so each year is shown on
+                      its own.
+                    </p>
+                    <div className="table-scroll mt-8">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Item</th>
+                            <th className="text-right">Revised estimate</th>
+                            <th className="text-right">Actual</th>
+                            <th className="text-right">{year - 1}</th>
+                            <th className="text-right">Change</th>
+                            <th className="text-right">Share</th>
+                            <th>Source</th>
+                          </tr>
+                        </thead>
+                        {detail.groups.map((g) => {
+                          const en = REVENUE_CATEGORIES.find((c) => c.category === g.category)?.en;
+                          return (
+                            <tbody key={g.category}>
+                              <tr className="bg-linen-200 font-semibold">
+                                <td>
+                                  <span
+                                    className="inline-block h-3 w-3 mr-2 align-middle"
+                                    style={{ background: COLOR[g.category] }}
+                                  />
+                                  {en} <span className="font-normal text-charcoal-700">({g.name_ms})</span>
+                                  {!g.printed && (
+                                    <span className="block text-xs font-normal text-charcoal-700">
+                                      Printed as a heading without an amount; the figure is the sum of its items.
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="num">{g.revised_sen === null ? "–" : formatSen(g.revised_sen)}</td>
+                                <td className="num">{formatSen(g.actual_sen)}</td>
+                                <td className="num">{g.prior_sen === null ? "–" : formatSen(g.prior_sen)}</td>
+                                <td className="num">{change(g.actual_sen, g.prior_sen)}</td>
+                                <td className="num">{share(g.actual_sen).toFixed(1)}%</td>
+                                <td>
+                                  <CitationLink
+                                    year={year}
+                                    docUrl={detail.doc_url}
+                                    pdfPage={g.pdf_page}
+                                    bookPage={g.book_page}
+                                  />
+                                </td>
+                              </tr>
+                              {g.items.map((i) => (
+                                <tr key={i.ordinal}>
+                                  <td className="pl-8">{i.name_ms}</td>
+                                  <td className="num">{i.revised_sen === null ? "–" : formatSen(i.revised_sen)}</td>
+                                  <td className="num">{formatSen(i.actual_sen)}</td>
+                                  <td className="num">{i.prior_sen === null ? "–" : formatSen(i.prior_sen)}</td>
+                                  <td className="num">{change(i.actual_sen, i.prior_sen)}</td>
+                                  <td className="num">{share(i.actual_sen).toFixed(1)}%</td>
+                                  <td>
+                                    <CitationLink
+                                      year={year}
+                                      docUrl={detail.doc_url}
+                                      pdfPage={i.pdf_page}
+                                      bookPage={i.book_page}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          );
+                        })}
+                        <tfoot>
+                          <tr className="font-semibold border-t-2 border-foreground">
+                            <td>Total revenue (HASIL)</td>
+                            <td />
+                            <td className="num">{formatSen(now.total)}</td>
+                            <td className="num">{before ? formatSen(before.total) : "–"}</td>
+                            <td className="num">{before ? change(now.total, before.total) : "–"}</td>
+                            <td className="num">100%</td>
+                            <td />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <p className="mt-8 text-sm text-charcoal-700 max-w-lg">
+                      Source: Jabatan Akauntan Negara, <em>Penyata Kewangan Kerajaan Persekutuan {year}</em>, Note 5(a).
+                      See how this revenue was spent on the <a href={`/spending?year=${year}`}>spending chart</a>, or
+                      how your own income tax is spread on <a href="/tax">Where your taxes go</a>.
+                    </p>
+                  </Band>
+                </>
+              ),
+            },
+          ]}
+        />
       </>
     ),
   };
