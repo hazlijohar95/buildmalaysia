@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import { notFound } from "next/navigation";
 import {
   getBudgetYears,
@@ -201,12 +202,10 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
       </p>
       <details className="group/drop mt-8 border-t-2 border-foreground">
         <summary className="flex items-baseline gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
-          <span
-            aria-hidden="true"
-            className="font-mono text-charcoal-700 group-open/drop:rotate-90 transition-transform"
-          >
-            ›
-          </span>
+          <LuChevronRight
+            aria-hidden
+            className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/drop:rotate-90"
+          />
           <span className="font-medium">Show the {rows.length} projects</span>
         </summary>
         <div className="table-scroll pb-4">

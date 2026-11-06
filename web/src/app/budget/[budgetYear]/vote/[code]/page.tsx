@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import { notFound } from "next/navigation";
 import {
   getBudgetOperatingHeadings,
@@ -220,12 +221,10 @@ function Headings({
             return (
               <details key={p.code} id={`p${p.code}`} className="group/prog border-b border-border">
                 <summary className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
-                  <span
-                    aria-hidden="true"
-                    className="font-mono text-charcoal-700 group-open/prog:rotate-90 transition-transform"
-                  >
-                    ›
-                  </span>
+                  <LuChevronRight
+                    aria-hidden
+                    className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/prog:rotate-90"
+                  />
                   <span className="flex-1 min-w-[16rem]">
                     <span className="font-mono text-xs text-charcoal-700 mr-2">{p.code}</span>
                     <span lang="ms" className="font-medium">

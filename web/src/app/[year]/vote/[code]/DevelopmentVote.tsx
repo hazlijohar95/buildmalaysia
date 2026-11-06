@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import type {
   DevelopmentAmounts,
   DevelopmentGroupTotal,
@@ -210,12 +211,10 @@ export default function DevelopmentVote({
                   className="group/sec border-b border-border"
                 >
                   <summary className="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
-                    <span
-                      aria-hidden="true"
-                      className="font-mono text-charcoal-700 group-open/sec:rotate-90 transition-transform"
-                    >
-                      ›
-                    </span>
+                    <LuChevronRight
+                      aria-hidden
+                      className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/sec:rotate-90"
+                    />
                     <span lang="ms" className="font-medium flex-1 min-w-[16rem]">
                       {s.group ? titleCase(s.group.name_ms) : "Projects printed without a group subtotal"}
                     </span>

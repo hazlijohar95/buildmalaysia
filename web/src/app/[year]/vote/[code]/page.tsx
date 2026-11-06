@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LuChevronRight } from "react-icons/lu";
 import SourceNotes from "@/components/SourceNotes";
 import { getSourceNotes } from "@/lib/queries/gaps";
 import { notFound } from "next/navigation";
@@ -327,9 +328,10 @@ function Activity({ year, act, lines }: { year: number; act: ActivityTotal; line
       <summary
         className={`${ROW} items-center py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100`}
       >
-        <span aria-hidden="true" className="font-mono text-charcoal-700 group-open/act:rotate-90 transition-transform">
-          ›
-        </span>
+        <LuChevronRight
+          aria-hidden
+          className="h-3 w-3 shrink-0 text-charcoal-700 motion-safe:transition-transform group-open/act:rotate-90"
+        />
         <span>
           <span className="font-mono text-xs text-charcoal-700 mr-2">{act.activity_code}</span>
           <span lang="ms">{titleCase(act.activity_name_ms)}</span>
