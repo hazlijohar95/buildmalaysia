@@ -2,7 +2,7 @@
 // with a mono kicker, and a row of square stat boxes.
 import { cn } from "@/lib/cn";
 
-export const kicker = "font-mono text-[12px] uppercase tracking-[0.22em]";
+export const kicker = "font-mono text-[0.75rem] uppercase tracking-[0.22em]";
 
 /** A full-width band of the page, ruled off below, with its content centred. */
 export function Band({
@@ -122,7 +122,7 @@ export function BiLabel({ en, ms }: { en: string; ms: string }) {
   return (
     <span>
       {en}
-      <span lang="ms" className="block text-[10px] font-normal normal-case tracking-normal text-charcoal-600">
+      <span lang="ms" className="block text-xs font-normal normal-case tracking-normal text-charcoal-600">
         {ms}
       </span>
     </span>
