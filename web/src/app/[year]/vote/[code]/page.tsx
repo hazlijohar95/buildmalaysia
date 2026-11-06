@@ -301,12 +301,12 @@ async function budgetFor(voteCode: string): Promise<number | null> {
 }
 
 // Activity rows share one grid so their figures line up like a table's columns.
-const ROW = "grid grid-cols-[1.25rem_minmax(0,1fr)] md:grid-cols-[1.25rem_minmax(0,1fr)_10rem_10rem_9rem] gap-x-4";
+const ROW = "grid grid-cols-[1.25rem_minmax(0,1fr)] lg:grid-cols-[1.25rem_minmax(0,1fr)_10rem_10rem_9rem] gap-x-4";
 
 function ActivityHead() {
   return (
     <div
-      className={`${ROW} mt-4 pb-2 border-b-2 border-foreground font-display text-xs uppercase tracking-[0.04em] text-charcoal-600 max-md:hidden`}
+      className={`${ROW} mt-4 pb-2 border-b-2 border-foreground font-display text-xs uppercase tracking-[0.04em] text-charcoal-600 max-lg:hidden`}
     >
       <span />
       <BiLabel en="Activity" ms="Aktiviti" />
@@ -336,16 +336,16 @@ function Activity({ year, act, lines }: { year: number; act: ActivityTotal; line
           <span className="font-mono text-xs text-charcoal-700 mr-2">{act.activity_code}</span>
           <span lang="ms">{titleCase(act.activity_name_ms)}</span>
         </span>
-        <span className="col-start-2 md:col-start-auto flex flex-wrap gap-x-4 text-sm md:contents">
-          <span className="md:text-right">
-            <span className="md:hidden text-charcoal-700">Revised </span>
+        <span className="col-start-2 lg:col-start-auto flex flex-wrap gap-x-4 text-sm lg:contents">
+          <span className="lg:text-right">
+            <span className="lg:hidden text-charcoal-700">Revised </span>
             <Money sen={act.revised_sen} />
           </span>
-          <span className={`md:text-right ${over ? "over-budget" : ""}`}>
-            <span className="md:hidden text-charcoal-700">Spent </span>
+          <span className={`lg:text-right ${over ? "over-budget" : ""}`}>
+            <span className="lg:hidden text-charcoal-700">Spent </span>
             <Money sen={act.actual_sen} />
           </span>
-          <span className="max-md:w-28">
+          <span className="max-lg:w-28">
             <UtilBar revised={act.revised_sen} actual={act.actual_sen} />
           </span>
         </span>
