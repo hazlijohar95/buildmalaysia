@@ -175,7 +175,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
               </label>
               <label className="flex items-center gap-2 text-sm text-linen-100">
                 Other reliefs
-                <span className="border-b border-linen-50/40 px-1">
+                <span className="border-b border-linen-50/40 px-1 text-base sm:text-sm">
                   RM <AmountInput value={otherReliefs} onChange={setOtherReliefs} label="Other reliefs in ringgit" />
                 </span>
               </label>
