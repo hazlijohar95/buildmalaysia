@@ -55,18 +55,6 @@
     width: 320px;
   }
 
-  .search-select-placeholder {
-    height: 38px;
-    background-color: var(--color-background-sankey);
-    border: 1px solid var(--color-difference-sankey);
-    border-radius: 4px;
-    color: var(--color-text-base-sankey);
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    font-size: 14px;
-  }
-
   .node-tooltip {
     z-index: 20;
     min-width: 200px;
@@ -75,8 +63,7 @@
     background-color: var(--color-background-sankey);
     color: var(--color-text-base-sankey);
     padding: 10px;
-    font-size: 12px;
-    border-radius: 4px;
+    font-size: 0.75rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(246, 235, 227, 0.1);
     pointer-events: all;
@@ -100,24 +87,24 @@
   }
 
   .node-tooltip-overall {
-    font-size: 11px;
+    font-size: 0.75rem;
     color: var(--color-short-text-sankey);
     line-height: 1.2;
   }
 
   .node-tooltip-department {
     margin-top: 2px;
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 
   .node-tooltip-link {
-    color: var(--color-neg-base-sankey);
+    color: var(--color-link-sankey);
     text-decoration: none;
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 
   .node-tooltip-link:hover {
-    color: var(--color-neg-hover-sankey);
+    color: var(--color-link-hover-sankey);
     text-decoration: underline;
   }
   .charts {
@@ -239,7 +226,6 @@
   }
 
   .label {
-    font-size: 0.7rem;
     color: var(--color-short-text-sankey);
     overflow: hidden;
     margin: 0;
@@ -264,7 +250,7 @@
   .block.short .label {
     display: flex;
     align-items: center;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .block.with-background .label {
@@ -273,10 +259,6 @@
 
   .block.difference .label {
     background-color: var(--color-background-sankey);
-  }
-
-  #revenue-chart-root .block.current-node {
-    background-color: var(--color-revenue-primary-active) !important;
   }
 
   .label .label-amount {
@@ -422,8 +404,13 @@
     fill: var(--color-hfs-revenue) !important;
   }
 
-  /* Label contrast fix for highlighted blocks without background */
-  .block.highlight:not(.with-background) .label {
+  /* Highlighted path blocks are light, so their labels are dark; the current node stays dark with light text.
+     Short, negative and difference blocks keep light text, because their labels sit on the chart's dark ground. */
+  .block.highlight:not(.with-background, .difference) .label {
+    color: var(--color-highlight-text-sankey) !important;
+  }
+
+  .block.highlight.current-node:not(.with-background, .difference) .label {
     color: var(--color-text-base-sankey) !important;
   }
 

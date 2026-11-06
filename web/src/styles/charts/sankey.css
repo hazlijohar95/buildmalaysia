@@ -10,9 +10,6 @@
 
   /* Negative/Deficit visualization */
 
-  /* Hover state for negative links */
-  --color-neg-hover-sankey: var(--color-lake-900);
-
   /* Stripes for negative blocks */
   --color-neg-highlight-sankey: var(--color-lake-900);
   --color-neg-active-sankey: var(--color-pine-400);
@@ -21,6 +18,13 @@
   --color-neg-text-base-sankey: var(--color-linen-100);
 
   /* Helper text colors */
+
+  /* Text on a highlighted path block, which is a light fill */
+  --color-highlight-text-sankey: var(--color-charcoal-1000);
+
+  /* The tooltip's link to a node's page, on the chart's dark ground */
+  --color-link-sankey: var(--color-lake-400);
+  --color-link-hover-sankey: var(--color-lake-300);
 
   /* Text for short/small blocks */
   --color-short-text-sankey: var(--color-linen-100);
@@ -42,8 +46,8 @@
   /* Highlighted Current Node -- "Highlight Current Sankey" => "hcs" */
   --color-hcs: var(--color-merah-600);
   /* Highlighted Nodes in Flow -- "Highlight Block Sankey" => "hbs" */
-  --color-hbs: var(--color-merah-500);
-  --color-hbs-ds: var(--color-merah-500); /* Downstream (further from center) */
+  --color-hbs: var(--color-merah-300);
+  --color-hbs-ds: var(--color-merah-300); /* Downstream (further from center) */
   /* Highlighted Differences in Flow -- "Highlight Difference Sankey" => "hds" */
   --color-hds: var(--color-merah-400);
   /* Highlighted Links in Flow -- "Highlight Flow Sankey" => "hfs" */
@@ -54,9 +58,9 @@
   /* Highlighted Current Node */
   --color-hcs-spending: var(--color-merah-600);
   /* Highlighted Nodes in Flow */
-  --color-hbs-spending: var(--color-merah-500);
+  --color-hbs-spending: var(--color-merah-300);
   /* Unused - Highlighted "downstream" (more right) Nodes in Flow */
-  --color-hbs-spending-ds: var(--color-merah-500);
+  --color-hbs-spending-ds: var(--color-merah-300);
   /* Highlighted Differences in Flow */
   --color-hds-spending: var(--color-merah-400);
   /* Highlighted Links in Flow */
@@ -66,11 +70,11 @@
 
   /* Revenue Use */
   /* Selected/Current node highlight */
-  --color-hcs-revenue: var(--color-lake-500);
+  --color-hcs-revenue: var(--color-lake-800);
   /* Highlighted Nodes in Flow */
-  --color-hbs-revenue: var(--color-lake-400);
+  --color-hbs-revenue: var(--color-lake-300);
   /* Unused - Highlighted "downstream" (more left) Nodes in Flow */
-  --color-hbs-revenue-ds: var(--color-lake-400);
+  --color-hbs-revenue-ds: var(--color-lake-300);
   /* Highlighted Differences in Flow */
   --color-hds-revenue: var(--color-aurora-700);
   /* Highlighted Links in Flow */

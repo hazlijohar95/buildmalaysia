@@ -176,16 +176,18 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
               }
             }}
             placeholder="Search a ministry, tax or programme"
-            className="w-full border-2 border-[#A8A19B] bg-[#272727] px-3 py-2 text-sm text-[#f6ebe3] placeholder:text-[#A8A19B]"
+            className="w-full border-2 border-charcoal-300 bg-charcoal-1000 px-3 py-2 text-base sm:text-sm text-linen-100 placeholder:text-charcoal-300"
             aria-label="Search the chart"
           />
           {open && query.trim().length >= 2 && (
             <ul
               id="sankey-search-results"
               role="listbox"
-              className="absolute right-0 z-20 mt-1 w-full max-w-md border-2 border-[#A8A19B] bg-[#272727] text-[#f6ebe3]"
+              className="absolute right-0 z-20 mt-1 w-full max-w-md border-2 border-charcoal-300 bg-charcoal-1000 text-linen-100"
             >
-              {results.length === 0 && <li className="px-3 py-2 text-sm text-[#A8A19B]">No matches for “{query}”</li>}
+              {results.length === 0 && (
+                <li className="px-3 py-2 text-sm text-charcoal-300">No matches for “{query}”</li>
+              )}
               {results.map(({ node, context }, i) => (
                 <li
                   key={`${node.type}-${node.id}`}
@@ -197,11 +199,21 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
                     choose(node);
                   }}
                   onMouseEnter={() => setActive(i)}
-                  className={`flex cursor-pointer justify-between gap-3 px-3 py-2 text-sm ${i === active ? "bg-[#3a3a3a]" : ""}`}
+                  className={`flex cursor-pointer justify-between gap-3 px-3 py-2 text-sm ${i === active ? "bg-linen-100 text-foreground" : ""}`}
                 >
                   <span className="min-w-0">
-                    <span className="block truncate font-medium">{node.searchName ?? node.displayName}</span>
-                    <span className="block truncate text-xs text-[#A8A19B]">in {context}</span>
+                    <span
+                      className="line-clamp-2 font-medium [overflow-wrap:anywhere]"
+                      title={node.searchName ?? node.displayName}
+                    >
+                      {node.searchName ?? node.displayName}
+                    </span>
+                    <span
+                      className={`line-clamp-2 text-xs [overflow-wrap:anywhere] ${i === active ? "text-charcoal-700" : "text-charcoal-300"}`}
+                      title={context}
+                    >
+                      in {context}
+                    </span>
                   </span>
                   <span className="shrink-0 tabular-nums">{formatNumber(node.value, amountScalingFactor)}</span>
                 </li>
@@ -209,7 +221,7 @@ export function SankeyChart({ data, amountScalingFactor = 1e9 }: SankeyChartProp
             </ul>
           )}
           {focus && (
-            <button type="button" className="mt-2 text-sm text-[#f6ebe3] underline" onClick={clear}>
+            <button type="button" className="mt-2 text-sm text-linen-100 underline" onClick={clear}>
               Show the whole chart
             </button>
           )}
