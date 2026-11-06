@@ -43,6 +43,7 @@
   h5,
   h6 {
     font-family: var(--font-display);
+    text-wrap: balance;
   }
   code,
   pre,
