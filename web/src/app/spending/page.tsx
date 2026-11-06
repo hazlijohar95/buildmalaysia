@@ -93,7 +93,7 @@ export default async function SpendingPage({ searchParams }: Props) {
               docUrl={spending.doc_url}
               pdfPage={spending.operating_pdf_page}
               bookPage={spending.operating_book_page}
-              className="text-charcoal-400"
+              className="text-charcoal-300"
             />
           </div>
         </div>
