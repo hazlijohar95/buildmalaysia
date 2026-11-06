@@ -18,6 +18,7 @@
 
 /* Optionally adjust min-width to fit the charts */
 .sankey-chart-container {
+  --focus-ring: var(--color-kuning);
   position: relative;
   background-color: var(--color-background-sankey);
   height: 100%;

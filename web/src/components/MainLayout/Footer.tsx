@@ -12,7 +12,7 @@ const FooterLink = ({ href, children }: { href: string; children: React.ReactNod
 
 export default function Footer({ spendingYear, budgetYear }: { spendingYear?: number; budgetYear?: number }) {
   return (
-    <footer className="border-t-2 border-solid border-t-foreground bg-foreground text-background">
+    <footer className="border-t-2 border-solid border-t-foreground bg-foreground text-background [--focus-ring:var(--color-kuning)]">
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
         <div className="mx-auto max-w-7xl px-6 pb-8 pt-20 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">

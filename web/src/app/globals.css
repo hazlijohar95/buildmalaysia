@@ -112,9 +112,13 @@ main a:not([class]):hover {
   text-decoration-thickness: 2px;
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-biru-800);
-  outline-offset: 2px;
+/* In the base layer so outline utilities can override it. A dark surface sets --focus-ring to a colour that
+   shows against it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-biru-800));
+    outline-offset: 2px;
+  }
 }
 
 .over-budget {

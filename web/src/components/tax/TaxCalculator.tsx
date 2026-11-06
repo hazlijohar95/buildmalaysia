@@ -70,7 +70,7 @@ function AmountInput({
           setText(e.target.value === "" ? "" : n.toLocaleString("en-MY"));
           onChange(n);
         }}
-        className={cn("col-start-1 row-start-1 w-full min-w-0 bg-transparent outline-none tabular-nums", className)}
+        className={cn("col-start-1 row-start-1 w-full min-w-0 bg-transparent tabular-nums", className)}
       />
     </span>
   );
@@ -115,7 +115,7 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
   return (
     <>
       <section className="p-2 md:p-4 border-b-2 border-foreground">
-        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 px-6 py-14 md:px-16 md:py-20">
+        <div className="relative overflow-hidden bg-charcoal-1000 text-linen-50 [--focus-ring:var(--color-kuning)] px-6 py-14 md:px-16 md:py-20">
           <div aria-hidden className="absolute inset-y-0 left-[5%] w-px bg-linen-50/10" />
           <div aria-hidden className="absolute inset-y-0 right-[5%] w-px bg-linen-50/10" />
           <div aria-hidden className="absolute -right-24 -top-24 h-72 w-72 rounded-full border border-linen-50/15" />
