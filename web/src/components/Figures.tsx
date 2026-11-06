@@ -23,7 +23,8 @@ export function money(sen: Sen, whole = false): { value: string; title?: string 
 export function Money({ sen, whole = false, className }: { sen: Sen; whole?: boolean; className?: string }) {
   const { value, title } = money(sen, whole);
   return (
-    <span title={title} className={cn("tabular-nums whitespace-nowrap", className)}>
+    // relative anchors the screen-reader copy here, so inside a scrolling table it cannot widen the page.
+    <span title={title} className={cn("relative tabular-nums whitespace-nowrap", className)}>
       {title ? (
         <>
           <span aria-hidden="true">{value}</span>

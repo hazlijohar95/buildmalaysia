@@ -41,7 +41,7 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
             <span className="block h-full bg-merah-600" style={{ width: `${(item.amount_sen / max) * 100}%` }} />
           </span>
           <span
-            className="text-right font-display text-lg font-semibold tabular-nums"
+            className="relative text-right font-display text-lg font-semibold tabular-nums"
             title={formatSen(item.amount_sen)}
           >
             <span aria-hidden="true">{formatSenCompact(item.amount_sen)}</span>
