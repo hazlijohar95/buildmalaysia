@@ -17,32 +17,23 @@ export function parseSenOrNull(raw: string | number | bigint | null): Sen | null
   return raw === null ? null : parseSen(raw);
 }
 
+const twoPlaces = new Intl.NumberFormat("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 /** Full RM with two decimal places, e.g. "RM 13,532,772.40". */
 export function formatSen(sen: Sen): string {
   const rm = sen / 100;
   const sign = rm < 0 ? "-" : "";
-  const abs = Math.abs(rm);
-  const formatted = abs.toLocaleString("en-MY", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${sign}RM ${formatted}`;
+  return `${sign}RM ${twoPlaces.format(Math.abs(rm))}`;
 }
 
-/** Compact form for headlines, e.g. "RM 120.00 m" or "RM 1.14 bn". */
+/** Compact form for headlines, e.g. "RM 120.00 m", "RM 1.14 bn" or "RM 1,179.75 bn". */
 export function formatSenCompact(sen: Sen): string {
   const rm = sen / 100;
   const sign = rm < 0 ? "-" : "";
   const abs = Math.abs(rm);
 
-  if (abs >= 1_000_000_000) {
-    const val = (abs / 1_000_000_000).toFixed(2);
-    return `${sign}RM ${val} bn`;
-  }
-  if (abs >= 1_000_000) {
-    const val = (abs / 1_000_000).toFixed(2);
-    return `${sign}RM ${val} m`;
-  }
+  if (abs >= 1_000_000_000) return `${sign}RM ${twoPlaces.format(abs / 1_000_000_000)} bn`;
+  if (abs >= 1_000_000) return `${sign}RM ${twoPlaces.format(abs / 1_000_000)} m`;
   return formatSen(sen);
 }
 
