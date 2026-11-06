@@ -51,13 +51,7 @@ interface Member {
 
 // Portraits are cropped square and graded warm and slightly muted, so they sit together on the linen page.
 const photo = (src: string, alt: string) => (
-  <Image
-    src={src}
-    alt={alt}
-    width={224}
-    height={224}
-    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-  />
+  <Image src={src} alt={alt} width={224} height={224} className="h-full w-full object-cover" />
 );
 
 const TEAM: Member[] = [
@@ -209,14 +203,13 @@ export default async function AboutPage() {
         <H2>Core team</H2>
         <ul className="m-0 mt-10 grid list-none gap-6 p-0 lg:grid-cols-2 xl:grid-cols-3">
           {TEAM.map((m) => (
-            <li key={m.name} className="group flex border border-foreground/40">
+            <li key={m.name} className="flex border border-foreground/40">
               <div className="h-28 w-28 shrink-0 overflow-hidden border-r border-foreground/40">{m.portrait}</div>
-              <div className="@container flex min-w-0 flex-1 flex-col px-5 py-4">
+              <div className="flex min-w-0 flex-1 flex-col px-5 py-4">
                 <span className="font-display text-2xl font-semibold tracking-tight">{m.name}</span>
-                {/* Scales to the card (16px down to 12px) so the role and its aside stay on one line. */}
-                <span className="mt-1 whitespace-nowrap text-[clamp(0.75rem,6.6cqi,1rem)] text-charcoal-700">
+                <span className="mt-1 text-sm text-charcoal-700">
                   {m.role}
-                  {m.aside && <span className="ml-1.5 text-[0.75em] text-charcoal-600">{m.aside}</span>}
+                  {m.aside && <span className="mt-0.5 block text-xs text-charcoal-600">{m.aside}</span>}
                 </span>
               </div>
             </li>
@@ -304,7 +297,7 @@ export default async function AboutPage() {
                     {f.q}
                     <span
                       aria-hidden="true"
-                      className="text-xs text-biru-800 transition-transform duration-200 group-open:rotate-180"
+                      className="text-xs text-biru-800 motion-safe:transition-transform motion-safe:duration-200 group-open:rotate-180"
                     >
                       ▼
                     </span>
