@@ -57,11 +57,6 @@
   font-family: var(--font-display);
 }
 
-/* Tabular numerals for data cells */
-.tabnum {
-  font-variant-numeric: tabular-nums;
-}
-
 /* Scroll tables horizontally on narrow viewports without page-level overflow */
 .table-scroll {
   overflow-x: auto;
