@@ -99,7 +99,12 @@ function ResultGroup({ label, hits }: { label: string; hits: SearchHit[] }) {
 }
 
 function HitRow({ hit }: { hit: SearchHit }) {
-  const sub = hit.kind === "programme" || hit.kind === "activity" || hit.kind === "project" ? hit.vote_name_ms : null;
+  const sub =
+    hit.kind === "ministry"
+      ? hit.formerly && (hit.formerly.origin === "acronym" ? hit.formerly.name_ms : `formerly ${hit.formerly.name_ms}`)
+      : hit.kind === "vote"
+        ? null
+        : hit.vote_name_ms;
 
   return (
     <li className="py-4">

@@ -10,18 +10,24 @@ import SourceNotes from "@/components/SourceNotes";
 import { getSourceNotes } from "@/lib/queries/gaps";
 import { cn } from "@/lib/cn";
 import { voteCodeToSlug } from "@/lib/citations";
+import { formatDate } from "@/lib/dates";
 import { formatSen, formatSenCompact, parseSen, type Sen } from "@/lib/money";
 import {
   getBudgetForVotes,
   getDevelopmentGroups,
   getMinistriesForYear,
   getMinistry,
-  getMinistrySlugs,
   getProgrammeSpending,
   getTopProjects,
+  type BodyAlias,
+  type Citation,
+  type LineageLink,
+  type VoteTenure,
 } from "@/lib/queries/ministry";
 import { titleCase } from "@/lib/queries/sankey";
 import { getFederalSpending } from "@/lib/queries/spending";
+import { slugify } from "@/lib/slug";
+import { getLoadedYears } from "@/lib/years";
 import { colours } from "@/styles/colours";
 
 interface Props {
@@ -31,7 +37,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ministry = await getMinistry((await params).slug);
-  return { title: ministry ? titleCase(ministry.latest.name_ms) : "Ministry not found" };
+  return { title: ministry ? titleCase(ministry.body.name_ms) : "Ministry not found" };
 }
 
 const ordinal = (n: number) => {
@@ -49,6 +55,63 @@ function Amount({ sen }: { sen: Sen }) {
   );
 }
 
+/** Acronyms are printed as given; other names are title-cased like the rest of the site. */
+const aliasText = (a: Pick<BodyAlias, "name_ms" | "origin">) =>
+  a.origin === "acronym" ? a.name_ms : titleCase(a.name_ms);
+
+function Source({ citation }: { citation: Citation }) {
+  return (
+    <a href={citation.url} target="_blank" rel="noopener noreferrer" title={citation.title}>
+      {citation.locator ?? citation.title}
+    </a>
+  );
+}
+
+const Confidence = ({ level }: { level: LineageLink["confidence"] }) =>
+  level === "high" ? null : <span className="text-charcoal-700"> ({level} confidence)</span>;
+
+function BodyLink({ body }: { body: LineageLink["body"] }) {
+  return (
+    <Link href={`/ministries/${body.slug}`} lang="ms">
+      {titleCase(body.name_ms)}
+    </Link>
+  );
+}
+
+/** "since 10 Mar 2020", "before 2016 to 2 Jul 2018", "10 Mar 2020 to 3 Dec 2022". */
+function aliasPeriod(a: BodyAlias, firstYear: number): string {
+  const from = a.valid_from === null ? `before ${firstYear}` : formatDate(a.valid_from);
+  return a.valid_to === null ? `since ${from}` : `${from} to ${formatDate(a.valid_to)}`;
+}
+
+/** "B/P.33 was held by Kementerian Alam Sekitar dan Air from 2020 to 2023, then by this ministry since 2024." */
+function tenureSentence(number: string, tenures: VoteTenure[], ownId: string): React.ReactNode {
+  const span = (t: VoteTenure) =>
+    t.to_year === null
+      ? `since ${t.from_year}`
+      : t.from_year === t.to_year
+        ? `in ${t.from_year}`
+        : `from ${t.from_year} to ${t.to_year}`;
+  const runs: { body: VoteTenure["body"]; spans: string[] }[] = [];
+  for (const t of tenures) {
+    const last = runs[runs.length - 1];
+    if (last && last.body.id === t.body.id) last.spans.push(span(t));
+    else runs.push({ body: t.body, spans: [span(t)] });
+  }
+  return (
+    <>
+      B/P.{number} was held by{" "}
+      {runs.map((r, i) => (
+        <span key={i}>
+          {i > 0 && ", then by "}
+          {r.body.id === ownId ? "this ministry" : <BodyLink body={r.body} />} {r.spans.join(" and ")}
+        </span>
+      ))}
+      .
+    </>
+  );
+}
+
 export default async function MinistryPage({ params, searchParams }: Props) {
   const [{ slug }, { year: yearParam }] = await Promise.all([params, searchParams]);
   const ministry = await getMinistry(slug);
@@ -57,10 +120,10 @@ export default async function MinistryPage({ params, searchParams }: Props) {
     permanentRedirect(`/ministries/${ministry.canonical}${yearParam ? `?year=${yearParam}` : ""}`);
   }
 
-  const { years } = ministry;
+  const { body, years, aliases, lineage, tenures } = ministry;
   const current = years.find((y) => y.fiscal_year === Number(yearParam)) ?? ministry.latest;
   const year = current.fiscal_year;
-  const name = titleCase(ministry.latest.name_ms);
+  const name = titleCase(body.name_ms);
   const printedName = titleCase(current.name_ms);
   const codes = [current.operating_vote_code, current.development_vote_code].filter((c): c is string => c !== null);
   const devCode = current.development_vote_code;
@@ -68,13 +131,13 @@ export default async function MinistryPage({ params, searchParams }: Props) {
     (c): c is string => c !== null,
   );
 
-  const [spending, programmes, groups, budget, peers, slugs, notes] = await Promise.all([
+  const [spending, programmes, groups, budget, peers, loadedYears, notes] = await Promise.all([
     getFederalSpending(year),
     current.operating_vote_code ? getProgrammeSpending(year, current.operating_vote_code) : [],
     devCode ? getDevelopmentGroups(year, devCode) : [],
     getBudgetForVotes(latestCodes),
     getMinistriesForYear(year),
-    getMinistrySlugs(),
+    getLoadedYears(),
     // Only its operating figures come from the statement the caveats are about.
     current.operating_vote_code ? getSourceNotes(year, current.operating_vote_code) : null,
   ]);
@@ -84,13 +147,13 @@ export default async function MinistryPage({ params, searchParams }: Props) {
 
   const history = [...years].sort((a, b) => a.fiscal_year - b.fiscal_year);
   const first = history[0];
-  const renamed = [
-    ...new Set(history.filter((h) => h.name_ms !== ministry.latest.name_ms).map((h) => titleCase(h.name_ms))),
-  ];
+  const firstLoadedYear = loadedYears[loadedYears.length - 1] ?? first.fiscal_year;
+  const numbers = [...new Set(tenures.map((t) => t.number))];
+  const sharedNumbers = numbers.filter((n) => tenures.filter((t) => t.number === n).length > 1);
   const budgetFor = (fy: number) =>
     budget?.rows.filter((r) => r.fiscal_year === fy).reduce((s, r) => s + r.total_sen, 0) ?? 0;
   const tabled = budget ? budgetFor(budget.budget_year) : 0;
-  const rankIndex = peers.findIndex((p) => p.number === current.number);
+  const rankIndex = peers.findIndex((p) => p.body_id === body.id);
   const prev = rankIndex > 0 ? peers[rankIndex - 1] : null;
   const next = rankIndex >= 0 && rankIndex < peers.length - 1 ? peers[rankIndex + 1] : null;
   const neighbourClass =
@@ -162,8 +225,13 @@ export default async function MinistryPage({ params, searchParams }: Props) {
             </>
           )}
           . That was {(current.share * 100).toFixed(1)}% of federal spending.
-          {renamed.length > 0 &&
-            ` Under the same vote number it has also been printed as ${renamed.join(", ")}; reorganisations can move programmes between ministries.`}
+          {ministry.residual.map((r) => (
+            <span key={r.fiscal_year}>
+              {" "}
+              {[r.operating_vote_code, r.development_vote_code].filter((c) => c !== null).join(" and ")} was still
+              printed, with nothing spent, in {r.fiscal_year}.
+            </span>
+          ))}
         </p>
         <div className="mt-10">
           <StackedBars
@@ -268,6 +336,67 @@ export default async function MinistryPage({ params, searchParams }: Props) {
         </Band>
       )}
 
+      <Band>
+        <H2>Names</H2>
+        <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
+          {aliases.map((a, i) => (
+            <li key={i} className="py-3">
+              <span lang="ms" className="font-medium">
+                {aliasText(a)}
+              </span>
+              <span className="block mt-0.5 text-sm text-charcoal-700">
+                {aliasPeriod(a, firstLoadedYear)} · {a.origin}
+                <Confidence level={a.confidence} /> · <Source citation={a.citation} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Band>
+
+      {(lineage.length > 0 || sharedNumbers.length > 0) && (
+        <Band>
+          <H2>Lineage</H2>
+          {lineage.length > 0 && (
+            <ul className="mt-6 max-w-3xl list-none m-0 p-0 divide-y divide-border">
+              {lineage.map((e, i) => (
+                <li key={i} className="py-3">
+                  {e.whole ? (
+                    e.direction === "predecessor" ? (
+                      <>
+                        All of <BodyLink body={e.body} /> became part of this ministry
+                      </>
+                    ) : (
+                      <>
+                        All of this ministry became part of <BodyLink body={e.body} />
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <span lang="ms">{e.functions}</span> moved {e.direction === "predecessor" ? "from" : "to"}{" "}
+                      <BodyLink body={e.body} />
+                    </>
+                  )}{" "}
+                  on {formatDate(e.effective)}
+                  <Confidence level={e.confidence} />.
+                  <span className="block mt-0.5 text-sm text-charcoal-700">
+                    <Source citation={e.citation} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {sharedNumbers.map((n) => (
+            <p key={n} className="mt-6 max-w-3xl">
+              {tenureSentence(
+                n,
+                tenures.filter((t) => t.number === n),
+                body.id,
+              )}
+            </p>
+          ))}
+        </Band>
+      )}
+
       {budget && tabled > 0 && latestCodes[0] && (
         <Band>
           <H2>Budget {budget.budget_year}</H2>
@@ -289,7 +418,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
       >
         {[prev, next].map((m, i) =>
           m ? (
-            <Link key={i} href={`/ministries/${slugs.get(m.number)}?year=${year}`} className={neighbourClass}>
+            <Link key={i} href={`/ministries/${slugify(m.body_name_ms)}?year=${year}`} className={neighbourClass}>
               <span className={cn(kicker, "text-charcoal-700")}>
                 {i === 0 ? `← Larger · ${ordinal(m.rank)}` : `Smaller · ${ordinal(m.rank)} →`}
               </span>

@@ -10,6 +10,7 @@ from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.budget_word import parse_budget_summary_word
+from pipeline.lineage import DEFAULT_LINEAGE_DIR, LineageError, load_lineage, read_lineage
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.ocr import OcrError
@@ -43,7 +44,7 @@ def ingest(year: int, database_url: str, raw_dir: Path) -> int:
                 conn, source, operating, development, revenue, parsed.pages, retrieved_at(pdf), covid,
                 parsed.operating_ocr_engine,
             )  # fmt: skip
-    except (SourceError, ParseError, ReconciliationError, OcrError) as error:
+    except (SourceError, ParseError, ReconciliationError, OcrError, LineageError) as error:
         print(f"ingest {year} failed: {error}", file=sys.stderr)
         return 1
 
@@ -114,7 +115,7 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
                 " where document_id = %s and result not in ('matches', 'rounding') order by 1, 2, 3",
                 (source.id,),
             ).fetchall()
-    except (SourceError, ParseError) as error:
+    except (SourceError, ParseError, LineageError) as error:
         print(f"ingest-budget {year} failed: {error}", file=sys.stderr)
         return 1
     print(f"ingested {source.id} from {pdf}")
@@ -140,6 +141,21 @@ def ingest_budget(year: int, database_url: str, raw_dir: Path) -> int:
     return 0
 
 
+def load_lineage_files(database_url: str, lineage_dir: Path) -> int:
+    try:
+        lineage = read_lineage(lineage_dir)
+        with psycopg.connect(database_url, autocommit=True) as conn:
+            result = load_lineage(conn, lineage)
+    except (OSError, LineageError) as error:
+        print(f"load-lineage failed: {error}", file=sys.stderr)
+        return 1
+    print(
+        f"loaded {lineage_dir}: bodies {result.bodies}, aliases {result.aliases}, vote holders {result.holders},"
+        f" edges {result.edges}; {result.checked} printed vote names in the loaded documents all covered"
+    )
+    return 0
+
+
 def tax_schedule(year: int, raw_dir: Path, out: Path) -> int:
     try:
         schedule = write_schedule(raw_dir, year, out)
@@ -162,6 +178,9 @@ def main() -> int:
     budget_cmd.add_argument("--year", type=int, required=True, help="the budget year, e.g. 2027")
     budget_cmd.add_argument("--database-url", required=True)
     budget_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    lineage_cmd = commands.add_parser("load-lineage", help="replace the ministry lineage tables from data/lineage/")
+    lineage_cmd.add_argument("--database-url", required=True)
+    lineage_cmd.add_argument("--lineage-dir", type=Path, default=DEFAULT_LINEAGE_DIR)
     tax_cmd = commands.add_parser("tax-schedule", help="read one year's personal income tax schedule into JSON")
     tax_cmd.add_argument("--year", type=int, required=True, help="the year of assessment, e.g. 2025")
     tax_cmd.add_argument("--out", type=Path, required=True)
@@ -169,6 +188,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "tax-schedule":
         return tax_schedule(args.year, args.raw_dir, args.out)
+    if args.command == "load-lineage":
+        return load_lineage_files(args.database_url, args.lineage_dir)
     if args.command == "ingest-budget":
         return ingest_budget(args.year, args.database_url, args.raw_dir)
     return ingest(args.year, args.database_url, args.raw_dir)

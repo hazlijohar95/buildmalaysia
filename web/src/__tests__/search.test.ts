@@ -82,7 +82,7 @@ function makeHit(overrides: Partial<SearchHit> & Pick<SearchHit, "kind">): Searc
     actual_sen: parseSen(0),
   };
   if (overrides.kind === "ministry") {
-    return { ...base, ...overrides } as SearchHit;
+    return { ...base, formerly: null, ...overrides } as SearchHit;
   }
   return { ...base, vote_name_ms: "VOTE", ...overrides } as SearchHit;
 }

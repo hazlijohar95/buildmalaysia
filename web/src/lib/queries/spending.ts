@@ -59,9 +59,9 @@ export async function getFederalSpending(year: number): Promise<FederalSpending 
   };
 }
 
-/** One row per ministry: its supply vote (B.nn) and development vote (P.nn), as printed. */
+/** One row per body: its supply vote (B.nn) and development vote (P.nn), as printed that year. */
 export interface MinistrySpending {
-  number: string;
+  body_id: string;
   name_ms: string;
   operating_vote_code: string | null;
   operating_actual_sen: Sen | null;
@@ -71,7 +71,7 @@ export interface MinistrySpending {
 }
 
 interface RawMinistrySpending {
-  number: string;
+  body_id: string;
   name_ms: string;
   operating_vote_code: string | null;
   operating_actual_sen: string | null;
@@ -82,7 +82,7 @@ interface RawMinistrySpending {
 
 export async function getMinistrySpending(year: number): Promise<MinistrySpending[]> {
   const rows = await sql<RawMinistrySpending[]>`
-    select number, name_ms, operating_vote_code, operating_actual_sen,
+    select body_id, name_ms, operating_vote_code, operating_actual_sen,
            development_vote_code, development_actual_sen, actual_sen
     from ministry_spending
     where fiscal_year = ${year}

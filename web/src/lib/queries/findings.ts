@@ -230,8 +230,8 @@ export interface TopGrowthMinistryData {
 }
 
 /**
- * Returns the ministry whose total actual spending grew most (by percentage) from the prior year,
- * comparing only votes that share the same number and printed name in both years.
+ * Returns the body whose total actual spending grew most (by percentage) from the prior year, leaving out
+ * any body with a lineage edge, establishment or dissolution dated in either year.
  */
 export async function getTopGrowthMinistryData(year: number): Promise<TopGrowthMinistryData | null> {
   const [row] = await sql<
@@ -247,17 +247,27 @@ export async function getTopGrowthMinistryData(year: number): Promise<TopGrowthM
     }[]
   >`
     with growth as (
-      select curr.name_ms, curr.operating_vote_code, curr.actual_sen as curr_actual,
+      select curr.body_name_ms as name_ms, curr.operating_vote_code, curr.actual_sen as curr_actual,
              prev.actual_sen as prev_actual, prev.fiscal_year as prev_year
       from ministry_spending curr
       join ministry_spending prev
         on prev.fiscal_year = curr.fiscal_year - 1
-       and prev.number = curr.number
-       and prev.name_ms = curr.name_ms
+       and prev.body_id = curr.body_id
+      join body b on b.id = curr.body_id
       where curr.fiscal_year = ${year}
+        and not curr.residual and not prev.residual
         and prev.actual_sen > 0
         and curr.actual_sen > prev.actual_sen
         and curr.operating_vote_code is not null
+        -- A body reorganised between the two years is not comparing like with like.
+        and not exists (
+          select 1 from lineage_edge e
+          where curr.body_id in (e.predecessor, e.successor)
+            and e.confidence <> 'unverified'
+            and extract(year from e.effective) between prev.fiscal_year and curr.fiscal_year
+        )
+        and (b.established is null or extract(year from b.established) not between prev.fiscal_year and curr.fiscal_year)
+        and (b.dissolved is null or extract(year from b.dissolved) not between prev.fiscal_year and curr.fiscal_year)
     )
     select g.name_ms, g.operating_vote_code, g.curr_actual, g.prev_actual, g.prev_year,
            pt.pdf_page, pt.book_page, sd.url as doc_url
