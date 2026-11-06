@@ -81,12 +81,7 @@ export default async function MethodologyPage() {
             Development Fund (Kumpulan Wang Pembangunan). That fund pays for development spending, so the transfer would
             otherwise be counted twice. Operating, development and COVID-19 Fund spending for every loaded year match
             data.gov.my&apos;s published figures to the million, with one exception: for 2023 development, data.gov.my
-            reports RM96,091 million and the statement prints RM96,089.7 million.
-          </p>
-
-          <p>
-            2020 is not loaded yet. Its operating statement is printed as drawn shapes with no text layer, so it can
-            only be read by optical character recognition, which this site does not yet rely on.
+            reports RM 96,091 million and the statement prints RM 96,089.7 million.
           </p>
 
           <p>
