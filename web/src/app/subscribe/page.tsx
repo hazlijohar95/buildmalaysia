@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Band, PageHeader } from "@/components/Boxed";
+import { Logo } from "@/components/brand/Logo";
 import { SubscribeForm } from "@/components/SubscribeForm";
+import { cn } from "@/lib/cn";
 import { STATUS_COPY, type SubscribeStatus } from "@/lib/subscribe/types";
 
 export const metadata: Metadata = {
@@ -30,8 +32,16 @@ export default async function SubscribePage({
       <PageHeader eyebrow="Alerts" title="Get alerts" />
       <Band>
         {status && (
-          <div id="subscribe-status" className="mb-8 max-w-lg border-2 border-foreground p-4 text-sm" role="status">
-            {STATUS_COPY[status]}
+          <div
+            id="subscribe-status"
+            className={cn(
+              "mb-8 max-w-lg border-2 border-foreground p-4 text-sm",
+              (status === "sent" || status === "confirmed") && "status-in flex items-center gap-4",
+            )}
+            role="status"
+          >
+            {status === "confirmed" && <Logo unit={1} decorative className="celebrate shrink-0" />}
+            <span>{STATUS_COPY[status]}</span>
           </div>
         )}
         {status !== "unavailable" && <SubscribeForm tone="light" invalid={status === "invalid"} />}

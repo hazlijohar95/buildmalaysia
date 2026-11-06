@@ -5,11 +5,12 @@
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/cn";
+import { NavProgress } from "./NavProgress";
 
 export interface NavLink {
   href: string;
@@ -209,6 +210,9 @@ export default function Header({ items, cta }: { items: NavItem[]; cta: NavLink 
           </button>
         </div>
         {mobileOpen && <MobileMenu items={items} cta={cta} isActive={isActive} />}
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
       </header>
     </>
   );
@@ -333,7 +337,7 @@ function MobileMenu({
     // inside itself instead of running off the screen.
     <nav
       id="mobile-menu"
-      className="lg:hidden max-h-[calc(100dvh-var(--frame)-var(--bar)-4px)] overflow-y-auto overscroll-contain border-t-2 border-foreground"
+      className="lg:hidden motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)] max-h-[calc(100dvh-var(--frame)-var(--bar)-4px)] overflow-y-auto overscroll-contain border-t-2 border-foreground"
       aria-label="Mobile navigation"
     >
       {items.map((item) =>
