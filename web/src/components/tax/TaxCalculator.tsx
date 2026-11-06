@@ -106,6 +106,8 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
   const max = yours[0]?.amount ?? 0;
   const top = yours.slice(0, SEGMENTS.length);
   const restShare = 1 - top.reduce((s, i) => s + i.share, 0);
+  const figure = (name: string, amount: number) => `${name}: ${rm(amount, perHundred ? 2 : 0)}`;
+  const restFigure = figure("Everything else", base * restShare);
   const visible = showAll ? yours : yours.slice(0, SHOWN);
   const rates = SCHEDULE.sources.find((s) => s.id === "lhdn-kadar-cukai");
   const reliefsPage = SCHEDULE.sources.find((s) => s.id === "lhdn-pelepasan-cukai");
@@ -206,21 +208,20 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
             <div
               className="flex h-14 w-full overflow-hidden border-2 border-foreground"
               role="img"
-              aria-label="Your tax by destination"
+              aria-label={`${perHundred ? "Each RM 100 of spending" : "Your tax"} by destination. ${[
+                ...top.map((s) => figure(s.name, s.amount)),
+                restFigure,
+              ].join("; ")}.`}
             >
               {top.map((s, i) => (
                 <div
                   key={s.id}
-                  title={`${s.name}: ${rm(s.amount, perHundred ? 2 : 0)}`}
+                  title={figure(s.name, s.amount)}
                   style={{ width: `${s.share * 100}%`, background: SEGMENTS[i] }}
                   className="h-full border-r border-linen-50/60 last:border-r-0"
                 />
               ))}
-              <div
-                title="Everything else"
-                style={{ width: `${restShare * 100}%`, background: REST }}
-                className="h-full"
-              />
+              <div title={restFigure} style={{ width: `${restShare * 100}%`, background: REST }} className="h-full" />
             </div>
             <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
               {top.map((s, i) => (

@@ -11,7 +11,10 @@ export interface RankedItem {
   note?: string | null; // a gloss or share shown under the name
 }
 
-/** A ranked list with a bar per row, scaled to the largest; amounts compact with the exact figure on hover. */
+/**
+ * A ranked list with a bar per row, scaled to the largest; amounts compact with the exact figure on hover, and only
+ * the exact figure for screen readers.
+ */
 export default function RankedList({ items, className }: { items: RankedItem[]; className?: string }) {
   const max = Math.max(1, ...items.map((i) => i.amount_sen));
   return (
@@ -41,7 +44,8 @@ export default function RankedList({ items, className }: { items: RankedItem[]; 
             className="text-right font-display text-lg font-semibold tabular-nums"
             title={formatSen(item.amount_sen)}
           >
-            {formatSenCompact(item.amount_sen)}
+            <span aria-hidden="true">{formatSenCompact(item.amount_sen)}</span>
+            <span className="sr-only">{formatSen(item.amount_sen)}</span>
           </span>
         </li>
       ))}

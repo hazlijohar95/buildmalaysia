@@ -82,7 +82,7 @@ export interface Stat {
   label: React.ReactNode;
   value: React.ReactNode;
   sub?: React.ReactNode;
-  title?: string; // exact figure on hover when the value is compact
+  title?: string; // the exact figure, shown under a compact value
 }
 
 /** Square stat boxes ruled by a 2px gap: two to a row below lg, all in one row from lg. */
@@ -101,10 +101,15 @@ export function StatRow({ stats }: { stats: Stat[] }) {
           <div
             // Sized to the cell (14% of its width, capped at 3rem) so a long figure like RM 52,623.62 never spills out.
             className="mt-3 font-display text-[min(3rem,14cqi)] leading-tight font-semibold tracking-tight tabular-nums whitespace-nowrap"
-            title={s.title}
           >
             {s.value}
           </div>
+          {s.title && (
+            // A long figure may break after any thousands comma rather than spill out of a narrow cell.
+            <div className="mt-1 font-mono text-xs tabular-nums text-charcoal-600 [overflow-wrap:anywhere]">
+              {s.title.split(",").flatMap((part, i) => (i === 0 ? [part] : [",", <wbr key={i} />, part]))}
+            </div>
+          )}
           {s.sub && <div className="mt-1 text-sm text-charcoal-700">{s.sub}</div>}
         </div>
       ))}
