@@ -174,7 +174,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
         intro={
           <p>
             {current.operating_vote_code && devCode
-              ? `Its running costs are supply vote ${current.operating_vote_code} and its projects development vote ${devCode}.`
+              ? `Its operating spending is supply vote ${current.operating_vote_code} and its projects development vote ${devCode}.`
               : current.operating_vote_code
                 ? `Its spending is supply vote ${current.operating_vote_code}; it has no development vote.`
                 : `Its spending is development vote ${devCode}.`}
@@ -220,7 +220,7 @@ export default async function MinistryPage({ params, searchParams }: Props) {
           <span lang="ms">{printedName}</span> spent <Amount sen={current.actual_sen} /> in {year}
           {current.operating_vote_code && devCode && (
             <>
-              : <Amount sen={current.operating_actual_sen} /> on running costs and{" "}
+              : <Amount sen={current.operating_actual_sen} /> on operating spending and{" "}
               <Amount sen={current.development_actual_sen} /> on development projects
             </>
           )}

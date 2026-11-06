@@ -204,7 +204,7 @@ export default async function HomePage() {
                 title: formatSen(spending.total_actual_sen),
               },
               {
-                label: "Running costs",
+                label: "Operating",
                 value: formatSenCompact(spending.operating_net_actual_sen),
                 title: formatSen(spending.operating_net_actual_sen),
               },

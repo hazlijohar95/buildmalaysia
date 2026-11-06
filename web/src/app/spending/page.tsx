@@ -54,7 +54,7 @@ export default async function SpendingPage({ searchParams }: Props) {
             title: formatSen(spending.total_actual_sen),
           },
           {
-            label: "Running costs",
+            label: "Operating",
             value: formatSenCompact(spending.operating_net_actual_sen),
             title: formatSen(spending.operating_net_actual_sen),
             sub: "salaries, supplies, grants, debt charges",
@@ -102,7 +102,7 @@ export default async function SpendingPage({ searchParams }: Props) {
       <Band>
         <H2>Who spent it</H2>
         <p className="mt-3 max-w-3xl text-charcoal-800">
-          Every ministry, with its running costs and development projects together, and the charges paid outside any
+          Every ministry, with its operating and development spending together, and the charges paid outside any
           ministry.
         </p>
         <RankedList
@@ -121,7 +121,7 @@ export default async function SpendingPage({ searchParams }: Props) {
         <H2>How the total is counted</H2>
         <div className="mt-4 max-w-3xl space-y-3 text-charcoal-800">
           <p>
-            Running costs are the operating statement&apos;s total less the{" "}
+            Operating spending is the operating statement&apos;s total less the{" "}
             <span title={formatSen(spending.development_fund_transfer_sen)}>
               {formatSenCompact(spending.development_fund_transfer_sen)}
             </span>{" "}
