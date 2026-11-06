@@ -3,7 +3,7 @@ import Base from "@/layouts/Base.astro";
 import Static from "@/components/Static";
 import page from "@/views/home";
 
-const { head, body } = await page();
+const { head, body } = page();
 ---
 
 <Base {...head}><Static node={body} /></Base>

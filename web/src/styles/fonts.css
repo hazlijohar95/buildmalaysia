@@ -1,11 +1,17 @@
 /* Geist comes from Fontsource (imported in src/layouts/Base.astro); Cal Sans (calcom/font) and Paper Mono
-   (paper-design/paper-mono) are both SIL OFL 1.1. */
+   (paper-design/paper-mono) are both SIL OFL 1.1.
+
+   Both are subset to the Latin range below, which halves Cal Sans, with every axis and layout feature kept:
+   python3 -m fontTools.subset <upstream>.woff2 --unicodes="<unicode-range>" --layout-features='*' --flavor=woff2
+   Text outside the range falls back to the next font in the stack. */
 
 @font-face {
   font-family: "Cal Sans";
   src: url("../assets/fonts/CalSansVF.woff2") format("woff2");
   font-weight: 400 700;
   font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2190-2199, U+2212, U+2215, U+25A0-25FF, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -13,6 +19,8 @@
   src: url("../assets/fonts/PaperMono-VF.woff2") format("woff2");
   font-weight: 100 800;
   font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2190-2199, U+2212, U+2215, U+25A0-25FF, U+FEFF, U+FFFD;
 }
 
 :root {

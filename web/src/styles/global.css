@@ -148,6 +148,94 @@ main a:not([class]):hover {
   }
 }
 
+/* Moving between pages keeps the header still and cross-fades the page under it. */
+@view-transition {
+  navigation: auto;
+}
+[data-site-header] {
+  view-transition-name: site-header;
+}
+::view-transition-group(root) {
+  animation-duration: 180ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/* The bar along the header's bottom rule while a clicked page loads (nav.ts). It races to a third, then creeps
+   toward the end and never reaches it: the next page replaces this one when it lands. */
+.nav-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -2px;
+  height: 2px;
+  background: var(--color-merah-600);
+  transform-origin: left;
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-progress[data-state="pending"] {
+  opacity: 1;
+  animation: nav-progress 12s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+@keyframes nav-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  4% {
+    transform: scaleX(0.35);
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress[data-state="pending"] {
+    animation: carta-fade-in 200ms ease both;
+    transform: scaleX(1);
+    opacity: 0.6;
+  }
+}
+
+/* PageSkeleton: shown only while nothing follows it, so it goes the moment the page's own content is parsed, and
+   invisible for its first 300ms so a fast page never flashes it. Not :last-child, which Chrome doesn't match
+   while the parent is still streaming; browsers without :has never show it. */
+#page-skeleton {
+  display: none;
+}
+@supports selector(:has(+ *)) {
+  #page-skeleton:not(:has(+ *)) {
+    display: block;
+    animation: carta-fade-in 240ms var(--ease-out) 300ms both;
+  }
+}
+.skeleton-bar {
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--color-linen-200) 0%,
+    var(--color-linen-100) 50%,
+    var(--color-linen-200) 100%
+  );
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-bar {
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 /* The page frame's margin and the nav bar's height, which the sticky header and anchor offsets derive from. */
 :root {
   --frame: 10px;

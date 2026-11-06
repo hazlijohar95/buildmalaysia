@@ -21,3 +21,6 @@ export interface Page {
   head: Head;
   body: ReactNode;
 }
+
+/** Marks a page whose body failed after the layout had streamed (Streamed.tsx); worker.ts never caches it. */
+export const LOAD_FAILED_MARKER = "data-load-failed";

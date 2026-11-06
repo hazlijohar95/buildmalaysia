@@ -13,8 +13,21 @@ export interface SiteNav {
   budgetYear?: number;
 }
 
+// The nav changes only when the database is reloaded, and rendered pages are already cached for an hour, so an
+// isolate keeps it for five minutes. Most renders then stream the layout without waiting on a query, and a slow
+// page's queries can't hold the header back.
+const NAV_TTL_MS = 5 * 60_000;
+let kept: { nav: SiteNav; at: number } | undefined;
+
 /** The header's menus and the footer's links, built from what the database has loaded. */
 export async function loadNav(): Promise<SiteNav> {
+  if (kept && Date.now() - kept.at < NAV_TTL_MS) return kept.nav;
+  const nav = await buildNav();
+  kept = { nav, at: Date.now() };
+  return nav;
+}
+
+async function buildNav(): Promise<SiteNav> {
   const [years, books, [covidYear]] = await Promise.all([getLoadedYears(), getTabledBooks(), getCovidYears()]);
   const [latest] = years;
   const items: NavItem[] = [
