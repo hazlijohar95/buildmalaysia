@@ -200,7 +200,7 @@ function Dropped({ year, url, rows }: { year: number; url: string; rows: Dropped
           </span>
         ))}
       </p>
-      <details className="group/drop mt-8 border-t-2 border-foreground">
+      <details className="reveal group/drop mt-8 border-t-2 border-foreground">
         <summary className="flex items-baseline gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden hover:bg-linen-100">
           <LuChevronRight
             aria-hidden

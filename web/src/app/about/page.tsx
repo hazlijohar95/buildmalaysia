@@ -289,7 +289,7 @@ export default async function AboutPage() {
                 <details
                   key={f.q}
                   className={cn(
-                    "group border-b border-foreground/25",
+                    "reveal group border-b border-foreground/25",
                     i === 0 ? "first:border-t" : "md:first:border-t",
                   )}
                 >

@@ -283,9 +283,9 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
                 </span>
                 <span className="hidden md:block h-3 bg-linen-200">
                   <span
-                    className="block h-full"
+                    className="block h-full origin-left motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out"
                     style={{
-                      width: `${max > 0 ? (s.amount / max) * 100 : 0}%`,
+                      transform: `scaleX(${max > 0 ? s.amount / max : 0})`,
                       background: SEGMENTS[i] ?? "var(--color-merah-600)",
                     }}
                   />
