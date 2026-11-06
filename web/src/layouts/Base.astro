@@ -3,6 +3,7 @@ import "@fontsource-variable/geist/wght.css";
 import "@/styles/global.css";
 import Footer from "@/components/MainLayout/Footer";
 import Header from "@/components/MainLayout/Header";
+import PageSkeleton from "@/components/PageSkeleton";
 import { SUBSCRIBE_SCRIPT } from "@/components/SubscribeForm";
 import { PALETTE } from "@/brand/carta";
 import { brandFileUrl } from "@/brand/files";
@@ -25,6 +26,28 @@ const {
 const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
 const ogImage = new URL(og.path, Astro.site).href;
 const nav = await loadNav();
+
+// Fetches a page as soon as the reader shows intent (hovering a link, or pressing on it), so the click lands on a
+// page that is already here. Prefetch only: nothing runs until the reader navigates. Downloads, the API, images
+// and the one-time confirmation links are left alone.
+const SPECULATION_RULES = JSON.stringify({
+  prefetch: [
+    {
+      where: {
+        and: [
+          { href_matches: "/*" },
+          {
+            not: {
+              href_matches: ["/api/*", "/data/*/*", "/brand/files/*", "/*opengraph-image*", "/subscribe/confirm*"],
+            },
+          },
+          { not: { selector_matches: "[download], [target=_blank]" } },
+        ],
+      },
+      eagerness: "moderate",
+    },
+  ],
+});
 
 // Runs before first paint: the logo's intro plays on the first page view of a session, and never on a later one.
 const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStorage.setItem("carta-intro","1");document.documentElement.setAttribute("data-intro","")}}catch(e){}`;
@@ -61,6 +84,7 @@ const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStor
     <link rel="icon" href={brandFileUrl("icon.svg")} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={brandFileUrl("apple-touch-icon.png")} sizes="180x180" />
     <script is:inline set:html={INTRO_SCRIPT} />
+    <script is:inline type="speculationrules" set:html={SPECULATION_RULES} />
   </head>
   <body class="min-h-screen p-[var(--frame)]">
     <div class="min-h-[calc(100vh-2*var(--frame))] border-x-2 border-b-2 border-foreground flex flex-col">
@@ -71,13 +95,17 @@ const INTRO_SCRIPT = `try{if(!sessionStorage.getItem("carta-intro")){sessionStor
       >
         Skip to content
       </a>
-      <Header client:load items={nav.items} cta={nav.cta} pathname={Astro.url.pathname} />
+      <Header items={nav.items} cta={nav.cta} pathname={Astro.url.pathname} />
       <main id="main" class="flex-1">
+        <PageSkeleton />
         <slot />
       </main>
       <Footer spendingYear={nav.latest} budgetYear={nav.budgetYear} />
     </div>
     <script is:inline set:html={SUBSCRIBE_SCRIPT} />
+    <script>
+      import "@/components/MainLayout/nav";
+    </script>
     <!-- Cloudflare Web Analytics: cookie-free page counts. Its automatic injection skips Worker responses. -->
     <script
       is:inline

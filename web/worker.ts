@@ -8,6 +8,7 @@
 // deploy never serves HTML that points at the previous build's scripts.
 import { handle } from "@astrojs/cloudflare/handler";
 import { withRequestScope } from "@/lib/db";
+import { LOAD_FAILED_MARKER } from "@/lib/route";
 
 const CANONICAL_HOST = "buildmalaysia.com";
 const PAGE_TTL_SECONDS = 3600;
@@ -53,8 +54,16 @@ async function servePage(request: Request, url: URL, env: Env, ctx: ExecutionCon
 
   const stored = response.clone();
   stored.headers.set("cache-control", `public, max-age=0, s-maxage=${PAGE_TTL_SECONDS}`);
-  ctx.waitUntil(cache.put(key, stored));
+  ctx.waitUntil(store(cache, key, stored, type.startsWith("text/html")));
   return response;
+}
+
+// A streamed page has sent its 200 before its body loads, so a body that failed is only visible in the HTML.
+async function store(cache: Cache, key: URL, page: Response, isHtml: boolean): Promise<void> {
+  if (!isHtml) return cache.put(key, page);
+  const html = await page.text();
+  if (html.includes(LOAD_FAILED_MARKER)) return;
+  await cache.put(key, new Response(html, page));
 }
 
 async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

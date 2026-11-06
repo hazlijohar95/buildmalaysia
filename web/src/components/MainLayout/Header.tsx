@@ -1,7 +1,10 @@
 // Boxed navigation in the style of buildcanada.com: a white logo cell, bordered cells and a dark
 // call-to-action cell. A cell is either a link or a menu that opens a boxed panel under the header, on
 // hover with a mouse and on click or Enter otherwise. Below the lg breakpoint it collapses to one menu.
-import { useEffect, useRef, useState } from "react";
+//
+// Rendered on the server only. Every menu's panel is in the markup, hidden, and nav.ts opens and closes them by
+// setting `aria-expanded` and `hidden`; the styles below key off those attributes, so the header needs no React
+// in the browser.
 import { LuChevronDown, LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { kicker } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
@@ -28,75 +31,22 @@ export type NavItem =
 const cell =
   "flex items-center whitespace-nowrap px-5 font-mono text-[0.75rem] font-medium uppercase leading-[1.3] tracking-[0.14em] no-underline transition-colors duration-150 ease-out";
 
-const OPEN_DELAY = 80; // ms of hover before a menu opens, so passing the pointer across the bar opens nothing
-const CLOSE_DELAY = 160; // ms of grace after the pointer leaves, so a diagonal move into the panel keeps it open
-
-// Slugged so any label makes a valid id, and a safe attribute selector for restoring focus on Escape.
+// Slugged so any label makes a valid id.
 const panelId = (label: string) => `nav-panel-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 export default function Header({ items, cta, pathname }: { items: NavItem[]; cta: NavLink; pathname: string }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const openedByHover = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const mobileButton = useRef<HTMLButtonElement>(null);
-
   const isActive = (link: NavLink) => link.match.some((m) => pathname === m || pathname.startsWith(`${m}/`));
-
-  const schedule = (fn: () => void, ms: number) => {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(fn, ms);
-  };
-  const hoverOpen = (label: string) => {
-    openedByHover.current = true;
-    // Moving between open menus switches at once; opening from closed waits a beat.
-    schedule(() => setOpenMenu(label), openMenu ? 0 : OPEN_DELAY);
-  };
-  const hoverClose = () => schedule(() => setOpenMenu(null), CLOSE_DELAY);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
-  useEffect(() => {
-    // Going back restores the page from the back/forward cache with whatever menu was open when it was left.
-    const onShow = (e: PageTransitionEvent) => {
-      if (!e.persisted) return;
-      setOpenMenu(null);
-      setMobileOpen(false);
-    };
-    window.addEventListener("pageshow", onShow);
-    return () => window.removeEventListener("pageshow", onShow);
-  }, []);
-  useEffect(() => {
-    if (!openMenu && !mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (openMenu) document.querySelector<HTMLButtonElement>(`[aria-controls="${panelId(openMenu)}"]`)?.focus();
-      if (mobileOpen) mobileButton.current?.focus();
-      setOpenMenu(null);
-      setMobileOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [openMenu, mobileOpen]);
-
-  // Each menu mounts its own panel, so without this the panel would replay its entrance when moving between
-  // menus. It animates in only when a menu opens from closed.
-  const wasOpen = useRef(false);
-  const entering = openMenu !== null && !wasOpen.current;
-  useEffect(() => {
-    wasOpen.current = openMenu !== null;
-  }, [openMenu]);
 
   return (
     <>
-      {openMenu && (
-        // Dims the page under an open menu, so the panel reads as a layer above it.
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/15 backdrop-blur-[2px] motion-safe:animate-[nav-fade-in_200ms_ease-out]"
-          onClick={() => setOpenMenu(null)}
-        />
-      )}
-      <header className="sticky top-[var(--frame)] z-50 border-y-2 border-foreground bg-background">
+      {/* Dims the page under an open menu, so the panel reads as a layer above it. */}
+      <div
+        data-nav-backdrop
+        hidden
+        aria-hidden="true"
+        className="fixed inset-0 z-40 hidden lg:block bg-charcoal-1000/15 backdrop-blur-[2px] motion-safe:animate-[nav-fade-in_200ms_ease-out]"
+      />
+      <header data-site-header className="sticky top-[var(--frame)] z-50 border-y-2 border-foreground bg-background">
         <div className="flex min-h-[var(--bar)] items-stretch">
           {/* At 1.5px a stripe the logo is 37.5px tall; an 11px top inset puts every stripe edge on a whole
               device pixel at 2x. The cell is white because the flag's white stripes need a white ground. */}
@@ -125,50 +75,29 @@ export default function Header({ items, cta, pathname }: { items: NavItem[]; cta
                   </a>
                 );
               }
-              const open = openMenu === item.label;
               const active = [...item.links, ...(item.years ?? [])].some(isActive);
               return (
-                <div
-                  key={item.label}
-                  className="flex border-l border-foreground"
-                  onPointerEnter={(e) => e.pointerType === "mouse" && hoverOpen(item.label)}
-                  onPointerLeave={(e) => e.pointerType === "mouse" && hoverClose()}
-                  onBlur={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget)) setOpenMenu((m) => (m === item.label ? null : m));
-                  }}
-                >
+                <div key={item.label} data-nav-menu className="flex border-l border-foreground">
                   <button
                     type="button"
-                    aria-expanded={open}
-                    aria-controls={open ? panelId(item.label) : undefined}
-                    onClick={() => {
-                      clearTimeout(timer.current);
-                      // A click right after hover opened the menu keeps it open instead of closing it.
-                      const keep = open && openedByHover.current;
-                      openedByHover.current = false;
-                      if (!keep) setOpenMenu(open ? null : item.label);
-                    }}
+                    aria-expanded="false"
+                    aria-controls={panelId(item.label)}
                     className={cn(
                       cell,
-                      "gap-2 text-foreground cursor-pointer",
-                      open
-                        ? // The open button is the panel's tab: same paper, covering the bar's bottom rule beneath it.
-                          "relative z-10 bg-linen-50 after:absolute after:inset-x-0 after:-bottom-[2px] after:h-[2px] after:bg-linen-50"
-                        : active
-                          ? "bg-linen-200 hover:bg-foreground hover:text-background"
-                          : "hover:bg-foreground hover:text-background",
+                      "group gap-2 text-foreground cursor-pointer",
+                      active && "bg-linen-200",
+                      "not-aria-expanded:hover:bg-foreground not-aria-expanded:hover:text-background",
+                      // The open button is the panel's tab: same paper, covering the bar's bottom rule beneath it.
+                      "aria-expanded:relative aria-expanded:z-10 aria-expanded:bg-linen-50 aria-expanded:after:absolute aria-expanded:after:inset-x-0 aria-expanded:after:-bottom-[2px] aria-expanded:after:h-[2px] aria-expanded:after:bg-linen-50",
                     )}
                   >
                     {item.label}
                     <LuChevronDown
                       aria-hidden="true"
-                      className={cn(
-                        "h-3 w-3 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out",
-                        open && "rotate-180",
-                      )}
+                      className="h-3 w-3 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out group-aria-expanded:rotate-180"
                     />
                   </button>
-                  {open && <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} entering={entering} />}
+                  <MenuPanel id={panelId(item.label)} item={item} isActive={isActive} />
                 </div>
               );
             })}
@@ -194,22 +123,21 @@ export default function Header({ items, cta, pathname }: { items: NavItem[]; cta
             {cta.label}
           </a>
           <button
-            ref={mobileButton}
+            data-nav-mobile-button
             type="button"
-            className="lg:hidden flex items-center border-l border-foreground px-5 text-foreground"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-expanded={mobileOpen}
-            aria-controls={mobileOpen ? "mobile-menu" : undefined}
+            className="group lg:hidden flex items-center border-l border-foreground px-5 text-foreground"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
           >
-            <span className="sr-only">{mobileOpen ? "Close menu" : "Open menu"}</span>
-            {mobileOpen ? (
-              <LuX className="h-6 w-6" aria-hidden="true" />
-            ) : (
-              <LuMenu className="h-6 w-6" aria-hidden="true" />
-            )}
+            <span className="sr-only group-aria-expanded:hidden">Open menu</span>
+            <span className="sr-only hidden group-aria-expanded:inline">Close menu</span>
+            <LuMenu className="h-6 w-6 group-aria-expanded:hidden" aria-hidden="true" />
+            <LuX className="hidden h-6 w-6 group-aria-expanded:block" aria-hidden="true" />
           </button>
         </div>
-        {mobileOpen && <MobileMenu items={items} cta={cta} isActive={isActive} />}
+        <MobileMenu items={items} cta={cta} isActive={isActive} />
+        {/* Runs along the bottom rule while a clicked page loads (nav.ts). */}
+        <div data-nav-progress aria-hidden="true" className="nav-progress" />
       </header>
     </>
   );
@@ -219,23 +147,22 @@ function MenuPanel({
   id,
   item,
   isActive,
-  entering,
 }: {
   id: string;
   item: Extract<NavItem, { kind: "menu" }>;
   isActive: (link: NavLink) => boolean;
-  entering: boolean;
 }) {
   const count = item.links.length;
   return (
     // A sheet of lighter paper drawn from the bar. Its top rule is the bar's own, broken under the open button,
     // and its cells are ruled by hairline gaps over a tinted backing.
+    // Each menu has its own panel, so moving between open menus would replay the entrance; it plays only when a
+    // menu opens from closed.
     <div
       id={id}
-      className={cn(
-        "absolute inset-x-0 top-full -mt-[2px] border-y-2 border-foreground bg-linen-50 shadow-[0_28px_56px_-28px_rgb(39_39_39/0.45)]",
-        entering && "motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]",
-      )}
+      data-nav-panel
+      hidden
+      className="absolute inset-x-0 top-full -mt-[2px] border-y-2 border-foreground bg-linen-50 shadow-[0_28px_56px_-28px_rgb(39_39_39/0.45)] motion-safe:data-entering:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)]"
     >
       <div
         className={cn(
@@ -334,6 +261,7 @@ function MobileMenu({
     // inside itself instead of running off the screen.
     <nav
       id="mobile-menu"
+      hidden
       className="lg:hidden motion-safe:animate-[nav-panel-in_240ms_cubic-bezier(0.2,0,0,1)] max-h-[calc(100dvh-var(--frame)-var(--bar)-4px)] overflow-y-auto overscroll-contain border-t-2 border-foreground"
       aria-label="Mobile navigation"
     >
