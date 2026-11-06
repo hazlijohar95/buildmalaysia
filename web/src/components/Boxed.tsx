@@ -39,7 +39,9 @@ export function PageHeader({
   return (
     <Band wide={wide}>
       <div className={cn(kicker, "text-charcoal-700")}>{eyebrow}</div>
-      <h1 className="mt-4 m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight wrap-break-word">{title}</h1>
+      <h1 className="mt-4 m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight wrap-break-word">
+        {title}
+      </h1>
       {intro && <div className="mt-4 max-w-3xl text-lg text-charcoal-800 [&_p+p]:mt-3">{intro}</div>}
       {children && <div className="mt-8">{children}</div>}
     </Band>
