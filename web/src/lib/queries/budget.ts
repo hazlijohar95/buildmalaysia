@@ -1,5 +1,8 @@
 import sql from "@/lib/db";
+import type { VoteComparison } from "@/lib/budget-moves";
 import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
+import { getBodyLineage } from "@/lib/queries/lineage";
+import { printedVoteName } from "@/lib/queries/vote-nav";
 
 /** Each loaded budget book, newest first, with its grand total for the year it budgets as tabled. */
 export async function getTabledBooks(): Promise<{ budget_year: number; grand_total_sen: Sen | null }[]> {
@@ -103,6 +106,45 @@ export async function getBudgetVotes(budgetYear: number): Promise<BudgetVoteRow[
     order by left(f.vote_code, 1) desc, f.vote_code
   `;
   return rows.map((r) => ({ ...r, amounts: r.amounts.map((a) => parseSen(a)) }));
+}
+
+/** Each vote's current-year budget beside the proposed one, both from the book's summary line, with its holders. */
+export async function getVoteComparisons(budgetYear: number): Promise<VoteComparison[]> {
+  const [rows, lineageOf] = await Promise.all([
+    sql<
+      {
+        vote_code: string;
+        heading: string;
+        source_text: string;
+        base_sen: string;
+        proposed_sen: string;
+        pdf_page: number;
+        book_page: number;
+        holdings: { body_id: string; from_year: number; to_year: number | null }[];
+      }[]
+    >`
+      select f.vote_code, f.heading, f.source_text, b.total_sen as base_sen, f.total_sen as proposed_sen,
+             f.pdf_page, f.book_page,
+             coalesce((select json_agg(json_build_object('body_id', h.body_id, 'from_year', h.from_year,
+                                                         'to_year', h.to_year))
+                       from vote_holder h where h.vote_code = f.vote_code), '[]') as holdings
+      from budget_vote_figure f
+      join budget_document d on d.document_id = f.document_id
+      join budget_vote_figure b
+        on b.document_id = f.document_id and b.vote_code = f.vote_code and b.basis = 'original_estimate'
+      where d.budget_year = ${budgetYear} and f.basis = 'estimate'
+    `,
+    getBodyLineage(),
+  ]);
+  return rows.map((r) => ({
+    voteCode: r.vote_code,
+    name: printedVoteName(r.source_text) ?? r.heading,
+    base: parseSen(r.base_sen),
+    proposed: parseSen(r.proposed_sen),
+    pdfPage: r.pdf_page,
+    bookPage: r.book_page,
+    holdings: r.holdings.map((h) => ({ body: lineageOf(h.body_id), from: h.from_year, to: h.to_year })),
+  }));
 }
 
 export interface BudgetHeadingRow {
