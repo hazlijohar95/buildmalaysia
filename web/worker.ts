@@ -5,13 +5,26 @@
 // Every page is rendered from the database, but the data only changes when the
 // database is reloaded, so a rendered page is cached for an hour in the data
 // center that served it. The cache key carries the deployed version, so a new
-// deploy never serves HTML that points at the previous build's scripts.
+// deploy never serves HTML that points at the previous build's scripts, and the
+// form asked for, so `/2025` as HTML and as Markdown (by `/2025.md` or by
+// `Accept: text/markdown`) are two entries and never stand in for each other.
 import { handle } from "@astrojs/cloudflare/handler";
 import { withRequestScope } from "@/lib/db";
+import { pageRequest } from "@/lib/representation";
 import { LOAD_FAILED_MARKER } from "@/lib/route";
 
 const CANONICAL_HOST = "buildmalaysia.com";
 const PAGE_TTL_SECONDS = 3600;
+const CACHEABLE_TYPES = [
+  "text/html",
+  "text/markdown",
+  "text/plain",
+  "text/csv",
+  "image/",
+  "application/atom+xml",
+  "application/pdf",
+  "application/zip",
+];
 
 const SECURITY_HEADERS: Record<string, string> = {
   "strict-transport-security": "max-age=31536000; includeSubDomains",
@@ -38,20 +51,22 @@ function forBrowser(page: Response, cacheStatus: "HIT" | "MISS"): Response {
 
 async function servePage(request: Request, url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const cache = await caches.open("pages");
+  const page = pageRequest(url, request.headers.get("accept"));
   const key = new URL(url);
+  // Set, not parsed as a relative URL: a path starting "//" would become the key's host.
+  key.pathname = page.pathname;
   // A brand file is the same whatever the query, so a query must not buy a fresh render of a zip or a PNG.
   if (url.pathname.startsWith("/brand/files/") || url.pathname.startsWith("/brand/make/")) key.search = "";
   key.searchParams.set("__version", env.CF_VERSION_METADATA.id);
+  key.searchParams.set("__format", page.format);
 
   const hit = await cache.match(key);
   if (hit) return forBrowser(hit, "HIT");
 
   const rendered = await handle(request, env, ctx);
-  // Pages, generated images, CSV downloads and the brand files, which change only on a reload or a deploy.
+  // Pages, generated images, CSV downloads, the brand files, /llms.txt and the feed, which change only on a reload or a deploy.
   const type = rendered.headers.get("content-type") ?? "";
-  const cacheable = ["text/html", "image/", "text/csv", "application/pdf", "application/zip"].some((t) =>
-    type.startsWith(t),
-  );
+  const cacheable = CACHEABLE_TYPES.some((prefix) => type.startsWith(prefix));
   if (rendered.status !== 200 || !cacheable || rendered.headers.has("set-cookie")) return rendered;
 
   const response = forBrowser(rendered, "MISS");

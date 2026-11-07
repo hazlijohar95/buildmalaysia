@@ -8,15 +8,14 @@ import PageSkeleton from "@/components/PageSkeleton";
 import { SUBSCRIBE_SCRIPT } from "@/components/SubscribeForm";
 import { PALETTE } from "@/brand/carta";
 import { brandFileUrl } from "@/brand/paths";
+import { FEED_PATH, FEED_TITLE } from "@/lib/feed";
 import { loadNav } from "@/lib/nav";
 import { previews } from "@/lib/previews";
+import { markdownPath } from "@/lib/representation";
 import type { Head } from "@/lib/route";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
 type Props = Head;
-
-const SITE_TITLE = "Build Malaysia: the facts about government spending";
-const SITE_DESCRIPTION =
-  "How the Malaysian federal government budgets and spends public money, from the audited statements and the budget books. Every figure links to the page it came from.";
 
 const {
   title,
@@ -27,6 +26,7 @@ const {
 const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
 const ogImage = new URL(og.path, Astro.site).href;
 const nav = await loadNav();
+const markdownHref = markdownPath(Astro.url.pathname) + Astro.url.search;
 
 // Fetches a page as soon as the reader shows intent (hovering a link, or pressing on it), so the click lands on a
 // page that is already here. Prefetch only: nothing runs until the reader navigates. Downloads, the API, images
@@ -66,6 +66,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="alternate" type="text/markdown" href={markdownHref} />
+    <link rel="alternate" type="application/atom+xml" title={FEED_TITLE} href={FEED_PATH} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Build Malaysia" />
