@@ -13,6 +13,8 @@ export interface Head {
   description?: string;
   /** The link-preview image route. Pages without one use the site's. */
   og?: { path: string; alt: string };
+  /** The path search engines should index when several URLs show this page. */
+  canonical?: string;
   noindex?: boolean;
 }
 

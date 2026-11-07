@@ -61,6 +61,12 @@ async function buildNav(): Promise<SiteNav> {
                 note: "Every project, with its budget and spending",
                 match: [],
               },
+              {
+                href: "/projects",
+                label: "Projects over time",
+                note: "Each project followed year to year",
+                match: ["/projects"],
+              },
             ]
           : []),
         ...(covidYear

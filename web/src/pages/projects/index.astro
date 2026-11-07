@@ -1,0 +1,9 @@
+---
+import Base from "@/layouts/Base.astro";
+import Static from "@/components/Static";
+import page from "@/views/projects";
+
+const { head, body } = await page();
+---
+
+<Base {...head}><Static node={body} /></Base>

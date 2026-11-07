@@ -23,6 +23,7 @@ const {
   description = SITE_DESCRIPTION,
   og = previews.site,
   noindex = false,
+  canonical,
 } = Astro.props;
 const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
 const ogImage = new URL(og.path, Astro.site).href;
@@ -62,6 +63,7 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     {noindex && <meta name="robots" content="noindex" />}
+    {canonical && <link rel="canonical" href={new URL(canonical, Astro.site).href} />}
     <meta name="theme-color" content={PALETTE.biru.hex} />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
