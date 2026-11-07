@@ -1,5 +1,7 @@
 import sql from "@/lib/db";
+import { reorganisedBetween } from "@/lib/lineage";
 import { parseSen, type Sen } from "@/lib/money";
+import { getBodyLineage } from "@/lib/queries/lineage";
 
 /** Raw data for the debt-service (T.13) finding. */
 export interface DebtServiceData {
@@ -230,55 +232,45 @@ export interface TopGrowthMinistryData {
 }
 
 /**
- * Returns the body whose total actual spending grew most (by percentage) from the prior year, leaving out
- * any body with a lineage edge, establishment or dissolution dated in either year.
+ * Returns the body whose total actual spending grew most (by percentage) from the prior year, leaving out any body
+ * reorganised, set up or dissolved in either year.
  */
 export async function getTopGrowthMinistryData(year: number): Promise<TopGrowthMinistryData | null> {
-  const [row] = await sql<
-    {
-      name_ms: string;
-      operating_vote_code: string;
-      curr_actual: string;
-      prev_actual: string;
-      prev_year: number;
-      pdf_page: number;
-      book_page: number;
-      doc_url: string;
-    }[]
-  >`
-    with growth as (
-      select curr.body_name_ms as name_ms, curr.operating_vote_code, curr.actual_sen as curr_actual,
-             prev.actual_sen as prev_actual, prev.fiscal_year as prev_year
+  const [rows, lineageOf] = await Promise.all([
+    sql<
+      {
+        body_id: string;
+        name_ms: string;
+        operating_vote_code: string;
+        curr_actual: string;
+        prev_actual: string;
+        prev_year: number;
+        pdf_page: number;
+        book_page: number;
+        doc_url: string;
+      }[]
+    >`
+      select curr.body_id, curr.body_name_ms as name_ms, curr.operating_vote_code, curr.actual_sen as curr_actual,
+             prev.actual_sen as prev_actual, prev.fiscal_year as prev_year, pt.pdf_page, pt.book_page, sd.url as doc_url
       from ministry_spending curr
       join ministry_spending prev
         on prev.fiscal_year = curr.fiscal_year - 1
        and prev.body_id = curr.body_id
-      join body b on b.id = curr.body_id
+      join printed_total pt
+        on pt.fiscal_year = curr.fiscal_year and pt.vote_code = curr.operating_vote_code
+       and pt.scope = 'vote' and pt.object_code is null
+      join source_document sd on sd.id = pt.document_id
       where curr.fiscal_year = ${year}
         and not curr.residual and not prev.residual
         and prev.actual_sen > 0
         and curr.actual_sen > prev.actual_sen
-        and curr.operating_vote_code is not null
-        -- A body reorganised between the two years is not comparing like with like.
-        and not exists (
-          select 1 from lineage_edge e
-          where curr.body_id in (e.predecessor, e.successor)
-            and e.confidence <> 'unverified'
-            and extract(year from e.effective) between prev.fiscal_year and curr.fiscal_year
-        )
-        and (b.established is null or extract(year from b.established) not between prev.fiscal_year and curr.fiscal_year)
-        and (b.dissolved is null or extract(year from b.dissolved) not between prev.fiscal_year and curr.fiscal_year)
-    )
-    select g.name_ms, g.operating_vote_code, g.curr_actual, g.prev_actual, g.prev_year,
-           pt.pdf_page, pt.book_page, sd.url as doc_url
-    from growth g
-    join printed_total pt
-      on pt.fiscal_year = ${year} and pt.vote_code = g.operating_vote_code
-     and pt.scope = 'vote' and pt.object_code is null
-    join source_document sd on sd.id = pt.document_id
-    order by (g.curr_actual::numeric - g.prev_actual) / g.prev_actual desc
-    limit 1
-  `;
+    `,
+    getBodyLineage(),
+  ]);
+  const growth = (r: (typeof rows)[number]) => (Number(r.curr_actual) - Number(r.prev_actual)) / Number(r.prev_actual);
+  const [row] = rows
+    .filter((r) => !reorganisedBetween(lineageOf(r.body_id), r.prev_year, year))
+    .toSorted((a, b) => growth(b) - growth(a));
   if (!row) return null;
   return {
     year,
