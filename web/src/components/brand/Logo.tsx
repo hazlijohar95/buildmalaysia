@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 type CSSVars = React.CSSProperties & Record<`--${string}`, string | number>;
 
 /** The canton: blue field, crescent and star. Classed so the intro and loaders can move it. */
-function Canton() {
+export function Canton() {
   return (
     <g className="carta-canton">
       <rect width={CANTON.width} height={CANTON.height} fill={PALETTE.biru.hex} shapeRendering="crispEdges" />
@@ -102,7 +102,11 @@ export function Logo({
   const l = layout(lockup);
   const box = l.viewBox;
   const px = unit / STRIPE;
-  const style: CSSVars = { "--carta-star-step": `${STAR_STEP_DEG}deg` };
+  // The icon crops the canton to a square; every other lockup lets its stripes grow past the viewBox on hover.
+  const style: CSSVars = {
+    "--carta-star-step": `${STAR_STEP_DEG}deg`,
+    ...(lockup === "icon" && { overflow: "hidden" }),
+  };
   return (
     <svg
       viewBox={viewBoxAttr(box)}

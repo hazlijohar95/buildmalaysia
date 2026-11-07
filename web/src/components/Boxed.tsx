@@ -3,6 +3,11 @@
 import { cn } from "@/lib/cn";
 
 export const kicker = "font-mono text-[0.75rem] uppercase tracking-[0.22em]";
+export const pageTitle = "m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight wrap-break-word";
+export const sectionTitle = "m-0 font-display text-3xl md:text-4xl font-semibold tracking-tight";
+/** A stat box's figure: sized to its container (14% of the width, capped at 3rem) so a long figure never spills. */
+export const statFigure =
+  "font-display text-[min(3rem,14cqi)] leading-tight font-semibold tracking-tight tabular-nums whitespace-nowrap";
 
 /** A full-width band of the page, ruled off below, with its content centred. */
 export function Band({
@@ -39,9 +44,7 @@ export function PageHeader({
   return (
     <Band wide={wide}>
       <div className={cn(kicker, "text-charcoal-700")}>{eyebrow}</div>
-      <h1 className="mt-4 m-0 font-display text-4xl md:text-6xl font-semibold tracking-tight wrap-break-word">
-        {title}
-      </h1>
+      <h1 className={`mt-4 ${pageTitle}`}>{title}</h1>
       {intro && <div className="mt-4 max-w-3xl text-lg text-charcoal-800 [&_p+p]:mt-3">{intro}</div>}
       {children && <div className="mt-8">{children}</div>}
     </Band>
@@ -75,9 +78,7 @@ export function NoteBand({
 }
 
 export function H2({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <h2 className={cn("m-0 font-display text-3xl md:text-4xl font-semibold tracking-tight", className)}>{children}</h2>
-  );
+  return <h2 className={cn(sectionTitle, className)}>{children}</h2>;
 }
 
 export interface Stat {
@@ -100,12 +101,7 @@ export function StatRow({ stats }: { stats: Stat[] }) {
           className="@container min-w-0 bg-background px-5 py-8 sm:px-8 md:py-10 [&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1"
         >
           <div className={cn(kicker, "text-charcoal-700")}>{s.label}</div>
-          <div
-            // Sized to the cell (14% of its width, capped at 3rem) so a long figure like RM 52,623.62 never spills out.
-            className="mt-3 font-display text-[min(3rem,14cqi)] leading-tight font-semibold tracking-tight tabular-nums whitespace-nowrap"
-          >
-            {s.value}
-          </div>
+          <div className={cn("mt-3", statFigure)}>{s.value}</div>
           {s.title && (
             // A long figure may break after any thousands comma rather than spill out of a narrow cell.
             <div className="mt-1 font-mono text-xs tabular-nums text-charcoal-600 [overflow-wrap:anywhere]">

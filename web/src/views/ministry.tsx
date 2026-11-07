@@ -27,7 +27,7 @@ import { titleCase } from "@/lib/queries/sankey";
 import { getFederalSpending } from "@/lib/queries/spending";
 import { slugify } from "@/lib/slug";
 import { getLoadedYears } from "@/lib/years";
-import { colours } from "@/styles/colours";
+import { SERIES } from "@/styles/charts/series";
 import { previews } from "@/lib/previews";
 import type { Page, RouteContext } from "@/lib/route";
 
@@ -231,8 +231,8 @@ export default async function ministryPage({ params, searchParams }: RouteContex
             <StackedBars
               label={`${name} spending by year`}
               series={[
-                { label: "Operating", color: colours.merah["600"] },
-                { label: "Development", color: colours.lake[700] },
+                { label: "Operating", color: SERIES[0].hex },
+                { label: "Development", color: SERIES[1].hex },
               ]}
               rows={history.map((h) => ({
                 year: h.fiscal_year,

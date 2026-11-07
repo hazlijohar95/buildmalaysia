@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { PALETTE } from "@/brand/carta";
-import { brandFileUrl } from "@/brand/files";
+import { brandFileUrl } from "@/brand/paths";
 import { colours } from "@/styles/colours";
 
 const MANIFEST = {

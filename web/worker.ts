@@ -39,15 +39,19 @@ function forBrowser(page: Response, cacheStatus: "HIT" | "MISS"): Response {
 async function servePage(request: Request, url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const cache = await caches.open("pages");
   const key = new URL(url);
+  // A brand file is the same whatever the query, so a query must not buy a fresh render of a zip or a PNG.
+  if (url.pathname.startsWith("/brand/files/") || url.pathname.startsWith("/brand/make/")) key.search = "";
   key.searchParams.set("__version", env.CF_VERSION_METADATA.id);
 
   const hit = await cache.match(key);
   if (hit) return forBrowser(hit, "HIT");
 
   const rendered = await handle(request, env, ctx);
-  // Pages, generated images, and CSV downloads, which all change only when the database is reloaded.
+  // Pages, generated images, CSV downloads and the brand files, which change only on a reload or a deploy.
   const type = rendered.headers.get("content-type") ?? "";
-  const cacheable = type.startsWith("text/html") || type.startsWith("image/") || type.startsWith("text/csv");
+  const cacheable = ["text/html", "image/", "text/csv", "application/pdf", "application/zip"].some((t) =>
+    type.startsWith(t),
+  );
   if (rendered.status !== 200 || !cacheable || rendered.headers.has("set-cookie")) return rendered;
 
   const response = forBrowser(rendered, "MISS");

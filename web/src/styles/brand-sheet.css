@@ -1,0 +1,207 @@
+/* The /brand page's interactions and print layout. Loaded by that page alone; src/views/brand/client.ts drives the
+   data attributes these rules key off. */
+
+/* ---- Copyable values: a value, link or chip that copies itself. ---- */
+
+button.copy {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+}
+.copy {
+  position: relative;
+  /* Buttons are unselectable by default; a value has to stay selectable for copying by hand. */
+  -webkit-user-select: text;
+  user-select: text;
+}
+button.copy {
+  cursor: copy;
+}
+@media (hover: hover) {
+  button.copy:hover {
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+  }
+}
+/* The bubble sits beside an inline value, so it never covers the values around it; above a full-width chip; and
+   to the left of a section's link, which sits at the right edge. Its text stays set after it hides, so it can fade
+   out as well as in. */
+.copy[data-bubble]::after {
+  content: attr(data-bubble);
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  z-index: 10;
+  translate: 0 -50%;
+  padding: 5px 8px;
+  background: var(--color-charcoal-1000);
+  color: var(--color-linen-50);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms var(--ease-out),
+    visibility 0s 150ms;
+}
+.copy[data-copied]::after {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 150ms var(--ease-out);
+}
+.copy.block[data-bubble]::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+}
+[data-copy-link][data-bubble]::after {
+  right: calc(100% + 4px);
+  left: auto;
+}
+
+/* ---- Clear space: four stripes of tint round each lockup, the logo's own box left clear. ---- */
+
+.clearspace {
+  display: none;
+  position: absolute;
+  inset: calc(-4 * var(--u));
+  border: calc(4 * var(--u)) solid rgb(43 95 217 / 0.16);
+  outline: 1px dashed #2b5fd9;
+  outline-offset: -1px;
+  pointer-events: none;
+}
+[data-clearspace] .clearspace {
+  display: block;
+}
+[data-clearspace-toggle][aria-pressed="true"] {
+  background: var(--color-foreground);
+  color: var(--color-background);
+}
+.clearspace-key {
+  display: inline-block;
+  background: rgb(43 95 217 / 0.16);
+  outline: 1px dashed #2b5fd9;
+  outline-offset: -1px;
+}
+
+/* ---- Motion: Play is the hover state on demand, so it is moot when nothing may move. ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion="step"] {
+    display: none;
+  }
+}
+
+/* ---- Builder: a transparent ground shows as a checkerboard. ---- */
+
+.builder-stage {
+  background: var(--color-linen-50);
+}
+.builder-stage[data-ground="clear"],
+.builder-clear {
+  background: repeating-conic-gradient(var(--color-charcoal-100) 0 25%, #fff 0 50%) 0 0 / 16px 16px;
+}
+.builder-clear {
+  background-size: 7px 7px;
+}
+
+/* ---- Below lg, a bar under the header names the section in view. ---- */
+
+.brand-bar {
+  position: fixed;
+  top: var(--sticky-top);
+  right: var(--frame);
+  left: var(--frame);
+  z-index: 40;
+  border: 2px solid var(--color-foreground);
+  border-top: 0;
+  background: var(--color-linen-50);
+  opacity: 0;
+  translate: 0 -6px;
+  visibility: hidden;
+}
+.brand-bar[data-shown] {
+  opacity: 1;
+  translate: 0;
+  visibility: visible;
+}
+/* Everyone gets the fade; the slide is added where motion is allowed. Leaving takes 150ms, arriving 180ms. */
+.brand-bar {
+  transition:
+    opacity 150ms var(--ease-out),
+    visibility 0s 150ms;
+}
+.brand-bar[data-shown] {
+  transition: opacity 180ms var(--ease-out);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brand-bar {
+    transition:
+      opacity 150ms var(--ease-out),
+      translate 150ms var(--ease-out),
+      visibility 0s 150ms;
+  }
+  .brand-bar[data-shown] {
+    transition:
+      opacity 180ms var(--ease-out),
+      translate 180ms var(--ease-out);
+  }
+}
+@media (max-width: 1023.98px) {
+  /* Anchors land below the bar as well as the header. */
+  html:has(.brand-bar:not([hidden])) {
+    scroll-padding-top: calc(var(--sticky-top) + 48px + 18px);
+  }
+}
+
+/* ---- Print: the sheet alone, a section to a page, in its own colours. ---- */
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body:has([data-brand-sheet]) {
+    padding: 0;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  body:has([data-brand-sheet]) > div {
+    border: 0;
+  }
+  body:has([data-brand-sheet]) :is(header[data-site-header], footer, body > nav, body > dialog, .fixed),
+  [data-brand-sheet] :is([data-print], [data-copy-link], [data-clearspace-toggle], [data-motion], [data-builder]),
+  .brand-bar {
+    display: none !important;
+  }
+  [data-brand-sheet] section[id] {
+    break-before: page;
+  }
+  [data-brand-hero] {
+    grid-template-columns: 1.25fr 1fr;
+  }
+  /* A grid broken across pages would show its ink in the space left on the page, so print rules each cell
+     instead of letting the ground show through the gaps. */
+  .boxed-grid {
+    gap: 0;
+    background: none;
+  }
+  .boxed-grid > * {
+    outline: 1px solid var(--color-foreground);
+  }
+  [data-brand-sheet] :is(figure, li, tr, h2, h3, .boxed-grid > *) {
+    break-inside: avoid;
+  }
+  [data-brand-sheet] :is(h2, h3) {
+    break-after: avoid;
+  }
+}

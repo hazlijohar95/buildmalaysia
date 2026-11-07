@@ -2,8 +2,14 @@
 import Base from "@/layouts/Base.astro";
 import Static from "@/components/Static";
 import page from "@/views/brand";
+import "@/styles/brand-sheet.css";
 
 const { head, body } = await page();
 ---
 
-<Base {...head}><Static node={body} /></Base>
+<Base {...head}>
+  <Static node={body} />
+  <script>
+    import "@/views/brand/client";
+  </script>
+</Base>
