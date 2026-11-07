@@ -37,3 +37,11 @@ export const colours = {
   amethyst,
   emerald,
 };
+
+/** One step of a scale, e.g. hex("merah", "600"). Throws on a step the scale lacks. */
+export function hex(family: keyof typeof colours, step: string): string {
+  const scale: Record<string, string> = colours[family];
+  const value = scale[step];
+  if (!value) throw new RangeError(`No ${family}-${step}`);
+  return value;
+}

@@ -39,17 +39,21 @@ const startEngines = () =>
 
 type Fonts = Parameters<typeof satori>[1]["fonts"];
 
-/** Renders satori-flavoured JSX (inline styles, flexbox only) to a PNG response. */
-export async function pngResponse(node: ReactNode, size: { width: number; height: number }, fonts: Fonts = []) {
-  await startEngines();
-  const svg = await satori(node, { ...size, fonts });
-  // WebAssembly memory never shrinks, so each render frees its buffers at once instead of waiting for GC.
-  const resvg = new Resvg(svg);
+/** Rasterises an SVG with resvg, freeing its buffers at once: WebAssembly memory never shrinks, so waiting for GC
+ * would hold the peak. */
+function rasterise(svg: string, width?: number): Response {
+  const resvg = new Resvg(svg, width ? { fitTo: { mode: "width", value: width } } : undefined);
   const image = resvg.render();
   const png = image.asPng();
   image.free();
   resvg.free();
   return new Response(png, { headers: { "content-type": OG_CONTENT_TYPE } });
+}
+
+/** Renders satori-flavoured JSX (inline styles, flexbox only) to a PNG response. */
+export async function pngResponse(node: ReactNode, size: { width: number; height: number }, fonts: Fonts = []) {
+  await startEngines();
+  return rasterise(await satori(node, { ...size, fonts }));
 }
 
 export function ogImage({ kicker, title, figure, note }: OgContent): Promise<Response> {
@@ -91,12 +95,11 @@ export function ogImage({ kicker, title, figure, note }: OgContent): Promise<Res
   );
 }
 
-/** A PNG of an SVG drawn at its own size, for the brand downloads. */
-export function svgPng(svg: string, size: { width: number; height: number }): Promise<Response> {
-  return pngResponse(
-    <div style={{ display: "flex", width: "100%", height: "100%" }}>
-      <img src={svgDataUri(svg)} width={size.width} height={size.height} alt="" />
-    </div>,
-    size,
-  );
+/**
+ * A PNG of a brand SVG at `width`. The SVG needs no layout, so it skips satori and goes to resvg alone, which
+ * roughly halves the memory a 2048 px render takes.
+ */
+export async function svgPng(svg: string, width: number): Promise<Response> {
+  await startEngines();
+  return rasterise(svg, width);
 }

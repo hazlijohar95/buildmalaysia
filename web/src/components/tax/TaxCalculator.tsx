@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { H2, StatRow, kicker as label } from "@/components/Boxed";
 import { calculateTax, SCHEDULE } from "@/lib/tax";
 import type { SpendingShare } from "@/lib/queries/allocation";
+import { REST as REST_SERIES, SERIES } from "@/styles/charts/series";
 
 /** Ringgit; sen are shown only when the amount has them, unless `digits` is given. */
 const rm = (n: number, digits = Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2) =>
@@ -16,17 +17,8 @@ const parseAmount = (text: string) => Number(text.split(".")[0].replace(/\D/g, "
 
 const PRESETS = [30_000, 60_000, 100_000, 250_000];
 const SLIDER_MAX = 500_000;
-// Each at least 4:1 against the linen-200 bar track.
-const SEGMENTS = [
-  "var(--color-merah-600)",
-  "var(--color-lake-700)",
-  "var(--color-pine-700)",
-  "var(--color-aurora-700)",
-  "var(--color-biru-600)",
-  "var(--color-copper-700)",
-  "var(--color-charcoal-700)",
-];
-const REST = "var(--color-charcoal-300)";
+const SEGMENTS = SERIES.map((s) => s.hex);
+const REST = REST_SERIES.hex;
 const SHOWN = 12;
 
 interface Props {
