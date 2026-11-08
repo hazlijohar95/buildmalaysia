@@ -8,6 +8,7 @@ import {
   getContractsMeta,
   parseContractFilters,
   searchContracts,
+  CONTRACTS_PER_PAGE,
   CONTRACTS_QUERY_MAX,
   type Contract,
   type ContractFilters,
@@ -21,7 +22,8 @@ const count = new Intl.NumberFormat("en-MY");
 const day = new Intl.DateTimeFormat("en-MY", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const formatDay = (iso: string) => day.format(new Date(`${iso}T00:00:00Z`));
 
-const field = "min-h-11 border-2 border-foreground bg-background px-3 py-2 font-mono text-sm";
+// w-full and min-w-0: a menu is otherwise as wide as its longest option, wider than a phone.
+const field = "min-h-11 w-full min-w-0 border-2 border-foreground bg-background px-3 py-2 font-mono text-sm";
 
 export default async function contractsPage({ searchParams }: RouteContext): Promise<Page> {
   const filters = parseContractFilters(searchParams);
@@ -67,17 +69,28 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
         />
 
         <Band>
-          {results.rows.length === 0 ? (
+          {!meta.snapshot ? (
+            <p className="m-0 max-w-xl text-lg text-charcoal-800">
+              The results are still being copied from <a href={SOURCE_URL}>MyProcurement</a>. Check back soon.
+            </p>
+          ) : results.rows.length === 0 ? (
             <p className="m-0 max-w-xl text-lg text-charcoal-800">
               Nothing matches. Try a shorter word in Bahasa Malaysia, such as <em lang="ms">ubat</em>,{" "}
-              <em lang="ms">jalan</em> or <em lang="ms">sekolah</em>, or clear a filter.
+              <em lang="ms">jalan</em> or <em lang="ms">sekolah</em>
+              {filtered ? (
+                <>
+                  , or <a href="/contracts">clear the search and filters</a>
+                </>
+              ) : null}
+              .
             </p>
           ) : (
             <>
               <div className={cn(kicker, "flex flex-wrap items-baseline justify-between gap-4 text-charcoal-700")}>
                 <span>
-                  {count.format((filters.page - 1) * 25 + 1)}–{count.format(Math.min(filters.page * 25, results.count))}{" "}
-                  of {count.format(results.count)}
+                  {count.format((filters.page - 1) * CONTRACTS_PER_PAGE + 1)}–
+                  {count.format(Math.min(filters.page * CONTRACTS_PER_PAGE, results.count))} of{" "}
+                  {count.format(results.count)}
                 </span>
                 <span className="flex gap-4">
                   {(Object.keys(SORTS) as (keyof typeof SORTS)[]).map((s) => (
@@ -144,7 +157,7 @@ function SearchForm({
   meta: Awaited<ReturnType<typeof getContractsMeta>>;
 }) {
   return (
-    <form action="/contracts" method="get" role="search" className="grid max-w-4xl gap-3">
+    <form action="/contracts" method="get" role="search" data-filters className="grid max-w-4xl grid-cols-1 gap-3">
       <div className="flex">
         <label htmlFor="q" className="sr-only">
           Search contracts
@@ -166,8 +179,8 @@ function SearchForm({
           Search
         </button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
-        <label className="grid gap-1">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <label className="grid min-w-0 gap-1">
           <span className={cn(kicker, "text-charcoal-700")}>Ministry</span>
           <select name="ministry" defaultValue={filters.ministry ?? ""} className={field}>
             <option value="">All ministries</option>
@@ -178,7 +191,7 @@ function SearchForm({
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid min-w-0 gap-1">
           <span className={cn(kicker, "text-charcoal-700")}>Type</span>
           <select name="kind" defaultValue={filters.kind ?? ""} className={field}>
             <option value="">All types</option>
@@ -189,7 +202,7 @@ function SearchForm({
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid min-w-0 gap-1">
           <span className={cn(kicker, "text-charcoal-700")}>Year</span>
           <select name="year" defaultValue={filters.year ? String(filters.year) : ""} className={field}>
             <option value="">All years</option>

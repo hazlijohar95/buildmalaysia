@@ -20,7 +20,11 @@ export default async function subscribePage({ searchParams }: RouteContext): Pro
   const status = pickStatus(searchParams.get("sent"), searchParams.get("confirmed"), searchParams.get("error"));
 
   return {
-    head: { title: "Get alerts" },
+    head: {
+      title: "Get alerts",
+      description:
+        "One email when Build Malaysia loads new figures: a new budget book or audited statement. Nothing else.",
+    },
     body: (
       <>
         <PageHeader eyebrow="Alerts" title="Get alerts" />

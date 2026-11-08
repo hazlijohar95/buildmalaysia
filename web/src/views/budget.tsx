@@ -75,7 +75,11 @@ export default async function budgetPage({ params }: RouteContext): Promise<Page
   const onCurrent = (now: Sen, before: Sen) => `${change(now, before)} on the ${current.fiscal_year} budget`;
 
   return {
-    head: { title: `Budget ${year}`, og: previews.budget(year) },
+    head: {
+      title: `Budget ${year}`,
+      description: `What the Malaysian federal government set out to spend in ${year}, ministry by ministry, from the Ministry of Finance's budget estimates.`,
+      og: previews.budget(year),
+    },
     body: (
       <>
         <PageHeader

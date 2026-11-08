@@ -18,7 +18,7 @@ Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget bo
 
 ## Procurement source
 
-Kementerian Kewangan's [MyProcurement](https://myprocurement.treasury.gov.my/): every published tender, quotation and direct-negotiation result, with the ministry, agency, winners and accepted price (Harga Setuju Terima). `fetch-procurement` saves every result page under `data/raw/myprocurement/<date>/` (git-ignored); `load-procurement` replaces the procurement tables from the newest snapshot, and refuses one with a missing page, a listing whose results don't add up to the total MyProcurement reports, or a result whose two printings of its winners differ. MyProcurement prints no budget vote, so these rows are not joined to the statements.
+Kementerian Kewangan's [MyProcurement](https://myprocurement.treasury.gov.my/): every published tender, quotation and direct-negotiation result, with the ministry, agency, winners and accepted price (Harga Setuju Terima). `fetch-procurement` saves every result page under `data/raw/myprocurement/<date>/` (git-ignored). MyProcurement sorts each listing by date alone, so results shown on the same day come back in a different order on every request and a day that runs across a page boundary loses some; the fetch then reads each such day again on its own until all of its results are seen. A day with more than one page of results (1 December 2021 has 874 archived tenders) never returns some of them however often it is read, so it is split by category, ministry, agency and then procurement-number prefix until each slice fits on one page. `load-procurement` replaces the procurement tables from the newest snapshot, and refuses one with a missing page or day, a listing with fewer results than MyProcurement reports, or a result whose two printings of its winners differ. MyProcurement prints no budget vote, so these rows are not joined to the statements.
 
 ## Layout
 
@@ -83,6 +83,7 @@ The site runs on Cloudflare Workers through Astro's [Cloudflare adapter](https:/
 ```bash
 supabase link --project-ref <ref> && supabase db push    # schema
 SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage tables included, checked row for row
+uv run --project pipeline python scripts/publish-procurement.py  # only the procurement tables, through `supabase login`
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
 cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```

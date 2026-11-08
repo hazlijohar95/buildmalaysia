@@ -16,7 +16,11 @@ export default async function covidPage({ params }: RouteContext): Promise<Page>
   const withdrawals = total.withdrawal_sen !== 0;
 
   return {
-    head: { title: `COVID-19 Fund ${year}`, og: previews.year(year) },
+    head: {
+      title: `COVID-19 Fund ${year}`,
+      description: `Every programme of the federal COVID-19 Fund in ${year}: its ceiling, allocation and spending, exactly as printed in the audited statement.`,
+      og: previews.year(year),
+    },
     body: (
       <>
         <PageHeader

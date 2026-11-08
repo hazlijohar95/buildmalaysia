@@ -45,7 +45,11 @@ export default async function operatingPage({ params, searchParams }: RouteConte
     getSourceNotes(year),
   ]);
 
-  const head = { title: `Operating expenditure ${year}`, og: previews.year(year) };
+  const head = {
+    title: `Operating expenditure ${year}`,
+    description: `What it cost to run the Malaysian federal government in ${year}, vote by vote: the approved budget, the revised budget and what was spent, from the audited statement.`,
+    og: previews.year(year),
+  };
 
   if (!totals || !spending) {
     return {

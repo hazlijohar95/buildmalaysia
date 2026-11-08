@@ -170,7 +170,11 @@ async function HomeBody() {
       </section>
 
       <section className="border-b-2 border-foreground">
-        <Carousel count={3} className="grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground">
+        <Carousel
+          count={3}
+          label="What Build Malaysia does"
+          className="grid grid-cols-1 md:grid-cols-3 gap-[2px] bg-foreground"
+        >
           {[
             {
               icon: <LuLandmark />,

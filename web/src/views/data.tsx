@@ -10,7 +10,11 @@ export default async function dataPage(): Promise<Page> {
   );
 
   return {
-    head: { title: "Download data" },
+    head: {
+      title: "Download data",
+      description:
+        "The figures behind Build Malaysia's budget and spending pages as CSV, one row per fact, each with the page number and URL of its source document.",
+    },
     body: (
       <>
         <PageHeader
