@@ -8,7 +8,10 @@
 -- replaces all three tables at once. Nothing here is joined to a budget vote: MyProcurement
 -- prints no vote, programme or activity code.
 
-create extension if not exists pg_trgm;
+-- Trigram indexes make substring search (ILIKE '%ubat%') fast. The extension lives in its own schema,
+-- as Supabase recommends, so its functions stay out of public.
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 create type procurement_kind as enum ('tender', 'quotation', 'direct');
 
@@ -55,11 +58,11 @@ create table procurement_award (
   check (ordinal >= 1)
 );
 
-create index procurement_notice_title_trgm on procurement_notice using gin (title gin_trgm_ops);
-create index procurement_notice_agency_trgm on procurement_notice using gin (agency gin_trgm_ops);
+create index procurement_notice_title_trgm on procurement_notice using gin (title extensions.gin_trgm_ops);
+create index procurement_notice_agency_trgm on procurement_notice using gin (agency extensions.gin_trgm_ops);
 create index procurement_notice_ministry on procurement_notice (ministry);
 create index procurement_notice_dated on procurement_notice (dated desc);
-create index procurement_award_supplier_trgm on procurement_award using gin (supplier gin_trgm_ops);
+create index procurement_award_supplier_trgm on procurement_award using gin (supplier extensions.gin_trgm_ops);
 create index procurement_notice_total on procurement_notice (total_sen desc nulls last);
 
 alter table procurement_snapshot enable row level security;

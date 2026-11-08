@@ -9,10 +9,13 @@ from pipeline.procurement import (
     LISTINGS,
     Award,
     ProcurementError,
+    day_dir,
     dedupe,
     parse_page,
     parse_ringgit,
+    read_day,
     read_snapshot,
+    straddling_days,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "myprocurement"
@@ -118,27 +121,59 @@ def test_dedupe_keeps_the_current_listing_and_refuses_disagreement() -> None:
         dedupe([(archived, "a"), (changed, "b")])
 
 
-def test_a_result_published_during_the_fetch_is_read_once(tmp_path: Path) -> None:
-    """Page 2 is fetched after a new result went up: it repeats page 1's last card, and the total grew by one."""
+def _page(path: Path, html: str, total: int, page: int, last: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = {"html": html, "total": total, "page": page, "lastPage": last, "retrieved_at": "2026-11-09T01:00:00+08:00"}
+    path.write_text(json.dumps(body))
+
+
+def _two_page_tender_listing(tmp_path: Path) -> tuple[Path, list[str]]:
+    """Every listing empty except the archived tenders: the fixture's ten cards split over two pages, so that the
+    day of cards 6 and 7 (shown 26 Oct 2026) runs across the boundary."""
     folder = tmp_path / "2026-11-09"
     for listing in LISTINGS:
-        (folder / listing.slug).mkdir(parents=True)
-        body = {"html": "", "total": 0, "page": 1, "lastPage": 1, "retrieved_at": "2026-11-09T01:00:00+08:00"}
-        (folder / listing.slug / "00001.json").write_text(json.dumps(body))
-    html = (FIXTURES / "archive-results-tender.html").read_text()
-    cards = html.split(CARD_START)
-    first, second = CARD_START.join(cards[:6]), CARD_START.join([cards[0], *cards[5:]])
-    pages = folder / "archive-results-tender"
-    pages.joinpath("00001.json").write_text(
-        json.dumps({"html": first, "total": 10, "page": 1, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:00+08:00"})
-    )
-    pages.joinpath("00002.json").write_text(
-        json.dumps({"html": second, "total": 11, "page": 2, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:05+08:00"})
-    )
+        _page(folder / listing.slug / "00001.json", "", 0, 1, 1)
+    cards = (FIXTURES / "archive-results-tender.html").read_text().split(CARD_START)
+    return folder, cards
+
+
+def test_a_day_across_pages_must_be_read_whole(tmp_path: Path) -> None:
+    folder, cards = _two_page_tender_listing(tmp_path)
+    out = folder / "archive-results-tender"
+    head, rest = CARD_START.join(cards[:7]), CARD_START.join([cards[0], *cards[7:]])
+    _page(out / "00001.json", head, 10, 1, 2)
+    _page(out / "00002.json", rest, 10, 2, 2)
+    straddling = straddling_days(out, BY_SLUG["archive-results-tender"])
+    assert straddling == [date(2026, 10, 26)]
+    with pytest.raises(ProcurementError, match="not read whole"):
+        read_snapshot(folder)
+    same_day = [c for c in cards[1:] if "Tarikh Paparan Keputusan: 26/10/2026" in c]
+    _page(day_dir(out, straddling[0]) / "01-001.json", CARD_START.join(["", *same_day]), len(same_day), 1, 1)
+    read, _, _, _ = read_snapshot(folder)
+    assert len(read) == 10
+
+
+def test_a_day_read_whole_must_cover_its_total(tmp_path: Path) -> None:
+    folder = tmp_path / "day"
+    cards = (FIXTURES / "archive-results-tender.html").read_text().split(CARD_START)
+    _page(folder / "01-001.json", CARD_START.join(["", cards[1]]), 2, 1, 1)
+    assert read_day(folder, BY_SLUG["archive-results-tender"]) is None
+    _page(folder / "02-001.json", CARD_START.join(["", cards[2]]), 2, 1, 1)
+    assert len(read_day(folder, BY_SLUG["archive-results-tender"]) or []) == 2
+
+
+def test_a_result_published_during_the_fetch_is_read_once(tmp_path: Path) -> None:
+    """Page 2 was fetched after a new result went up: it repeats page 1's last card, and the total grew by one."""
+    folder, cards = _two_page_tender_listing(tmp_path)
+    out = folder / "archive-results-tender"
+    first, second = CARD_START.join(cards[:7]), CARD_START.join([cards[0], *cards[6:]])
+    _page(out / "00001.json", first, 10, 1, 2)
+    _page(out / "00002.json", second, 11, 2, 2)
+    for day in straddling_days(out, BY_SLUG["archive-results-tender"]):
+        same_day = [c for c in cards[1:] if f"Tarikh Paparan Keputusan: {day:%d/%m/%Y}" in c]
+        _page(day_dir(out, day) / "01-001.json", CARD_START.join(["", *same_day]), len(same_day), 1, 1)
     read, _, _, repeats = read_snapshot(folder)
     assert (len(read), repeats) == (10, 1)
-    pages.joinpath("00002.json").write_text(
-        json.dumps({"html": second, "total": 9, "page": 2, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:05+08:00"})
-    )
+    _page(out / "00002.json", second, 9, 2, 2)
     with pytest.raises(ProcurementError, match="removed"):
         read_snapshot(folder)
