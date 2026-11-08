@@ -11,10 +11,13 @@ export const carouselItem = "max-md:w-[85%] max-md:shrink-0 max-md:snap-start ma
  */
 export default function Carousel({
   count,
+  label,
   className,
   children,
 }: {
   count: number;
+  /** Names the row for a keyboard or screen-reader user, who can focus it to scroll it with the arrow keys. */
+  label: string;
   className: string;
   children: ReactNode;
 }) {
@@ -22,6 +25,7 @@ export default function Carousel({
     <div data-carousel>
       <div
         data-carousel-track
+        data-scroll-label={label}
         className={cn(
           className,
           "max-md:flex max-md:gap-3 max-md:overflow-x-auto max-md:snap-x max-md:snap-mandatory max-md:scroll-px-5 max-md:bg-background max-md:px-5 max-md:py-5 max-md:[scrollbar-width:none] max-md:overscroll-x-contain",
@@ -34,15 +38,18 @@ export default function Carousel({
           <span data-carousel-count className={cn(kicker, "text-charcoal-700")}>
             1 / {count}
           </span>
-          <span className="flex gap-1.5">
+          <span className="flex">
             {Array.from({ length: count }, (_, i) => (
+              // The button pads the dot out to a tap-sized target; the dot itself is what shows.
               <button
                 key={i}
                 type="button"
                 tabIndex={-1}
                 data-carousel-dot
-                className="h-2 w-2 bg-foreground/25 transition-[width,background-color] duration-200 aria-[current=true]:w-5 aria-[current=true]:bg-foreground"
-              />
+                className="group flex h-6 items-center px-[3px]"
+              >
+                <span className="h-2 w-2 bg-foreground/25 transition-[width,background-color] duration-200 group-aria-[current=true]:w-5 group-aria-[current=true]:bg-foreground" />
+              </button>
             ))}
           </span>
         </div>
