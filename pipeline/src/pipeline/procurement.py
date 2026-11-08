@@ -238,11 +238,17 @@ def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=pri
             return
         field, rest = fields[0], fields[1:]
         # Categories are a fixed list; ministries and agencies are taken from the results, as old ones keep their
-        # old names, so one whose every result fell out of the pages read so far can't be split off.
+        # old names. One whose every result fell out of the pages read so far can't be split off, so when the
+        # slices fall short of the total, the whole is split by number instead, which reaches every result.
         values = CATEGORIES if field == "procurement_category" else _seen_values(seen.values(), field, filters, day)
+        covered = 0
         for value in values:
             narrower = (*filters, (field, value))
-            split(narrower, read(narrower), rest)
+            found = read(narrower)
+            covered += found
+            split(narrower, found, rest)
+        if covered < total and listing.kind != "direct":
+            by_number(filters, "", total)
 
     def by_number(filters: Filters, prefix: str, total: int) -> None:
         if total <= PER_PAGE or len(prefix) >= MAX_PREFIX:

@@ -174,8 +174,11 @@ class _LossySite:
 
     DAY = date(2026, 10, 26)
 
-    def __init__(self, shared_number: bool = False) -> None:
+    def __init__(self, shared_number: bool = False, lost_agency: str | None = None) -> None:
         html = (FIXTURES / "archive-results-tender.html").read_text()
+        if lost_agency:  # the lost result is the only one its agency has
+            head, card = html.split("id: 1006682 }")
+            html = head + "id: 1006682 }" + card.replace("JABATAN KERJA RAYA MALAYSIA (JKR)", lost_agency, 1)
         if shared_number:  # the lost result's number, printed on another result too
             html = html.replace("JKR/CKUB/21624/2021", "JKR/PJR/05/2010")
         html = re.sub(r"Tarikh Paparan Keputusan:\s*[0-9/]+", f"Tarikh Paparan Keputusan: {self.DAY:%d/%m/%Y}", html)
@@ -232,6 +235,14 @@ def test_a_slice_still_too_big_is_split_by_number_prefix(tmp_path: Path, monkeyp
     assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
     numbers = [v for r in site.requests for f, v in r if f == "procurement_number"]
     assert list(dict.fromkeys(numbers)) == ["JKR", "JKR(", "JKR/"]
+
+
+def test_a_result_whose_agency_never_shows_is_reached_by_number(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
+    monkeypatch.setattr(procurement, "PER_PAGE", 5)
+    site = _LossySite(lost_agency="JABATAN KERJA RAYA SABAH")
+    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
+    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
 
 
 def test_a_day_that_cannot_be_split_small_enough_stops_the_fetch(tmp_path: Path, monkeypatch) -> None:
