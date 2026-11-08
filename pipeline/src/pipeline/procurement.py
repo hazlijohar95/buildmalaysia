@@ -352,7 +352,8 @@ def _text(fragment: str) -> str:
     return _SPACE.sub(" ", unescape(re.sub(r"<[^>]+>", " ", fragment))).strip()
 
 
-# MyProcurement prints the Unix epoch where a result has no decision date.
+# MyProcurement prints a placeholder where a result has no decision date: the Unix epoch, or an empty date rendered
+# as one in the year 2 (30/11/0002). Nothing on the site is dated that early.
 NO_DATE = date(1970, 1, 1)
 
 
@@ -360,7 +361,7 @@ def _date(value: str) -> date | None:
     if value.strip().lower() == "tiada maklumat":
         return None
     parsed = datetime.strptime(value.strip(), "%d/%m/%Y").date()
-    return None if parsed == NO_DATE else parsed
+    return None if parsed <= NO_DATE else parsed
 
 
 def parse_ringgit(value: str) -> int | None:

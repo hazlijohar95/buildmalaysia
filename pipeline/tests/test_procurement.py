@@ -67,8 +67,9 @@ def test_a_quotation_without_a_decision_date() -> None:
     assert first.result_date is None
 
 
-def test_the_epoch_placeholder_is_no_date() -> None:
-    html = (FIXTURES / "archive-results-tender.html").read_text().replace("12/05/2020", "01/01/1970", 1)
+@pytest.mark.parametrize("placeholder", ["01/01/1970", "30/11/0002"])
+def test_a_placeholder_date_is_no_date(placeholder: str) -> None:
+    html = (FIXTURES / "archive-results-tender.html").read_text().replace("12/05/2020", placeholder, 1)
     assert parse_page(html, BY_SLUG["archive-results-tender"])[0].result_date is None
 
 
