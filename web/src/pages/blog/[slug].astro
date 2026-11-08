@@ -1,0 +1,81 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Band, kicker, pageTitle } from "@/components/Boxed";
+import { decodeSlug, getEmDashEntry } from "emdash";
+import { Image, PortableText } from "emdash/ui";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+const { entry: post, error } = await getEmDashEntry("posts", slug);
+if (error) throw error;
+if (!post) return Astro.rewrite("/404");
+
+const dateFormat = new Intl.DateTimeFormat("en-MY", { day: "numeric", month: "long", year: "numeric" });
+---
+
+<Base title={post.data.title} description={post.data.excerpt ?? undefined}>
+  <Band>
+    <article class="mx-auto max-w-3xl">
+      <a href="/blog" class:list={[kicker, "text-charcoal-700 no-underline hover:text-biru-800"]}>← Blog</a>
+      <h1 class:list={["mt-4", pageTitle]} {...post.edit.title}>{post.data.title}</h1>
+      {
+        post.data.publishedAt && (
+          <time datetime={post.data.publishedAt.toISOString()} class:list={["mt-4 block", kicker, "text-charcoal-700"]}>
+            {dateFormat.format(post.data.publishedAt)}
+          </time>
+        )
+      }
+      {
+        post.data.featured_image && (
+          <div class="mt-8">
+            <Image image={post.data.featured_image} priority />
+          </div>
+        )
+      }
+      <div class="blog-prose mt-8 text-lg leading-relaxed text-charcoal-800" {...post.edit.content}>
+        <PortableText value={post.data.content} />
+      </div>
+    </article>
+  </Band>
+</Base>
+
+<style>
+  .blog-prose :global(h2) {
+    margin: 2.5rem 0 1rem;
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--color-foreground);
+  }
+  .blog-prose :global(h3) {
+    margin: 2rem 0 0.75rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+  .blog-prose :global(p),
+  .blog-prose :global(ul),
+  .blog-prose :global(ol),
+  .blog-prose :global(blockquote) {
+    margin: 0 0 1.25rem;
+  }
+  .blog-prose :global(ul) {
+    list-style: disc;
+    padding-left: 1.5rem;
+  }
+  .blog-prose :global(ol) {
+    list-style: decimal;
+    padding-left: 1.5rem;
+  }
+  .blog-prose :global(blockquote) {
+    border-left: 4px solid var(--color-foreground);
+    padding-left: 1.25rem;
+    font-style: italic;
+  }
+  .blog-prose :global(img) {
+    max-width: 100%;
+    height: auto;
+  }
+</style>

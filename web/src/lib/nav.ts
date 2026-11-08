@@ -92,6 +92,7 @@ async function buildNav(): Promise<SiteNav> {
         ]
       : []),
     { kind: "link", href: "/methodology", label: "Methodology", match: ["/methodology"] },
+    { kind: "link", href: "/blog", label: "Blog", match: ["/blog"] },
     { kind: "link", href: "/about", label: "About", match: ["/about"] },
   ];
   return {

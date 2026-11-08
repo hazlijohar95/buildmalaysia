@@ -9,6 +9,7 @@
 // form asked for, so `/2025` as HTML and as Markdown (by `/2025.md` or by
 // `Accept: text/markdown`) are two entries and never stand in for each other.
 import { handle } from "@astrojs/cloudflare/handler";
+import { createScheduledHandler } from "@emdash-cms/cloudflare/worker";
 import { withRequestScope } from "@/lib/db";
 import { pageRequest } from "@/lib/representation";
 import { LOAD_FAILED_MARKER } from "@/lib/route";
@@ -36,7 +37,11 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 // Static assets never reach the Worker, so every GET on the canonical host is a page, an image or a download.
+// The CMS admin and API are per user, and blog posts change whenever one is published, so neither is cached here.
 function isCacheablePageRequest(request: Request, url: URL): boolean {
+  if (url.pathname.startsWith("/_emdash/") || /^\/blog(\/|\.md$|$)/.test(url.pathname)) {
+    return false;
+  }
   return request.method === "GET" && url.hostname === CANONICAL_HOST;
 }
 
@@ -67,7 +72,9 @@ async function servePage(request: Request, url: URL, env: Env, ctx: ExecutionCon
   // Pages, generated images, CSV downloads, the brand files, /llms.txt and the feed, which change only on a reload or a deploy.
   const type = rendered.headers.get("content-type") ?? "";
   const cacheable = CACHEABLE_TYPES.some((prefix) => type.startsWith(prefix));
-  if (rendered.status !== 200 || !cacheable || rendered.headers.has("set-cookie")) return rendered;
+  // A page rendered for a signed-in blog editor carries the editing toolbar and is marked private by EmDash.
+  const isPrivate = /\b(private|no-store)\b/.test(rendered.headers.get("cache-control") ?? "");
+  if (rendered.status !== 200 || !cacheable || isPrivate || rendered.headers.has("set-cookie")) return rendered;
 
   const response = forBrowser(rendered, "MISS");
 
@@ -107,4 +114,6 @@ export default {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
     return response;
   },
+  // The blog's scheduled posts, backups and upkeep, on the Cron Trigger in wrangler.jsonc.
+  scheduled: createScheduledHandler(),
 } satisfies ExportedHandler<Env>;
