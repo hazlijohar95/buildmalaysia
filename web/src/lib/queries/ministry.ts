@@ -202,12 +202,15 @@ export async function getMinistry(slug: string): Promise<Ministry | null> {
       where ${bodyId} in (e.predecessor, e.successor)
       order by e.effective, e.id
     `,
+    // Supply and development votes only: charged votes (T.nn) are numbered on their own and belong to no ministry.
     sql<{ number: string; body_id: string; body_name_ms: string; from_year: number; to_year: number | null }[]>`
       select distinct substr(h.vote_code, 3) as number, b.id as body_id, b.name_ms as body_name_ms,
              h.from_year, h.to_year
       from vote_holder h
       join body b on b.id = h.body_id
-      where substr(h.vote_code, 3) in (select substr(vote_code, 3) from vote_holder where body_id = ${bodyId})
+      where left(h.vote_code, 1) in ('B', 'P')
+        and substr(h.vote_code, 3) in (
+          select substr(vote_code, 3) from vote_holder where body_id = ${bodyId} and left(vote_code, 1) in ('B', 'P'))
       order by number, h.from_year
     `,
   ]);
