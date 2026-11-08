@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.procurement import (
+    CARD_START,
     LISTINGS,
     Award,
     ProcurementError,
@@ -115,3 +116,29 @@ def test_dedupe_keeps_the_current_listing_and_refuses_disagreement() -> None:
     changed = archived.__class__(**{**archived.__dict__, "title": "SOMETHING ELSE"})
     with pytest.raises(ProcurementError, match="differs"):
         dedupe([(archived, "a"), (changed, "b")])
+
+
+def test_a_result_published_during_the_fetch_is_read_once(tmp_path: Path) -> None:
+    """Page 2 is fetched after a new result went up: it repeats page 1's last card, and the total grew by one."""
+    folder = tmp_path / "2026-11-09"
+    for listing in LISTINGS:
+        (folder / listing.slug).mkdir(parents=True)
+        body = {"html": "", "total": 0, "page": 1, "lastPage": 1, "retrieved_at": "2026-11-09T01:00:00+08:00"}
+        (folder / listing.slug / "00001.json").write_text(json.dumps(body))
+    html = (FIXTURES / "archive-results-tender.html").read_text()
+    cards = html.split(CARD_START)
+    first, second = CARD_START.join(cards[:6]), CARD_START.join([cards[0], *cards[5:]])
+    pages = folder / "archive-results-tender"
+    pages.joinpath("00001.json").write_text(
+        json.dumps({"html": first, "total": 10, "page": 1, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:00+08:00"})
+    )
+    pages.joinpath("00002.json").write_text(
+        json.dumps({"html": second, "total": 11, "page": 2, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:05+08:00"})
+    )
+    read, _, _, repeats = read_snapshot(folder)
+    assert (len(read), repeats) == (10, 1)
+    pages.joinpath("00002.json").write_text(
+        json.dumps({"html": second, "total": 9, "page": 2, "lastPage": 2, "retrieved_at": "2026-11-09T01:00:05+08:00"})
+    )
+    with pytest.raises(ProcurementError, match="removed"):
+        read_snapshot(folder)

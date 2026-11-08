@@ -188,7 +188,8 @@ def load_procurement(database_url: str, raw_dir: Path, snapshot: Path | None) ->
         return 1
     print(
         f"loaded {folder}: {result.notices} notices, {result.awards} awards; every listing's count matches the total"
-        f" MyProcurement reported ({result.duplicates} notices listed twice, kept once)"
+        f" MyProcurement reported ({result.duplicates} listed as both current and archived, {result.repeats} read"
+        " twice as new results arrived; each kept once)"
     )
     return 0
 

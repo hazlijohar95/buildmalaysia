@@ -313,38 +313,50 @@ def latest_snapshot(raw_dir: Path = DEFAULT_RAW_DIR) -> Path:
 class LoadResult:
     notices: int
     awards: int
-    duplicates: int
+    duplicates: int  # results listed both as current and archived
+    repeats: int  # results read twice because new ones were published during the fetch
 
 
 def read_snapshot(folder: Path) -> tuple[list[tuple[Notice, str]], datetime, datetime, int]:
-    """Every notice in a snapshot with its page's retrieval time. Refuses a snapshot with a missing page, or a
-    listing whose cards don't add up to the total MyProcurement reported for it."""
+    """Every notice in a snapshot with its page's retrieval time, and how many were read twice.
+
+    Each listing is newest first and is read from page 1, so a result published during the fetch pushes the rest
+    down: the next page repeats the last result of the one before, and nothing is skipped. A listing is accepted
+    when its distinct results number exactly the total page 1 reported and its total never fell. Anything else (a
+    missing page, a result removed or reordered) stops the load."""
     read: list[tuple[Notice, str]] = []
     times: list[str] = []
+    repeats = 0
     for listing in LISTINGS:
         pages = sorted((folder / listing.slug).glob("*.json"))
         if not pages:
             raise ProcurementError(f"{folder.name}: {listing.slug} has no pages; the fetch did not finish")
-        first = json.loads(pages[0].read_text())
-        total, last = first["total"], first["lastPage"]
+        total = json.loads(pages[0].read_text())["total"]
+        # A listing that grew during the fetch can gain a page, so the last page saved says how many there are.
+        last = json.loads(pages[-1].read_text())["lastPage"]
         if [int(p.stem) for p in pages] != list(range(1, last + 1)):
             raise ProcurementError(f"{folder.name}: {listing.slug} has {len(pages)} of {last} pages")
-        count = 0
+        seen: set[int] = set()
+        previous = total
         for path in pages:
             body = json.loads(path.read_text())
-            if body["total"] != total:
+            if body["total"] < previous:
                 raise ProcurementError(
-                    f"{listing.slug} page {path.stem} reports {body['total']} results, page 1 {total}: the listing "
-                    "changed during the fetch; fetch it again"
+                    f"{listing.slug} page {path.stem} reports {body['total']} results after {previous}: results were"
+                    " removed during the fetch; fetch it again"
                 )
-            notices = parse_page(body["html"], listing)
-            count += len(notices)
-            read.extend((n, body["retrieved_at"]) for n in notices)
+            previous = body["total"]
+            for notice in parse_page(body["html"], listing):
+                if notice.id in seen:
+                    repeats += 1
+                    continue
+                seen.add(notice.id)
+                read.append((notice, body["retrieved_at"]))
             times.append(body["retrieved_at"])
-        if count != total:
-            raise ProcurementError(f"{listing.slug}: read {count} notices, MyProcurement reports {total}")
+        if len(seen) != total:
+            raise ProcurementError(f"{listing.slug}: read {len(seen)} distinct results, MyProcurement reports {total}")
     stamps = sorted(datetime.fromisoformat(t) for t in times)
-    return read, stamps[0], stamps[-1], len(read)
+    return read, stamps[0], stamps[-1], repeats
 
 
 def _same(a: Notice, b: Notice) -> bool:
@@ -377,7 +389,7 @@ def _total(notice: Notice) -> int | None:
 
 
 def load_snapshot(conn: psycopg.Connection, folder: Path) -> LoadResult:
-    read, first_at, last_at, _ = read_snapshot(folder)
+    read, first_at, last_at, repeats = read_snapshot(folder)
     notices, duplicates = dedupe(read)
     awards = sum(len(n.awards) for n, _ in notices)
     with conn.transaction(), conn.cursor() as cur:
@@ -427,4 +439,4 @@ def load_snapshot(conn: psycopg.Connection, folder: Path) -> LoadResult:
         (wrong,) = cur.fetchone()
         if wrong:
             raise ProcurementError(f"{wrong} notices' totals differ from their awards")
-    return LoadResult(len(notices), awards, duplicates)
+    return LoadResult(len(notices), awards, duplicates, repeats)
