@@ -15,6 +15,7 @@ from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
 from pipeline.ocr import OcrError
 from pipeline.parse import ParseError
+from pipeline.procurement import ProcurementError, fetch_snapshot, latest_snapshot, load_snapshot
 from pipeline.sources import (
     BUDGET_SOURCES,
     DEFAULT_RAW_DIR,
@@ -167,6 +168,32 @@ def tax_schedule(year: int, raw_dir: Path, out: Path) -> int:
     return 0
 
 
+def fetch_procurement(raw_dir: Path) -> int:
+    try:
+        folder = fetch_snapshot(raw_dir)
+    except (OSError, ProcurementError) as error:
+        print(f"fetch-procurement failed: {error}", file=sys.stderr)
+        return 1
+    print(f"saved {folder}")
+    return 0
+
+
+def load_procurement(database_url: str, raw_dir: Path, snapshot: Path | None) -> int:
+    try:
+        folder = snapshot or latest_snapshot(raw_dir)
+        with psycopg.connect(database_url) as conn:
+            result = load_snapshot(conn, folder)
+    except (OSError, ProcurementError) as error:
+        print(f"load-procurement failed: {error}", file=sys.stderr)
+        return 1
+    print(
+        f"loaded {folder}: {result.notices} notices, {result.awards} awards; every listing's count matches the total"
+        f" MyProcurement reported ({result.duplicates} listed as both current and archived, {result.repeats} read"
+        " twice as new results arrived; each kept once)"
+    )
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -185,7 +212,17 @@ def main() -> int:
     tax_cmd.add_argument("--year", type=int, required=True, help="the year of assessment, e.g. 2025")
     tax_cmd.add_argument("--out", type=Path, required=True)
     tax_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    fetch_cmd = commands.add_parser("fetch-procurement", help="save every MyProcurement result page under data/raw")
+    fetch_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    proc_cmd = commands.add_parser("load-procurement", help="replace the procurement tables from a saved snapshot")
+    proc_cmd.add_argument("--database-url", required=True)
+    proc_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    proc_cmd.add_argument("--snapshot", type=Path, help="a data/raw/myprocurement/<date> folder; the newest by default")
     args = parser.parse_args()
+    if args.command == "fetch-procurement":
+        return fetch_procurement(args.raw_dir)
+    if args.command == "load-procurement":
+        return load_procurement(args.database_url, args.raw_dir, args.snapshot)
     if args.command == "tax-schedule":
         return tax_schedule(args.year, args.raw_dir, args.out)
     if args.command == "load-lineage":

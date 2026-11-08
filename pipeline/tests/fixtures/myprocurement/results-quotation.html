@@ -1,0 +1,922 @@
+<div>
+            <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009524 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009524, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000021483
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/321472a9d24ac24a6cef163380684ba9">SEBUTHARGA MEMBEKAL DAN MENGHANTAR BODY WIPES CHLORHEXIDINE BASE DISINFECTANT SIZE 32 CM X 32 CM DI HOSPITAL AMPANG BAGI TEMPOH TIGA (3) TAHUN</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI SELANGOR</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Tiada Maklumat</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            R N Z MARKETING SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            324,720.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        R N Z MARKETING SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        324,720.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009525 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009525, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000021539
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/49bfd889dba6c89cac03ec5a828e3e1b">SEBUT HARGA MEMBEKAL DAN MENGHANTAR BLOOD CULTURE BOTTLE SELAMA DUA (2) TAHUN DI HOSPITAL CYBERJAYA.</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Tiada Maklumat</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            GELIGA SISTEM SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            277,516.80
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        GELIGA SISTEM SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        277,516.80
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009519 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009519, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000018240
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/f698df4f7b43e0d595877c27fc96d294">TAWARAN SEBUT HARGA MEMBEKAL, MENGHANTAR DAN MENYERAH UBAT CEFTAROLINE FOSAMIL 600MG INJECTION UNTUK KEGUNAAN JABATAN FARMASI HOSPITAL SUNGAI BULOH BAGI TEMPOH DUA (2) TAHUN</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI SELANGOR</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">10/09/2026</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            PHARMANIAGA LOGISTICS SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            334,175.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        PHARMANIAGA LOGISTICS SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        334,175.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009513 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009513, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000008816
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/e0d368690ecbaff491f1e9d9ee10b6c5">[HIJAU] PERKHIDMATAN PEMBERSIHAN SELURUH KAWASAN DALAM DAN LUAR BANGUNAN TERMASUK KERJA-KERJA LANDSKAP DI KOMPLEKS RAKAN MUDA JAWI, SEBERANG PERAI SELATAN, PULAU PINANG.</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN BELIA DAN SUKAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN BELIA DAN SUKAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Perkhidmatan Bukan Perunding</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">18/05/2026</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            MOHD KHAIRI BIN NORDIN
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            182,414.64
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        MOHD KHAIRI BIN NORDIN
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        182,414.64
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009526 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009526, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000021730
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/efe08382322bc5b046dd76fb7287094a">SEBUT HARGA MEMBEKAL, MENGHANTAR, MEMASANG, MENGUJI DAN MENTAULIAH 2 IN 1 ARTHROSCOPIC SHAVER X RF SYSTEM UNTUK KEGUNAAN UNIT ORTOPEDIK HOSPITAL JASIN</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI MELAKA</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Tiada Maklumat</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            R N Z MARKETING SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            81,249.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        R N Z MARKETING SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        81,249.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009516 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009516, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000014097
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/f3876821302d39d67b0e8905c4924e76">PERKHIDMATAN PENYELENGGARAAN DAN PEMANTAUAN SISTEM PENGGERA KESELAMATAN, CCTV, ACCESS DOOR DAN LAIN.LAIN SELENGGARAAN YANG BERKAITAN DI JPJ CAWANGAN RAUB, JPJ CAWANGAN BENTONG, JPJ CAWANGAN CAMERON HIGHLANDS, STESEN PENGUATKUASA KARAK DAN STESEN PENGUATKUASA BENTA SELAMA TIGA PULUH ENAM BULAN (36) BULAN</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN PENGANGKUTAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN PENGANGKUTAN JALAN (JPJ)</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Perkhidmatan Bukan Perunding</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">05/10/2026</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            PADU SOLUTIONS  SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            113,400.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        PADU SOLUTIONS  SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        113,400.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009512 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009512, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000008808
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/2b9eef34913a7e12c9dfc8b029d2800f">[HIJAU] PERKHIDMATAN PEMBERSIHAN DALAM DAN LUAR BANGUNAN SERTA KAWASAN LANDSKAP DI KOMPLEKS BELIA DAN SUKAN NEGERI PULAU PINANG.</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN BELIA DAN SUKAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN BELIA DAN SUKAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Perkhidmatan Bukan Perunding</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">18/05/2026</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            ARTISTIC RECOGNITION SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            409,728.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        ARTISTIC RECOGNITION SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        409,728.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009517 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009517, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000016141
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/3bc1552911527055ea98a4c1f855380d">SEBUT HARGA MEMBEKAL DAN MENGHANTAR UBAT BETAMETHASONE VALERATE 1 IN 2 CREAM BAGI TEMPOH TIGA PULUH ENAM (36) BULAN UNTUK KEGUNAAN HOSPITAL ALOR GAJAH DAN HOSPITAL JASIN, MELAKA.</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI MELAKA</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">05/10/2026</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            QUALITY REPUTATION SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            147,384.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        QUALITY REPUTATION SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        147,384.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009523 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009523, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000021226
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/e09cc2f58bb61d3565e2ad92ec904e89">MEMBEKAL DAN MENGHANTAR BEKALAN  BARANGAN PAKAI BUANG   PLASTIC APRON, DISPOSABLE, SZ: 31  X 55  X 0.03MM BAGI TEMPOH DUA (2) TAHUN KE  UNIT FARMASI LOGISTIK, HOSPITAL KLUSTER PAHANG TIMUR (HOSPITAL TENGKU AMPUAN AFZAN, HOSPITAL PEKAN, HOSPITAL MUADZAM SHAH DAN HOSPITAL ROMPIN).</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI PAHANG</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Tiada Maklumat</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            ZETA TEKNIK SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            255,000.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        ZETA TEKNIK SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        255,000.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1009528 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1009528, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                <div class="flex-grow text-sm md:text-base break-words">
+    <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+        Tarikh Paparan Keputusan: 08/11/2026
+    </div>
+    
+    <div class="px-4 py-2 rounded-md">
+                <span class="font-bold">No. Sebut Harga</span>: QT260000000022318
+         
+    </div>
+    <div class="px-4 py-2 rounded-md font-bold text-primary uppercase">
+                    <a href="https://myprocurement.treasury.gov.my/results/quotation/c78e475a84020f07fb3caed76a4e8457">MEMBEKAL REAGEN UNTUK UJIAN HEMOGLOBIN A1C (HBA1C) DI JABATAN PATOLOGI, HOSPITAL TENGKU AMPUAN AFZAN, KUANTAN, PAHANG</a>
+            </div>
+    <div x-show="open" class="w-full flex flex-col px-4">
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kementerian:</div>
+            <div class="w-full sm:w-2/3 uppercase">KEMENTERIAN KESIHATAN</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Agensi:</div>
+            <div class="w-full sm:w-2/3 uppercase">JABATAN KESIHATAN NEGERI PAHANG</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Kategori Perolehan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Bekalan</div>
+        </div>
+        <div class="flex flex-col sm:flex-row mt-2">
+            <div class="w-full sm:w-1/3 font-bold align-top">Tarikh Keputusan:</div>
+            <div class="w-full sm:w-2/3 uppercase">Tiada Maklumat</div>
+        </div>
+    </div>
+    <div x-show="open" class="mt-4">
+                                    <div class="flex sm:hidden p-4 gap-4 rounded-md border border-blue-500/50">
+                    <div class="flex justify-between font-bold">
+                        <div>
+                        1.
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <h3 class="uppercase font-bold">Nama Petender Berjaya</h3>
+                            MEDILIANCE (M) SDN. BHD.
+                        </div>
+                        <div>
+                            <h3 class="uppercase font-bold">Harga Setuju Terima (RM)</h3>
+                            63,200.00
+                        </div>
+                    </div>
+                </div>
+                            <table class="hidden sm:block w-full">
+            <tr class="bg-primary/20">
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Bil.
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30">
+                    Nama Petender Berjaya
+                </th>
+                <th class="text-start px-4 py-2 border border-primary/30 text-nowrap">
+                    Harga Setuju Terima (RM)
+                </th>
+            </tr>
+                                            <tr>
+                    <td class="text-start px-4 py-2 border border-primary/30">
+                        1.
+                    </td>
+                    <td class="text-start px-4 py-2 border border-primary/30 w-full">
+                        MEDILIANCE (M) SDN. BHD.
+                    </td>
+                    <td class="text-end px-4 py-2 border border-primary/30">
+                        63,200.00
+                    </td>
+                </tr>
+                                    </table>
+    </div>
+</div>            </div>
+            <div id="pagination-wrapper" x-on:click.prevent="paginationClick" class="mt-4">
+        <form class="flex justify-center rounded-md border-2 border-gray-300 w-fit mx-auto overflow-hidden h-12" x-on:submit.prevent="paginationForm">
+                        <span class="flex items-center p-3 aspect-square text-gray-400 cursor-not-allowed">
+                <i class="fa-solid fa-chevron-left"></i>
+            </span>
+                        <input name="page" type="number" class="w-16 text-center my-1 p-0 rounded-md" min="1" max="583" value="1"/>
+            <div class="flex items-center px-4">
+                <span class="hidden sm:inline">
+                daripada
+                </span>
+                <span class="sm:hidden">/</span>
+            </div>
+            <a href="https://myprocurement.treasury.gov.my/procurements/fetch?type=results&amp;category=quotation&amp;itemsPerPage=10&amp;page=583" class="flex items-center p-3 aspect-square">
+                583
+            </a>
+                        <a href="https://myprocurement.treasury.gov.my/procurements/fetch?type=results&amp;category=quotation&amp;itemsPerPage=10&amp;page=2" class="flex items-center p-3 aspect-square">
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+                    </form>
+    </div>
+</div>
