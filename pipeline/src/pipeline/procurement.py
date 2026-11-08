@@ -253,6 +253,8 @@ def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=pri
         if fields and len(reached) < total:
             field, rest = fields[0], fields[1:]
             for value in CATEGORIES if field == "procurement_category" else _names(seen, reached, field):
+                if len(reached) >= total:
+                    break  # the slices read so far already cover it; no need to ask for the rest
                 narrower = (*filters, (field, value))
                 reached = reached | by_name(narrower, *read(narrower), rest)
         if len(reached) < total and listing.kind != "direct":
