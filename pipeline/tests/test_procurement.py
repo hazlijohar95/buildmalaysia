@@ -1,9 +1,12 @@
 import json
+import math
+import re
 from datetime import date
 from pathlib import Path
 
 import pytest
 
+from pipeline import procurement
 from pipeline.procurement import (
     CARD_START,
     LISTINGS,
@@ -11,6 +14,7 @@ from pipeline.procurement import (
     ProcurementError,
     day_dir,
     dedupe,
+    fetch_day,
     parse_page,
     parse_ringgit,
     read_day,
@@ -156,24 +160,84 @@ def test_a_day_across_pages_must_be_read_whole(tmp_path: Path) -> None:
 def test_a_day_read_whole_must_cover_its_total(tmp_path: Path) -> None:
     folder = tmp_path / "day"
     cards = (FIXTURES / "archive-results-tender.html").read_text().split(CARD_START)
-    _page(folder / "01-001.json", CARD_START.join(["", cards[1]]), 2, 1, 1)
+    _page(folder / "all-001.json", CARD_START.join(["", cards[1]]), 2, 1, 1)
     assert read_day(folder, BY_SLUG["archive-results-tender"]) is None
-    _page(folder / "02-001.json", CARD_START.join(["", cards[2]]), 2, 1, 1)
+    _page(folder / "slice-001.json", CARD_START.join(["", cards[2]]), 1, 1, 1)
+    sliced = json.loads((folder / "slice-001.json").read_text()) | {"filters": [["procurement_category", "x"]]}
+    (folder / "slice-001.json").write_text(json.dumps(sliced))
     assert len(read_day(folder, BY_SLUG["archive-results-tender"]) or []) == 2
 
 
-def test_a_result_published_during_the_fetch_is_read_once(tmp_path: Path) -> None:
-    """Page 2 was fetched after a new result went up: it repeats page 1's last card, and the total grew by one."""
-    folder, cards = _two_page_tender_listing(tmp_path)
-    out = folder / "archive-results-tender"
-    first, second = CARD_START.join(cards[:7]), CARD_START.join([cards[0], *cards[6:]])
-    _page(out / "00001.json", first, 10, 1, 2)
-    _page(out / "00002.json", second, 11, 2, 2)
-    for day in straddling_days(out, BY_SLUG["archive-results-tender"]):
-        same_day = [c for c in cards[1:] if f"Tarikh Paparan Keputusan: {day:%d/%m/%Y}" in c]
-        _page(day_dir(out, day) / "01-001.json", CARD_START.join(["", *same_day]), len(same_day), 1, 1)
-    read, _, _, repeats = read_snapshot(folder)
-    assert (len(read), repeats) == (10, 1)
-    _page(out / "00002.json", second, 9, 2, 2)
-    with pytest.raises(ProcurementError, match="removed"):
-        read_snapshot(folder)
+class _LossySite:
+    """Every fixture card shown on one day. Like MyProcurement, a query with more results than fit on a page is
+    paged in an order that never reaches one of them; a query that fits on a page comes back whole."""
+
+    DAY = date(2026, 10, 26)
+
+    def __init__(self, shared_number: bool = False) -> None:
+        html = (FIXTURES / "archive-results-tender.html").read_text()
+        if shared_number:  # the lost result's number, printed on another result too
+            html = html.replace("JKR/CKUB/21624/2021", "JKR/PJR/05/2010")
+        html = re.sub(r"Tarikh Paparan Keputusan:\s*[0-9/]+", f"Tarikh Paparan Keputusan: {self.DAY:%d/%m/%Y}", html)
+        self.cards = html.split(CARD_START)[1:]
+        self.listing = BY_SLUG["archive-results-tender"]
+        self.requests: list[tuple] = []
+
+    def open_listing(self, listing) -> None:
+        pass
+
+    @staticmethod
+    def _match(notice, field: str, value: str) -> bool:
+        if field == "procurement_number":
+            return notice.reference.upper().startswith(value.upper())
+        return getattr(notice, procurement._FILTER_FIELDS[field]) == value
+
+    def fetch_page(self, listing, page, day, filters=()) -> dict:
+        self.requests.append(tuple(filters))
+        cards = [
+            c for c in self.cards if all(self._match(parse_page(CARD_START + c, listing)[0], f, v) for f, v in filters)
+        ]
+        size = procurement.PER_PAGE
+        # One JKR result is always the one lost, as on MyProcurement, where repeated reads lose the same results.
+        lost = next((c for c in cards if "id: 1006682 }" in c), cards[-1] if cards else None)
+        order = cards if len(cards) <= size else [*(c for c in cards if c is not lost), cards[0]]
+        chunk = order[(page - 1) * size : page * size]
+        return {
+            "html": "".join(CARD_START + c for c in chunk),
+            "total": len(cards),
+            "page": page,
+            "lastPage": max(1, math.ceil(len(cards) / size)),
+        }
+
+
+def test_a_day_too_big_for_a_page_is_split_until_each_slice_fits(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
+    monkeypatch.setattr(procurement, "PER_PAGE", 6)
+    site = _LossySite()
+    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
+    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
+    # 8 of the 10 are consultancy: split again by ministry, where Kementerian Kerja Raya's 6 fit on a page.
+    assert (
+        ("procurement_category", "Perkhidmatan Perunding"),
+        ("procurement_ministry", "KEMENTERIAN KERJA RAYA"),
+    ) in site.requests
+    assert not any(field == "procurement_agency" for r in site.requests for field, _ in r)
+
+
+def test_a_slice_still_too_big_is_split_by_number_prefix(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
+    monkeypatch.setattr(procurement, "PER_PAGE", 5)  # JKR's 6 results don't fit on a page
+    site = _LossySite()
+    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
+    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
+    numbers = [v for r in site.requests for f, v in r if f == "procurement_number"]
+    assert list(dict.fromkeys(numbers)) == ["JKR", "JKR(", "JKR/"]
+
+
+def test_a_day_that_cannot_be_split_small_enough_stops_the_fetch(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
+    monkeypatch.setattr(procurement, "PER_PAGE", 1)
+    site = _LossySite(shared_number=True)
+    with pytest.raises(ProcurementError, match="9 of 10 results"):
+        fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
+    assert read_day(day_dir(tmp_path, site.DAY), site.listing) is None

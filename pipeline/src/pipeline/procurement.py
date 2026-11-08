@@ -7,6 +7,7 @@ procurement tables from a snapshot in one transaction, and only after every list
 the site reported for it and every card's two printings of its winners agree.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -34,6 +35,7 @@ USER_AGENT = "buildmalaysia-pipeline (+https://buildmalaysia.com/about)"
 PAUSE_SECONDS = 0.5  # between requests, so a full fetch never loads the site
 
 Kind = Literal["tender", "quotation", "direct"]
+Filters = tuple[tuple[str, str], ...]  # the endpoint's own filters, as (parameter, value) pairs
 
 
 class ProcurementError(Exception):
@@ -112,11 +114,12 @@ class _Session:
             raise ProcurementError(f"{listing.url} carries no CSRF token; the page has changed")
         self.token = found.group(1)
 
-    def fetch_page(self, listing: Listing, page: int, day: date | None = None) -> dict:
+    def fetch_page(self, listing: Listing, page: int, day: date | None = None, filters: Filters = ()) -> dict:
         params = {"type": listing.type, "category": listing.category, "itemsPerPage": PER_PAGE, "page": page}
         if day:
             # Filters on the date the listing sorts by: Tarikh Paparan Keputusan, or Tarikh Permohonan.
             params |= {"date_start": day.isoformat(), "date_end": day.isoformat()}
+        params |= dict(filters)
         query = urllib.parse.urlencode(params)
         headers = {"Accept": "application/json", "X-CSRF-TOKEN": self.token or ""}
         body = json.loads(self._get(f"{BASE}/procurements/fetch?{query}", headers))
@@ -130,9 +133,6 @@ def snapshot_dir(raw_dir: Path, day: date) -> Path:
     return raw_dir / "myprocurement" / day.isoformat()
 
 
-DAY_PASSES = 8  # full re-reads of one day before a fetch gives up on it
-
-
 def fetch_snapshot(
     raw_dir: Path = DEFAULT_RAW_DIR, day: date | None = None, log=print, only: tuple[str, ...] = ()
 ) -> Path:
@@ -141,8 +141,9 @@ def fetch_snapshot(
 
     MyProcurement sorts a listing by date alone, so results published the same day come back in a different order
     on each request, and a day that crosses a page boundary loses some results to the next page's repeats. After
-    the pages, each such day is read again on its own, through the listing's date filter, until every one of its
-    results has been seen (see `straddling_days` and `fetch_day`)."""
+    the pages, each such day is read again on its own through the listing's date filter, split further where it
+    needs more than one page, until every one of its results has been seen (see `straddling_days` and
+    `fetch_day`)."""
     folder = snapshot_dir(raw_dir, day or date.today())
     session = _Session()
     for listing in LISTINGS:
@@ -168,9 +169,9 @@ def fetch_snapshot(
     return folder
 
 
-def _fetch(session: _Session, listing: Listing, page: int, day: date | None = None) -> dict:
+def _fetch(session: _Session, listing: Listing, page: int, day: date | None = None, filters: Filters = ()) -> dict:
     body = _with_retries(
-        lambda: session.fetch_page(listing, page, day),
+        lambda: session.fetch_page(listing, page, day, filters),
         lambda: session.open_listing(listing),
     )
     body["retrieved_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -206,40 +207,134 @@ def day_dir(out: Path, day: date) -> Path:
 
 
 def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=print) -> None:
-    """Read one day's results through the date filter, whole passes at a time, until the distinct results seen
-    number the total the site reports for that day. Each pass's pages are saved, so the load can check the same."""
+    """Read one day's results through the date filter until the distinct results seen number the total the site
+    reports for that day. A day that needs more than one page comes back in a different order on each request, and
+    some of its results on none of them, so it is split until each slice fits on one page, which the site returns
+    whole: by category, then ministry, then agency (the names its own results print), then by the leading
+    characters of the procurement number, which the site matches as a prefix. Every page is saved with its filters,
+    so the load can check the same."""
     folder = day_dir(out, day)
     if read_day(folder, listing) is not None:
         return
-    seen: set[int] = set()
-    for attempt in range(1, DAY_PASSES + 1):
+    seen: dict[int, Notice] = {}
+
+    def read(filters: Filters) -> int:
         page, last, total = 1, 1, 0
         while page <= last:
-            body = _fetch(session, listing, page, day)
-            _save(folder / f"{attempt:02d}-{page:03d}.json", body)
-            seen |= {n.id for n in parse_page(body["html"], listing)}
+            body = _fetch(session, listing, page, day, filters)
+            body["filters"] = [list(f) for f in filters]
+            _save(folder / f"{_slice_name(filters)}-{page:03d}.json", body)
+            seen.update((n.id, n) for n in parse_page(body["html"], listing))
             last, total = body["lastPage"], body["total"]
             page += 1
-        if len(seen) >= total:
-            log(f"{listing.slug}: {day} read whole ({total} results, {attempt} pass{'es' * (attempt > 1)})")
+        return total
+
+    def split(filters: Filters, total: int, fields: tuple[str, ...]) -> None:
+        if total <= PER_PAGE:
             return
-    raise ProcurementError(f"{listing.slug}: {day} gave {len(seen)} of {total} results in {DAY_PASSES} passes")
+        if not fields:
+            if listing.kind != "direct":  # direct negotiations have no number
+                by_number(filters, "", total)
+            return
+        field, rest = fields[0], fields[1:]
+        # Categories are a fixed list; ministries and agencies are taken from the results, as old ones keep their
+        # old names, so one whose every result fell out of the pages read so far can't be split off.
+        values = CATEGORIES if field == "procurement_category" else _seen_values(seen.values(), field, filters, day)
+        for value in values:
+            narrower = (*filters, (field, value))
+            split(narrower, read(narrower), rest)
+
+    def by_number(filters: Filters, prefix: str, total: int) -> None:
+        if total <= PER_PAGE or len(prefix) >= MAX_PREFIX:
+            return
+        numbers = [r for r in _seen_numbers(seen.values(), filters, day) if r.startswith(prefix)]
+        # Most slices share a long prefix (QT190000000…): try it in one step before going a character at a time.
+        common = os.path.commonprefix(numbers)
+        if len(common) > len(prefix) and _usable(common) and read(_with_number(filters, common)) == total:
+            by_number(filters, common, total)
+            return
+        known = sorted({r[len(prefix)] for r in numbers if len(r) > len(prefix)} & set(NUMBER_CHARACTERS))
+        covered = 0
+        for character in [*known, *(c for c in NUMBER_CHARACTERS if c not in known)]:
+            if covered >= total:
+                break
+            narrower = prefix + character
+            found = read(_with_number(filters, narrower))
+            covered += found
+            by_number(filters, narrower, found)
+
+    total = read(())
+    split((), total, _split_fields(listing))
+    if len(seen) < total:
+        raise ProcurementError(f"{listing.slug}: {day} gave {len(seen)} of {total} results, split as far as it goes")
+    log(f"{listing.slug}: {day} read whole ({total} results)")
+
+
+# Every character procurement numbers use; the site matches a number filter as a case-insensitive prefix, so `%`
+# and `_` (wildcards) and a trailing space (trimmed) can't be part of one.
+NUMBER_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&()*,-./:;?["
+MAX_PREFIX = 40
+
+
+def _usable(prefix: str) -> bool:
+    return all(c in NUMBER_CHARACTERS for c in prefix)
+
+
+def _with_number(filters: Filters, prefix: str) -> Filters:
+    return (*filters, ("procurement_number", prefix))
+
+
+def _seen_numbers(notices, filters: Filters, day: date) -> list[str]:
+    return [n.reference.upper() for n in notices if n.reference and _matches(n, filters, day)]
+
+
+# The endpoint's filters that match one of a result's printed fields exactly, and that field.
+_FILTER_FIELDS = {
+    "procurement_category": "category",
+    "procurement_ministry": "ministry",
+    "procurement_agency": "agency",
+}
+
+
+def _split_fields(listing: Listing) -> tuple[str, ...]:
+    # The direct negotiations listing has no category filter.
+    return tuple(f for f in _FILTER_FIELDS if listing.kind != "direct" or f != "procurement_category")
+
+
+CATEGORIES = ("Bekalan", "Kerja", "Perkhidmatan Bukan Perunding", "Perkhidmatan Perunding")
+
+
+def _seen_values(notices, field: str, filters: Filters, day: date) -> list[str]:
+    return sorted({_value(n, field) for n in notices if _matches(n, filters, day)})
+
+
+def _value(notice: Notice, field: str) -> str:
+    return getattr(notice, _FILTER_FIELDS[field])
+
+
+def _matches(notice: Notice, filters: Filters, day: date) -> bool:
+    return _sort_date(notice) == day and all(_value(notice, f) == v for f, v in filters)
+
+
+def _slice_name(filters: Filters) -> str:
+    if not filters:
+        return "all"
+    return hashlib.sha1(urllib.parse.urlencode(filters).encode()).hexdigest()[:12]
 
 
 def read_day(folder: Path, listing: Listing) -> list[tuple[Notice, str]] | None:
-    """A day fetched whole: every distinct result from its passes, or None when the passes don't cover the total
-    the site reported for the day (or there are none)."""
+    """A day fetched whole: every distinct result on its pages, or None when they don't cover the total the site
+    reported for the whole, unfiltered day (or there are none)."""
     pages = sorted(folder.glob("*.json"))
-    if not pages:
-        return None
     found: dict[int, tuple[Notice, str]] = {}
-    total = 0
+    total = None
     for path in pages:
         body = json.loads(path.read_text())
-        total = max(total, body["total"])
+        if not body.get("filters"):
+            total = max(total or 0, body["total"])
         for notice in parse_page(body["html"], listing):
             found.setdefault(notice.id, (notice, body["retrieved_at"]))
-    return list(found.values()) if len(found) >= total else None
+    return list(found.values()) if total is not None and len(found) >= total else None
 
 
 def _with_retries(call, reopen, attempts: int = 5):
