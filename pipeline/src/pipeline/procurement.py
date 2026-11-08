@@ -223,75 +223,77 @@ def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=pri
     Results that need more than one page come back in an order that misses some of them on every read, while one
     page comes back whole. So a day too big for a page is split until each slice fits: by category, then ministry,
     then agency, then by the leading characters of the procurement number. Ministries and agencies are taken from
-    the results already read, as old ones keep their old names; where the slices by name add up to less than their
-    whole, the whole is split by number, which reaches every result. Every page is saved with its filters, so the
-    load can check the same."""
+    the results already read, as old ones keep their old names, and the site matches them loosely (a ministry's name
+    also matches a longer one it begins), so slices can overlap. A slice counts as read once the distinct results
+    its own pages and its narrower slices returned number its total; where the slices by name fall short, the slice
+    is split by number, which reaches every result. Every page is saved with its filters, so the load can check the
+    same."""
     folder = day_dir(out, day)
     if read_day(folder, listing) is not None:
         return
     seen: dict[int, Notice] = {}
 
-    def read(filters: Filters) -> int:
-        """Read every page of one slice; return the total the site reports for it."""
-        page, last, total = 1, 1, 0
+    def read(filters: Filters) -> tuple[int, set[int]]:
+        """Read every page of one slice: the total the site reports for it, and the results its pages returned."""
+        page, last, total, ids = 1, 1, 0, set()
         while page <= last:
             body = _fetch(session, listing, page, day, filters)
             body["filters"] = [list(f) for f in filters]
             _save(folder / f"{_slice_name(filters)}-{page:03d}.json", body)
-            seen.update((n.id, n) for n in parse_page(body["html"], listing))
+            notices = parse_page(body["html"], listing)
+            seen.update((n.id, n) for n in notices)
+            ids |= {n.id for n in notices}
             last, total = body["lastPage"], body["total"]
             page += 1
-        return total
+        return total, ids
 
-    def by_name(filters: Filters, total: int, fields: tuple[str, ...]) -> None:
-        if total <= PER_PAGE:
-            return
-        covered = 0
-        if fields:
+    # Each split returns the results its slice's reads reached. A narrower slice adds a filter to its wider one, so
+    # what it reaches belongs to the wider slice too, and a slice is whole once it has reached its total.
+    def by_name(filters: Filters, total: int, reached: set[int], fields: tuple[str, ...]) -> set[int]:
+        if fields and len(reached) < total:
             field, rest = fields[0], fields[1:]
-            for value in CATEGORIES if field == "procurement_category" else _names(seen, field, filters, day):
+            for value in CATEGORIES if field == "procurement_category" else _names(seen, reached, field):
                 narrower = (*filters, (field, value))
-                found = read(narrower)
-                covered += found
-                by_name(narrower, found, rest)
-        if covered < total and listing.kind != "direct":
-            by_number(filters, "", total)
+                reached = reached | by_name(narrower, *read(narrower), rest)
+        if len(reached) < total and listing.kind != "direct":
+            reached = by_number(filters, "", total, reached)
+        return reached
 
-    def by_number(filters: Filters, prefix: str, total: int) -> None:
-        if total <= PER_PAGE or len(prefix) >= MAX_PREFIX:
-            return
-        numbers = [r for r in _numbers(seen, filters, day) if r.startswith(prefix)]
+    def by_number(filters: Filters, prefix: str, total: int, reached: set[int]) -> set[int]:
+        if len(reached) >= total or len(prefix) >= MAX_PREFIX:
+            return reached
+        numbers = [r for r in _numbers(seen, reached) if r.startswith(prefix)]
         # Most slices share a long prefix (QT190000000…): try it in one step before going a character at a time.
         common = os.path.commonprefix(numbers)
-        if len(common) > len(prefix) and _is_number_prefix(common) and read(_with_number(filters, common)) == total:
-            by_number(filters, common, total)
-            return
+        if len(common) > len(prefix) and _is_number_prefix(common):
+            found, ids = read(_with_number(filters, common))
+            reached = reached | ids
+            if found == total:
+                return by_number(filters, common, total, reached)
         known = sorted({r[len(prefix)] for r in numbers if len(r) > len(prefix)} & set(NUMBER_CHARACTERS))
-        covered = 0
         for character in [*known, *(c for c in NUMBER_CHARACTERS if c not in known)]:
-            if covered >= total:
+            if len(reached) >= total:
                 break
-            found = read(_with_number(filters, prefix + character))
-            covered += found
-            by_number(filters, prefix + character, found)
+            found, ids = read(_with_number(filters, prefix + character))
+            if found:
+                reached = reached | by_number(filters, prefix + character, found, ids)
+        return reached
 
-    total = read(())
-    by_name((), total, tuple(f for f in NAME_FILTERS if listing.kind != "direct" or f != "procurement_category"))
-    if len(seen) < total:
-        raise ProcurementError(f"{listing.slug}: {day} gave {len(seen)} of {total} results, split as far as it goes")
+    total, ids = read(())
+    reached = by_name(
+        (), total, ids, tuple(f for f in NAME_FILTERS if listing.kind != "direct" or f != "procurement_category")
+    )
+    if len(reached) < total:
+        raise ProcurementError(f"{listing.slug}: {day} gave {len(reached)} of {total} results, split as far as it goes")
     log(f"{listing.slug}: {day} read whole ({total} results)")
 
 
-def _in_slice(notice: Notice, filters: Filters, day: date) -> bool:
-    return _sort_date(notice) == day and all(getattr(notice, NAME_FILTERS[f]) == v for f, v in filters)
+def _names(seen: dict[int, Notice], reached: set[int], field: str) -> list[str]:
+    return sorted({getattr(seen[i], NAME_FILTERS[field]) for i in reached})
 
 
-def _names(seen: dict[int, Notice], field: str, filters: Filters, day: date) -> list[str]:
-    return sorted({getattr(n, NAME_FILTERS[field]) for n in seen.values() if _in_slice(n, filters, day)})
-
-
-def _numbers(seen: dict[int, Notice], filters: Filters, day: date) -> list[str]:
-    return [n.reference.upper() for n in seen.values() if n.reference and _in_slice(n, filters, day)]
+def _numbers(seen: dict[int, Notice], reached: set[int]) -> list[str]:
+    return [seen[i].reference.upper() for i in reached if seen[i].reference]
 
 
 def _is_number_prefix(prefix: str) -> bool:

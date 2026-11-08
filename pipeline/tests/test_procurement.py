@@ -174,25 +174,28 @@ LOST = 1006682  # a JKR consultancy result
 class _LossySite:
     """Every fixture card shown on one day, served like MyProcurement: a query with more results than fit on a page
     is paged in an order that never reaches result LOST (repeating the first instead), and one that fits on a page
-    comes back whole. Number filters match as a case-insensitive prefix."""
+    comes back whole."""
 
     DAY = date(2026, 10, 26)
 
-    def __init__(self, lost_agency: str | None = None, lost_number_shared: bool = False) -> None:
+    def __init__(
+        self, ministries: dict[int, str] | None = None, agencies: dict[int, str] | None = None, lost_number_shared=False
+    ) -> None:
+        """`ministries` and `agencies` refile results under other names; `lost_number_shared` prints LOST's number
+        on another JKR result too, so no number prefix can single it out."""
         html = (FIXTURES / "archive-results-tender.html").read_text()
         html = re.sub(r"Tarikh Paparan Keputusan:\s*[0-9/]+", f"Tarikh Paparan Keputusan: {self.DAY:%d/%m/%Y}", html)
+        if lost_number_shared:
+            html = html.replace("JKR/CKUB/21624/2021", "JKR/PJR/05/2010")
         self.listing = BY_SLUG["archive-results-tender"]
-        self.notices = {
-            n.id: (n, CARD_START + c) for n, c in zip(parse_page(html, self.listing), html.split(CARD_START)[1:])
-        }
-        lost, card = self.notices[LOST]
-        if lost_agency:  # the only result its agency has
-            card = card.replace(lost.agency, lost_agency, 1)
-        if lost_number_shared:  # printed on another JKR result too, so no number prefix can single it out
-            other = next(n for n, _ in self.notices.values() if n.agency == lost.agency and n.id != LOST)
-            card = card.replace(lost.reference, other.reference, 1)
-        [changed] = parse_page(card, self.listing)
-        self.notices[LOST] = (changed, card)
+        self.notices = {}
+        for card in (CARD_START + c for c in html.split(CARD_START)[1:]):
+            [notice] = parse_page(card, self.listing)
+            if notice.id in (ministries or {}):
+                card = card.replace(f">{notice.ministry}<", f">{ministries[notice.id]}<", 1)
+            if notice.id in (agencies or {}):
+                card = card.replace(f">{notice.agency}<", f">{agencies[notice.id]}<", 1)
+            self.notices[notice.id] = (parse_page(card, self.listing)[0], card)
         self.requests: list[tuple] = []
 
     def open_listing(self, listing) -> None:
@@ -214,9 +217,11 @@ class _LossySite:
 
     @staticmethod
     def _matches(notice, field: str, value: str) -> bool:
-        if field == "procurement_number":
-            return notice.reference.upper().startswith(value.upper())
-        return getattr(notice, procurement.NAME_FILTERS[field]) == value
+        # Like MyProcurement, every filter matches the start of the field, ignoring case.
+        printed = (
+            notice.reference if field == "procurement_number" else getattr(notice, procurement.NAME_FILTERS[field])
+        )
+        return printed.upper().startswith(value.upper())
 
 
 @pytest.fixture
@@ -254,7 +259,16 @@ def test_a_slice_still_too_big_is_split_by_number_prefix(tmp_path: Path, per_pag
 
 def test_a_result_whose_agency_never_shows_is_reached_by_number(tmp_path: Path, per_page) -> None:
     per_page(5)
-    site = _LossySite(lost_agency="JABATAN KERJA RAYA SABAH")
+    site = _LossySite(agencies={LOST: "JABATAN KERJA RAYA SABAH"})
+    assert _read_whole(site, tmp_path) == set(site.notices)
+
+
+def test_slices_that_overlap_are_counted_once(tmp_path: Path, per_page) -> None:
+    """The site matches a ministry's name as a prefix, so "KEMENTERIAN KERJA RAYA" also returns the result filed under
+    "KEMENTERIAN KERJA RAYA SARAWAK", and the ministries' totals add up to their category's while the result filed
+    under a ministry no read has shown is still missing."""
+    per_page(6)
+    site = _LossySite(ministries={LOST: "KEMENTERIAN SABAH", 1006196: "KEMENTERIAN KERJA RAYA SARAWAK"})
     assert _read_whole(site, tmp_path) == set(site.notices)
 
 
