@@ -13,3 +13,4 @@ __pycache__/
 .dev.vars*
 supabase/.temp/
 .pnpm-store/
+data/raw/myprocurement/

@@ -63,6 +63,12 @@ async function buildNav(): Promise<SiteNav> {
               },
             ]
           : []),
+        {
+          href: "/contracts",
+          label: "Government contracts",
+          note: "Every published tender and quotation award",
+          match: ["/contracts"],
+        },
         ...(covidYear
           ? [
               {

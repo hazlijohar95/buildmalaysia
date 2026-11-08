@@ -16,6 +16,10 @@ JANM, _Penyata Kewangan Kerajaan Persekutuan_ (Federal Government Financial Stat
 
 Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget book), Budget 2025, 2026 and 2027, e.g. <https://belanjawan.mof.gov.my/pdf/belanjawan2027/perbelanjaan/Anggaran_Perbelanjaan_Persekutuan_2027.pdf>.
 
+## Procurement source
+
+Kementerian Kewangan's [MyProcurement](https://myprocurement.treasury.gov.my/): every published tender, quotation and direct-negotiation result, with the ministry, agency, winners and accepted price (Harga Setuju Terima). `fetch-procurement` saves every result page under `data/raw/myprocurement/<date>/` (git-ignored); `load-procurement` replaces the procurement tables from the newest snapshot, and refuses one with a missing page, a listing whose results don't add up to the total MyProcurement reports, or a result whose two printings of its winners differ. MyProcurement prints no budget vote, so these rows are not joined to the statements.
+
 ## Layout
 
 | Path                   | What                                                                                                                                                             |
@@ -37,6 +41,7 @@ Kementerian Kewangan, _Anggaran Perbelanjaan Persekutuan_ (the federal budget bo
 - `budget_vote_figure`, `budget_total`: the MOF budget book's vote summary (two years of actuals, the current and the proposed budget). `budget_heading`, `budget_operating_line`, `budget_operating_total`: operating estimates by programme, activity and object group with posts. `budget_development_project`, `budget_development_group`, `budget_development_total`: development estimates by project. Each has a reconciliation view; `budget_actual_check` compares MOF's actuals with JANM's.
 - `federal_spending` (view): the year's total: operating less its transfer to the Development Fund, plus development, plus COVID-19 Fund spending. `ministry_spending` (view): each ministry's supply vote B.nn beside its development vote P.nn, with the body behind them.
 - `body`, `body_alias`, `vote_holder`, `lineage_edge`, `citation`: which institution stood behind each vote in each year. A vote number is a funding line, not a ministry: B/P.15 and B/P.33 have each been used by two different ministries, and most ministries have been renamed. `body` is the institution and carries the name the site shows; `body_alias` every name it has carried, printed or gazetted, with the dates; `vote_holder` the body behind each vote code over a range of fiscal years; `lineage_edge` each reorganisation between two bodies, with the date it took effect and the functions that moved. Every alias and edge cites its source in `citation`. `ministry_spending` adds `body_id`, `body_name_ms` and `residual` (true when a number was still printed, with zero, after its body was dissolved). The rows come from the reviewable files in `data/lineage/`, never from a PDF, and carry no amounts; the share of a partial move is computed from the loaded spending.
+- `procurement_notice`, `procurement_award`, `procurement_snapshot`: one row per published result (`kind` tender, quotation or direct) with its MyProcurement id and link, one per winner with the price in sen, and the snapshot they came from. `dated` files a result under its decision date, or the date it was published where no decision date is printed or the printed one falls after publication.
 - `vote_lineage_check` (view): every printed vote name in the statements and budget books, with the body that held it and a `problem` when the lineage does not cover it. `ingest` and `ingest-budget` roll back a document with a problem row, so the next reshuffle is caught at ingest.
 
 ## Local development
@@ -49,6 +54,8 @@ cd pipeline && uv sync
 uv run python -m pipeline load-lineage --database-url postgresql:///buildmalaysia   # before any ingest; safe to rerun
 for y in $(seq 2016 2025); do uv run python -m pipeline ingest --year $y --database-url postgresql:///buildmalaysia; done
 for y in 2025 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
+uv run python -m pipeline fetch-procurement   # about 1,650 pages, 1–2 hours; rerun to resume
+uv run python -m pipeline load-procurement --database-url postgresql:///buildmalaysia
 uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
 uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
