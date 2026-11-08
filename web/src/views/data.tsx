@@ -13,7 +13,7 @@ export default async function dataPage(): Promise<Page> {
     head: {
       title: "Download data",
       description:
-        "Every figure on Build Malaysia as CSV, one row per fact, with the page number and URL of the source document in every row.",
+        "The figures behind Build Malaysia's budget and spending pages as CSV, one row per fact, each with the page number and URL of its source document.",
     },
     body: (
       <>

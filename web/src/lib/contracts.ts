@@ -49,8 +49,8 @@ export function contractsHref(f: ContractFilters, change: Partial<ContractFilter
   const next = { ...f, page: 1, ...change };
   const params = new URLSearchParams();
   if (next.q) params.set("q", next.q);
-  if (next.kind) params.set("kind", next.kind);
   if (next.ministry) params.set("ministry", next.ministry);
+  if (next.kind) params.set("kind", next.kind);
   if (next.year) params.set("year", String(next.year));
   if (next.sort !== "value") params.set("sort", next.sort);
   if (next.page > 1) params.set("page", String(next.page));

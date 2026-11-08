@@ -65,7 +65,7 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
             <p className="max-w-xl text-charcoal-800">
               No results for &ldquo;{query}&rdquo;. Search a name in English or Bahasa Malaysia, such as health or
               kesihatan, or a vote code such as B.42. Looking for a contract or a company?{" "}
-              <a href={`/contracts?q=${encodeURIComponent(query)}`}>Search government contracts</a>.
+              <a href={`/contracts?${new URLSearchParams({ q: query }).toString()}`}>Search government contracts</a>.
             </p>
           </Band>
         )}

@@ -40,13 +40,13 @@ export default function Carousel({
           </span>
           <span className="flex">
             {Array.from({ length: count }, (_, i) => (
-              // The button pads the dot out to a tap-sized target; the dot itself is what shows.
+              // A 24px-square tap target (WCAG 2.5.8); the dot inside is what shows.
               <button
                 key={i}
                 type="button"
                 tabIndex={-1}
                 data-carousel-dot
-                className="group flex h-6 items-center px-[3px]"
+                className="group grid h-6 w-6 place-items-center"
               >
                 <span className="h-2 w-2 bg-foreground/25 transition-[width,background-color] duration-200 group-aria-[current=true]:w-5 group-aria-[current=true]:bg-foreground" />
               </button>

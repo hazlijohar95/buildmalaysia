@@ -61,7 +61,7 @@ export default async function developmentPage({ params, searchParams }: RouteCon
 
   const head = {
     title: `Development expenditure ${year}`,
-    description: `What the Malaysian federal government spent on development projects in ${year}, vote by vote and project by project, from the audited statement.`,
+    description: `What the Malaysian federal government spent on development projects in ${year}, vote by vote, from the audited statement.`,
     og: previews.year(year),
   };
 
