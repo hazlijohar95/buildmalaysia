@@ -25,6 +25,9 @@ const {
 } = Astro.props;
 const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
 const ogImage = new URL(og.path, Astro.site).href;
+const ogSize: NonNullable<Head["og"]> = og;
+const ogWidth = String(ogSize.width ?? 1200);
+const ogHeight = String(ogSize.height ?? 630);
 const nav = await loadNav();
 const markdownHref = markdownPath(Astro.url.pathname) + Astro.url.search;
 
@@ -75,8 +78,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <meta property="og:image:alt" content={og.alt} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content={ogWidth} />
+    <meta property="og:image:height" content={ogHeight} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
@@ -84,8 +87,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <meta name="twitter:image:alt" content={og.alt} />
     <meta name="twitter:image:type" content="image/png" />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:width" content="1200" />
-    <meta name="twitter:image:height" content="630" />
+    <meta name="twitter:image:width" content={ogWidth} />
+    <meta name="twitter:image:height" content={ogHeight} />
     <link rel="icon" href={brandFileUrl("icon.svg")} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={brandFileUrl("apple-touch-icon.png")} sizes="180x180" />
     <script is:inline set:html={INTRO_SCRIPT} />
