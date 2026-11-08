@@ -16,7 +16,10 @@ export default async function ministriesPage({ searchParams }: RouteContext): Pr
   if (year === undefined) notFound();
   const ministries = await getMinistriesForYear(year);
   return {
-    head: { title: "Ministries" },
+    head: {
+      title: "Ministries",
+      description: `What each federal ministry and department spent in ${year}: its operating and development votes together, as printed in the audited statement.`,
+    },
     body: (
       <>
         <PageHeader

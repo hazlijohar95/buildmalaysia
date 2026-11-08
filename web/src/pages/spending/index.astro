@@ -16,7 +16,11 @@ const data = await loadSpendingData(Astro.url.searchParams.get("year"));
 const { spendingTree, revenueTree } = data;
 ---
 
-<Base title="Government spending" og={previews.spending}>
+<Base
+  title="Government spending"
+  description="How the Malaysian federal government raised and spent public money each year, from the Accountant General's audited financial statements."
+  og={previews.spending}
+>
   <Static node={SpendingTop(data)} />
   <SpendingSankeySection citation={SpendingCitation(data)}>
     <SpendingSankey client:only="react" spending={spendingTree} revenue={revenueTree}>

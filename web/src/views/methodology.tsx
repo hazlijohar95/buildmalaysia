@@ -9,7 +9,14 @@ import Segments from "@/components/Segments";
 import type { Page } from "@/lib/route";
 
 export default function methodologyPage(): Page {
-  return { head: { title: "Methodology" }, body: <Streamed load={MethodologyBody} /> };
+  return {
+    head: {
+      title: "Methodology",
+      description:
+        "What the documents' terms mean, where every figure on Build Malaysia comes from, and the checks each load must pass before it reaches the site.",
+    },
+    body: <Streamed load={MethodologyBody} />,
+  };
 }
 
 // Loads in the body, so the layout and its skeleton stream while every reconciliation view is recomputed.
