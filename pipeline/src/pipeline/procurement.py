@@ -206,19 +206,33 @@ def day_dir(out: Path, day: date) -> Path:
     return out / "days" / day.isoformat()
 
 
+# The endpoint's filters that match one of a result's printed fields exactly, and that field. Direct negotiations
+# have no category filter and no procurement number.
+NAME_FILTERS = {"procurement_category": "category", "procurement_ministry": "ministry", "procurement_agency": "agency"}
+CATEGORIES = ("Bekalan", "Kerja", "Perkhidmatan Bukan Perunding", "Perkhidmatan Perunding")
+# Every character procurement numbers use. The site matches a number filter as a case-insensitive prefix, and
+# treats `%` and `_` as wildcards, so neither can be part of one.
+NUMBER_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&()*,-./:;?["
+MAX_PREFIX = 40
+
+
 def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=print) -> None:
     """Read one day's results through the date filter until the distinct results seen number the total the site
-    reports for that day. A day that needs more than one page comes back in a different order on each request, and
-    some of its results on none of them, so it is split until each slice fits on one page, which the site returns
-    whole: by category, then ministry, then agency (the names its own results print), then by the leading
-    characters of the procurement number, which the site matches as a prefix. Every page is saved with its filters,
-    so the load can check the same."""
+    reports for that day.
+
+    Results that need more than one page come back in an order that misses some of them on every read, while one
+    page comes back whole. So a day too big for a page is split until each slice fits: by category, then ministry,
+    then agency, then by the leading characters of the procurement number. Ministries and agencies are taken from
+    the results already read, as old ones keep their old names; where the slices by name add up to less than their
+    whole, the whole is split by number, which reaches every result. Every page is saved with its filters, so the
+    load can check the same."""
     folder = day_dir(out, day)
     if read_day(folder, listing) is not None:
         return
     seen: dict[int, Notice] = {}
 
     def read(filters: Filters) -> int:
+        """Read every page of one slice; return the total the site reports for it."""
         page, last, total = 1, 1, 0
         while page <= last:
             body = _fetch(session, listing, page, day, filters)
@@ -229,34 +243,27 @@ def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=pri
             page += 1
         return total
 
-    def split(filters: Filters, total: int, fields: tuple[str, ...]) -> None:
+    def by_name(filters: Filters, total: int, fields: tuple[str, ...]) -> None:
         if total <= PER_PAGE:
             return
-        if not fields:
-            if listing.kind != "direct":  # direct negotiations have no number
-                by_number(filters, "", total)
-            return
-        field, rest = fields[0], fields[1:]
-        # Categories are a fixed list; ministries and agencies are taken from the results, as old ones keep their
-        # old names. One whose every result fell out of the pages read so far can't be split off, so when the
-        # slices fall short of the total, the whole is split by number instead, which reaches every result.
-        values = CATEGORIES if field == "procurement_category" else _seen_values(seen.values(), field, filters, day)
         covered = 0
-        for value in values:
-            narrower = (*filters, (field, value))
-            found = read(narrower)
-            covered += found
-            split(narrower, found, rest)
+        if fields:
+            field, rest = fields[0], fields[1:]
+            for value in CATEGORIES if field == "procurement_category" else _names(seen, field, filters, day):
+                narrower = (*filters, (field, value))
+                found = read(narrower)
+                covered += found
+                by_name(narrower, found, rest)
         if covered < total and listing.kind != "direct":
             by_number(filters, "", total)
 
     def by_number(filters: Filters, prefix: str, total: int) -> None:
         if total <= PER_PAGE or len(prefix) >= MAX_PREFIX:
             return
-        numbers = [r for r in _seen_numbers(seen.values(), filters, day) if r.startswith(prefix)]
+        numbers = [r for r in _numbers(seen, filters, day) if r.startswith(prefix)]
         # Most slices share a long prefix (QT190000000…): try it in one step before going a character at a time.
         common = os.path.commonprefix(numbers)
-        if len(common) > len(prefix) and _usable(common) and read(_with_number(filters, common)) == total:
+        if len(common) > len(prefix) and _is_number_prefix(common) and read(_with_number(filters, common)) == total:
             by_number(filters, common, total)
             return
         known = sorted({r[len(prefix)] for r in numbers if len(r) > len(prefix)} & set(NUMBER_CHARACTERS))
@@ -264,25 +271,30 @@ def fetch_day(session: _Session, listing: Listing, out: Path, day: date, log=pri
         for character in [*known, *(c for c in NUMBER_CHARACTERS if c not in known)]:
             if covered >= total:
                 break
-            narrower = prefix + character
-            found = read(_with_number(filters, narrower))
+            found = read(_with_number(filters, prefix + character))
             covered += found
-            by_number(filters, narrower, found)
+            by_number(filters, prefix + character, found)
 
     total = read(())
-    split((), total, _split_fields(listing))
+    by_name((), total, tuple(f for f in NAME_FILTERS if listing.kind != "direct" or f != "procurement_category"))
     if len(seen) < total:
         raise ProcurementError(f"{listing.slug}: {day} gave {len(seen)} of {total} results, split as far as it goes")
     log(f"{listing.slug}: {day} read whole ({total} results)")
 
 
-# Every character procurement numbers use; the site matches a number filter as a case-insensitive prefix, so `%`
-# and `_` (wildcards) and a trailing space (trimmed) can't be part of one.
-NUMBER_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&()*,-./:;?["
-MAX_PREFIX = 40
+def _in_slice(notice: Notice, filters: Filters, day: date) -> bool:
+    return _sort_date(notice) == day and all(getattr(notice, NAME_FILTERS[f]) == v for f, v in filters)
 
 
-def _usable(prefix: str) -> bool:
+def _names(seen: dict[int, Notice], field: str, filters: Filters, day: date) -> list[str]:
+    return sorted({getattr(n, NAME_FILTERS[field]) for n in seen.values() if _in_slice(n, filters, day)})
+
+
+def _numbers(seen: dict[int, Notice], filters: Filters, day: date) -> list[str]:
+    return [n.reference.upper() for n in seen.values() if n.reference and _in_slice(n, filters, day)]
+
+
+def _is_number_prefix(prefix: str) -> bool:
     return all(c in NUMBER_CHARACTERS for c in prefix)
 
 
@@ -290,39 +302,8 @@ def _with_number(filters: Filters, prefix: str) -> Filters:
     return (*filters, ("procurement_number", prefix))
 
 
-def _seen_numbers(notices, filters: Filters, day: date) -> list[str]:
-    return [n.reference.upper() for n in notices if n.reference and _matches(n, filters, day)]
-
-
-# The endpoint's filters that match one of a result's printed fields exactly, and that field.
-_FILTER_FIELDS = {
-    "procurement_category": "category",
-    "procurement_ministry": "ministry",
-    "procurement_agency": "agency",
-}
-
-
-def _split_fields(listing: Listing) -> tuple[str, ...]:
-    # The direct negotiations listing has no category filter.
-    return tuple(f for f in _FILTER_FIELDS if listing.kind != "direct" or f != "procurement_category")
-
-
-CATEGORIES = ("Bekalan", "Kerja", "Perkhidmatan Bukan Perunding", "Perkhidmatan Perunding")
-
-
-def _seen_values(notices, field: str, filters: Filters, day: date) -> list[str]:
-    return sorted({_value(n, field) for n in notices if _matches(n, filters, day)})
-
-
-def _value(notice: Notice, field: str) -> str:
-    return getattr(notice, _FILTER_FIELDS[field])
-
-
-def _matches(notice: Notice, filters: Filters, day: date) -> bool:
-    return _sort_date(notice) == day and all(_value(notice, f) == v for f, v in filters)
-
-
 def _slice_name(filters: Filters) -> str:
+    """A slice's file name: `all` for the whole day, else a short hash of its filters (which the page records)."""
     if not filters:
         return "all"
     return hashlib.sha1(urllib.parse.urlencode(filters).encode()).hexdigest()[:12]

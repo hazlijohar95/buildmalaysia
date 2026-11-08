@@ -152,7 +152,7 @@ def test_a_day_across_pages_must_be_read_whole(tmp_path: Path) -> None:
     with pytest.raises(ProcurementError, match="not read whole"):
         read_snapshot(folder)
     same_day = [c for c in cards[1:] if "Tarikh Paparan Keputusan: 26/10/2026" in c]
-    _page(day_dir(out, straddling[0]) / "01-001.json", CARD_START.join(["", *same_day]), len(same_day), 1, 1)
+    _page(day_dir(out, straddling[0]) / "all-001.json", CARD_START.join(["", *same_day]), len(same_day), 1, 1)
     read, _, _, _ = read_snapshot(folder)
     assert len(read) == 10
 
@@ -168,87 +168,99 @@ def test_a_day_read_whole_must_cover_its_total(tmp_path: Path) -> None:
     assert len(read_day(folder, BY_SLUG["archive-results-tender"]) or []) == 2
 
 
+LOST = 1006682  # a JKR consultancy result
+
+
 class _LossySite:
-    """Every fixture card shown on one day. Like MyProcurement, a query with more results than fit on a page is
-    paged in an order that never reaches one of them; a query that fits on a page comes back whole."""
+    """Every fixture card shown on one day, served like MyProcurement: a query with more results than fit on a page
+    is paged in an order that never reaches result LOST (repeating the first instead), and one that fits on a page
+    comes back whole. Number filters match as a case-insensitive prefix."""
 
     DAY = date(2026, 10, 26)
 
-    def __init__(self, shared_number: bool = False, lost_agency: str | None = None) -> None:
+    def __init__(self, lost_agency: str | None = None, lost_number_shared: bool = False) -> None:
         html = (FIXTURES / "archive-results-tender.html").read_text()
-        if lost_agency:  # the lost result is the only one its agency has
-            head, card = html.split("id: 1006682 }")
-            html = head + "id: 1006682 }" + card.replace("JABATAN KERJA RAYA MALAYSIA (JKR)", lost_agency, 1)
-        if shared_number:  # the lost result's number, printed on another result too
-            html = html.replace("JKR/CKUB/21624/2021", "JKR/PJR/05/2010")
         html = re.sub(r"Tarikh Paparan Keputusan:\s*[0-9/]+", f"Tarikh Paparan Keputusan: {self.DAY:%d/%m/%Y}", html)
-        self.cards = html.split(CARD_START)[1:]
         self.listing = BY_SLUG["archive-results-tender"]
+        self.notices = {
+            n.id: (n, CARD_START + c) for n, c in zip(parse_page(html, self.listing), html.split(CARD_START)[1:])
+        }
+        lost, card = self.notices[LOST]
+        if lost_agency:  # the only result its agency has
+            card = card.replace(lost.agency, lost_agency, 1)
+        if lost_number_shared:  # printed on another JKR result too, so no number prefix can single it out
+            other = next(n for n, _ in self.notices.values() if n.agency == lost.agency and n.id != LOST)
+            card = card.replace(lost.reference, other.reference, 1)
+        [changed] = parse_page(card, self.listing)
+        self.notices[LOST] = (changed, card)
         self.requests: list[tuple] = []
 
     def open_listing(self, listing) -> None:
         pass
 
-    @staticmethod
-    def _match(notice, field: str, value: str) -> bool:
-        if field == "procurement_number":
-            return notice.reference.upper().startswith(value.upper())
-        return getattr(notice, procurement._FILTER_FIELDS[field]) == value
-
     def fetch_page(self, listing, page, day, filters=()) -> dict:
         self.requests.append(tuple(filters))
-        cards = [
-            c for c in self.cards if all(self._match(parse_page(CARD_START + c, listing)[0], f, v) for f, v in filters)
-        ]
+        matching = [(n, c) for n, c in self.notices.values() if all(self._matches(n, f, v) for f, v in filters)]
         size = procurement.PER_PAGE
-        # One JKR result is always the one lost, as on MyProcurement, where repeated reads lose the same results.
-        lost = next((c for c in cards if "id: 1006682 }" in c), cards[-1] if cards else None)
-        order = cards if len(cards) <= size else [*(c for c in cards if c is not lost), cards[0]]
-        chunk = order[(page - 1) * size : page * size]
+        if len(matching) > size:
+            matching = [*((n, c) for n, c in matching if n.id != LOST), matching[0]]
+        chunk = matching[(page - 1) * size : page * size]
         return {
-            "html": "".join(CARD_START + c for c in chunk),
-            "total": len(cards),
+            "html": "".join(c for _, c in chunk),
+            "total": sum(1 for n, _ in self.notices.values() if all(self._matches(n, f, v) for f, v in filters)),
             "page": page,
-            "lastPage": max(1, math.ceil(len(cards) / size)),
+            "lastPage": max(1, math.ceil(len(matching) / size)),
         }
 
+    @staticmethod
+    def _matches(notice, field: str, value: str) -> bool:
+        if field == "procurement_number":
+            return notice.reference.upper().startswith(value.upper())
+        return getattr(notice, procurement.NAME_FILTERS[field]) == value
 
-def test_a_day_too_big_for_a_page_is_split_until_each_slice_fits(tmp_path: Path, monkeypatch) -> None:
+
+@pytest.fixture
+def per_page(monkeypatch):
+    """Set the page size, and fetch without pausing."""
     monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
-    monkeypatch.setattr(procurement, "PER_PAGE", 6)
+    return lambda size: monkeypatch.setattr(procurement, "PER_PAGE", size)
+
+
+def _read_whole(site: _LossySite, out: Path) -> set[int]:
+    fetch_day(site, site.listing, out, site.DAY, log=lambda _: None)
+    return {n.id for n, _ in read_day(day_dir(out, site.DAY), site.listing) or []}
+
+
+def test_a_day_too_big_for_a_page_is_split_until_each_slice_fits(tmp_path: Path, per_page) -> None:
+    per_page(6)
     site = _LossySite()
-    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
-    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
+    assert _read_whole(site, tmp_path) == set(site.notices)
     # 8 of the 10 are consultancy: split again by ministry, where Kementerian Kerja Raya's 6 fit on a page.
-    assert (
+    by_ministry = (
         ("procurement_category", "Perkhidmatan Perunding"),
         ("procurement_ministry", "KEMENTERIAN KERJA RAYA"),
-    ) in site.requests
+    )
+    assert by_ministry in site.requests
     assert not any(field == "procurement_agency" for r in site.requests for field, _ in r)
 
 
-def test_a_slice_still_too_big_is_split_by_number_prefix(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
-    monkeypatch.setattr(procurement, "PER_PAGE", 5)  # JKR's 6 results don't fit on a page
+def test_a_slice_still_too_big_is_split_by_number_prefix(tmp_path: Path, per_page) -> None:
+    per_page(5)  # JKR's 6 results don't fit on a page
     site = _LossySite()
-    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
-    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
+    assert _read_whole(site, tmp_path) == set(site.notices)
     numbers = [v for r in site.requests for f, v in r if f == "procurement_number"]
     assert list(dict.fromkeys(numbers)) == ["JKR", "JKR(", "JKR/"]
 
 
-def test_a_result_whose_agency_never_shows_is_reached_by_number(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
-    monkeypatch.setattr(procurement, "PER_PAGE", 5)
+def test_a_result_whose_agency_never_shows_is_reached_by_number(tmp_path: Path, per_page) -> None:
+    per_page(5)
     site = _LossySite(lost_agency="JABATAN KERJA RAYA SABAH")
-    fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
-    assert len(read_day(day_dir(tmp_path, site.DAY), site.listing) or []) == 10
+    assert _read_whole(site, tmp_path) == set(site.notices)
 
 
-def test_a_day_that_cannot_be_split_small_enough_stops_the_fetch(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(procurement, "PAUSE_SECONDS", 0)
-    monkeypatch.setattr(procurement, "PER_PAGE", 1)
-    site = _LossySite(shared_number=True)
+def test_a_day_that_cannot_be_split_small_enough_stops_the_fetch(tmp_path: Path, per_page) -> None:
+    per_page(1)
+    site = _LossySite(lost_number_shared=True)
     with pytest.raises(ProcurementError, match="9 of 10 results"):
         fetch_day(site, site.listing, tmp_path, site.DAY, log=lambda _: None)
     assert read_day(day_dir(tmp_path, site.DAY), site.listing) is None

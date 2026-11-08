@@ -7,7 +7,7 @@ database password is needed. They are written in chunks to a private staging sch
 tables in one transaction that commits only if every row count matches. Finally each table's checksum is compared
 on both sides, the same check scripts/publish-db.sh makes. A failed run leaves the public tables as they were.
 
-`--target <postgres URL>` runs the same steps against another database with psql, to try them on a copy first.
+`--target <postgres URL>` runs the same steps against another database, to try them on a copy first.
 """
 
 import argparse
@@ -21,6 +21,7 @@ from collections.abc import Iterator
 
 import psycopg
 from psycopg import sql
+from psycopg.rows import dict_row
 
 # Parents before children: the swap inserts in this order and truncates all three at once.
 TABLES = ("procurement_snapshot", "procurement_notice", "procurement_award")
@@ -34,68 +35,28 @@ as checksum from public.{table} r"""
 
 
 class Hosted:
-    """Runs SQL on the hosted database, or with a URL on another Postgres through psql. Returns the last result's
-    rows as dicts."""
+    """Runs SQL on the hosted database through the Supabase CLI, or with a URL on another Postgres. Returns the
+    last statement's rows as dicts."""
 
     def __init__(self, url: str | None) -> None:
         self.url = url
-        self.supabase = shlex.split(
-            os.environ.get("SUPABASE", "npx -y supabase@latest")
-        )
+        self.supabase = shlex.split(os.environ.get("SUPABASE", "npx -y supabase@latest"))
 
     def run(self, statement: str) -> list[dict]:
-        with tempfile.NamedTemporaryFile("w", suffix=".sql", delete=False) as f:
-            f.write(statement)
-        try:
-            if self.url:
-                command = [
-                    "psql",
-                    self.url,
-                    "-X",
-                    "-q",
-                    "-v",
-                    "ON_ERROR_STOP=1",
-                    "--csv",
-                    "-f",
-                    f.name,
-                ]
-            else:
-                command = [
-                    *self.supabase,
-                    "db",
-                    "query",
-                    "--remote",
-                    "--yes",
-                    "--output-format",
-                    "json",
-                    "-f",
-                    f.name,
-                ]
-            result = subprocess.run(command, check=False, capture_output=True, text=True)
-        finally:
-            os.unlink(f.name)
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"{command[0]} failed:\n{result.stdout[-2000:]}{result.stderr[-2000:]}"
-            )
         if self.url:
-            lines = result.stdout.strip().splitlines()
-            header = next(
-                (
-                    i
-                    for i in range(len(lines) - 1, -1, -1)
-                    if lines[i] == "rows,checksum"
-                ),
-                None,
-            )
-            return (
-                [
-                    dict(zip(lines[header].split(","), line.split(",")))
-                    for line in lines[header + 1 :]
-                ]
-                if header is not None
-                else []
-            )
+            # Without parameters psycopg sends the text as one simple query, so it may hold several statements.
+            with psycopg.connect(self.url, autocommit=True, row_factory=dict_row) as conn:
+                cur = conn.execute(statement.encode())
+                while cur.nextset():  # step to the last statement's result
+                    pass
+                return cur.fetchall() if cur.description else []
+        with tempfile.NamedTemporaryFile("w", suffix=".sql") as f:
+            f.write(statement)
+            f.flush()
+            command = [*self.supabase, "db", "query", "--remote", "--yes", "--output-format", "json", "-f", f.name]
+            result = subprocess.run(command, check=False, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise RuntimeError(f"supabase db query failed:\n{result.stdout[-2000:]}{result.stderr[-2000:]}")
         start = result.stdout.find("{")
         return json.loads(result.stdout[start:]).get("rows", []) if start >= 0 else []
 
@@ -113,9 +74,7 @@ def columns(conn: psycopg.Connection, table: str) -> list[str]:
 def insert_chunks(conn: psycopg.Connection, table: str) -> Iterator[str]:
     """Multi-row INSERTs of every local row into the staging copy of `table`, grouped into request-sized chunks."""
     cols = sql.SQL(", ").join(map(sql.Identifier, columns(conn, table)))
-    head = sql.SQL("insert into {}.{} ({}) values ").format(
-        sql.Identifier(STAGING), sql.Identifier(table), cols
-    )
+    head = sql.SQL("insert into {}.{} ({}) values ").format(sql.Identifier(STAGING), sql.Identifier(table), cols)
     head_text = head.as_string(conn)
     chunk: list[str] = []
     size = 0
@@ -128,14 +87,9 @@ def insert_chunks(conn: psycopg.Connection, table: str) -> Iterator[str]:
 
     with conn.cursor(name=f"publish_{table}") as cur:
         cur.itersize = ROWS_PER_INSERT
-        cur.execute(
-            sql.SQL("select {} from public.{}").format(cols, sql.Identifier(table))
-        )
+        cur.execute(sql.SQL("select {} from public.{}").format(cols, sql.Identifier(table)))
         while rows := cur.fetchmany(ROWS_PER_INSERT):
-            values = ", ".join(
-                "(" + ", ".join(sql.Literal(v).as_string(conn) for v in row) + ")"
-                for row in rows
-            )
+            values = ", ".join("(" + ", ".join(sql.Literal(v).as_string(conn) for v in row) + ")" for row in rows)
             statement = f"{head_text}{values};\n"
             if size + len(statement) > CHUNK_BYTES:
                 yield from flush()
@@ -149,9 +103,7 @@ def swap_sql(conn: psycopg.Connection, counts: dict[str, int]) -> str:
     moves = []
     for table in TABLES:
         cols = ", ".join(columns(conn, table))
-        moves.append(
-            f"insert into public.{table} ({cols}) select {cols} from {STAGING}.{table};"
-        )
+        moves.append(f"insert into public.{table} ({cols}) select {cols} from {STAGING}.{table};")
     checks = [
         f"if (select count(*) from public.{t}) <> {n} then raise exception '{t} has % rows, expected {n}',"
         f" (select count(*) from public.{t}); end if;"
@@ -175,20 +127,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
         "--target",
-        help="publish to this Postgres URL with psql instead of the linked project",
+        help="publish to this Postgres URL instead of the linked project",
     )
     args = parser.parse_args()
     hosted = Hosted(args.target)
 
-    with psycopg.connect(
-        os.environ.get("DATABASE_URL", "postgresql:///buildmalaysia")
-    ) as conn:
+    with psycopg.connect(os.environ.get("DATABASE_URL", "postgresql:///buildmalaysia")) as conn:
         conn.execute("set time zone 'UTC'")
         counts = {
-            t: conn.execute(
-                sql.SQL("select count(*) from {}").format(sql.Identifier(t))
-            ).fetchone()[0]
-            for t in TABLES
+            t: conn.execute(sql.SQL("select count(*) from {}").format(sql.Identifier(t))).fetchone()[0] for t in TABLES
         }
         if not counts["procurement_snapshot"]:
             print(
@@ -198,13 +145,8 @@ def main() -> int:
             return 1
         print("local: " + ", ".join(f"{t} {n:,}" for t, n in counts.items()))
 
-        staging = "".join(
-            f"create table {STAGING}.{t} (like public.{t} including defaults);\n"
-            for t in TABLES
-        )
-        hosted.run(
-            f"drop schema if exists {STAGING} cascade;\ncreate schema {STAGING};\n{staging}"
-        )
+        staging = "".join(f"create table {STAGING}.{t} (like public.{t} including defaults);\n" for t in TABLES)
+        hosted.run(f"drop schema if exists {STAGING} cascade;\ncreate schema {STAGING};\n{staging}")
         try:
             sent = 0
             for table in TABLES:
@@ -217,9 +159,7 @@ def main() -> int:
             hosted.run(f"drop schema if exists {STAGING} cascade;")
             raise
 
-        local = {
-            t: conn.execute(FINGERPRINT.format(table=t)).fetchone() for t in TABLES
-        }
+        local = {t: conn.execute(FINGERPRINT.format(table=t)).fetchone() for t in TABLES}
     remote = {}
     for table in TABLES:
         [row] = hosted.run(f"set time zone 'UTC';\n{FINGERPRINT.format(table=table)};")
@@ -227,15 +167,9 @@ def main() -> int:
     if local != remote:
         for t in TABLES:
             print(f"{t}: local {local[t]}, hosted {remote[t]}", file=sys.stderr)
-        print(
-            "The hosted procurement tables differ from the local ones.", file=sys.stderr
-        )
+        print("The hosted procurement tables differ from the local ones.", file=sys.stderr)
         return 1
-    print(
-        "Published: "
-        + ", ".join(f"{t} {local[t][0]:,} rows" for t in TABLES)
-        + ", identical on both sides."
-    )
+    print("Published: " + ", ".join(f"{t} {local[t][0]:,} rows" for t in TABLES) + ", identical on both sides.")
     return 0
 
 
