@@ -11,8 +11,8 @@ export interface Head {
   /** The page's own title; the site name is appended. Omit on the home page. */
   title?: string;
   description?: string;
-  /** The link-preview image route. Pages without one use the site's. */
-  og?: { path: string; alt: string };
+  /** The link-preview image route. Pages without one use the site's. Width and height default to 1200 × 630. */
+  og?: { path: string; alt: string; width?: number; height?: number };
   noindex?: boolean;
 }
 
