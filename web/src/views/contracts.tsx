@@ -5,11 +5,13 @@ import {
   KINDS,
   SORTS,
   canonicalMinistry,
+  contractHref,
   contractsHref,
   getContractsMeta,
   ministryLabel,
   parseContractFilters,
   searchContracts,
+  supplierHref,
   CONTRACTS_PER_PAGE,
   CONTRACTS_QUERY_MAX,
   type Contract,
@@ -55,7 +57,7 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
             <p>
               Every award result the federal government has published on <a href={SOURCE_URL}>MyProcurement</a>: what
               was bought, which ministry bought it, who won, and the price accepted. Search by item, company, agency or
-              reference number.
+              reference number, then open any result for <a href="/contracts/method">our reading of it</a>.
             </p>
           }
         >
@@ -151,8 +153,8 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
               2016 and 2017. Most contracts awarded without a tender are not published there.
             </li>
             <li>
-              The data is copied from MyProcurement, © Kementerian Kewangan Malaysia, and each result links back to its
-              notice there. If a result looks wrong, check it against that notice first.
+              The data is copied from MyProcurement, © Kementerian Kewangan Malaysia, and each result&apos;s page links
+              to its notice there. If a result looks wrong, check it against that notice first.
             </li>
           </ul>
         </Band>
@@ -257,9 +259,9 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
       <div className="mt-2 grid gap-x-8 gap-y-3 md:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
           <a
-            href={c.sourceUrl}
+            href={contractHref(c)}
             lang="ms"
-            className="font-display text-lg font-semibold leading-snug text-foreground no-underline hover:text-biru-800 md:text-xl"
+            className="font-display text-lg font-semibold leading-snug text-foreground no-underline [overflow-wrap:anywhere] hover:text-biru-800 md:text-xl"
           >
             <Highlight text={readableCase(c.title)} q={filters.q} />
           </a>
@@ -289,8 +291,8 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
               return (
                 <li key={a.ordinal} className="flex flex-wrap justify-between gap-x-6">
                   <a
-                    href={contractsHref(filters, { q: a.supplier })}
-                    title={`Every result ${supplier} won`}
+                    href={supplierHref(a.supplier) ?? contractsHref(filters, { q: a.supplier })}
+                    title={`Everything ${supplier} has won`}
                     className="font-medium text-foreground"
                   >
                     <Highlight text={supplier} q={filters.q} />
