@@ -9,6 +9,37 @@ import { titleCase } from "@/lib/queries/sankey";
 export const CONTRACTS_PER_PAGE = 25;
 export const CONTRACTS_QUERY_MAX = 100;
 
+/** A contract's page on this site. */
+export function contractHref(c: { kind: ContractKind; id: number }): string {
+  return `/contracts/${c.kind}/${c.id}`;
+}
+
+// MyProcurement names companies, not registration numbers, so a company is the run of letters and digits in its
+// name: "SDN. BHD." and "SDN BHD" are the same company, and two firms sharing one name are counted together. The
+// database computes the same key with regexp_replace(upper(supplier), '[^A-Z0-9]+', '', 'g').
+export function supplierKey(name: string): string {
+  return name.toUpperCase().replace(/[^A-Z0-9]+/g, "");
+}
+
+/** "LOYAL ENGINEERING SDN. BHD." -> "loyal-engineering-sdn-bhd": the address of a company's page. */
+export function supplierSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function supplierHref(name: string): string | null {
+  const slug = supplierSlug(name);
+  return slug ? `/contracts/company/${slug}` : null;
+}
+
+/** A slug's company key and the words of its name, which narrow the search through the supplier name index. */
+export function parseSupplierSlug(slug: string): { key: string; words: string[] } | null {
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 200) return null;
+  return { key: supplierKey(slug), words: slug.split("-") };
+}
+
 // MyProcurement spells some ministries more than one way. Each variant here is filed under the one name it maps to,
 // so the menu lists the ministry once and old links to a variant still work. Renamed ministries stay apart: a new
 // name usually comes with a new remit.
@@ -173,34 +204,62 @@ function where(f: ContractFilters) {
   `;
 }
 
+/** The columns a Contract is read from; alias the notice `n`. A function: fragments belong to a request. */
+export const contractColumns = () => sql`
+  n.kind, n.id, n.reference, n.title, n.ministry, n.agency, n.category, n.dated::text as dated,
+  coalesce(n.dated = n.result_date, false) as result_dated, n.criterion, n.source_url, n.total_sen::text as total,
+  (select json_agg(json_build_object('ordinal', a.ordinal, 'supplier', a.supplier, 'amount', a.amount_sen::text)
+                   order by a.ordinal)
+   from procurement_award a where a.kind = n.kind and a.notice_id = n.id)::text as awards
+`;
+
+export interface ContractRow {
+  kind: ContractKind;
+  id: string;
+  reference: string | null;
+  title: string;
+  ministry: string;
+  agency: string;
+  category: string;
+  dated: string;
+  result_dated: boolean;
+  criterion: string | null;
+  source_url: string;
+  total: string | null;
+  awards: string | null;
+}
+
+export function toContract(r: ContractRow): Contract {
+  const awards = (r.awards ? JSON.parse(r.awards) : []) as {
+    ordinal: number;
+    supplier: string;
+    amount: string | null;
+  }[];
+  return {
+    kind: r.kind,
+    id: Number(r.id),
+    reference: r.reference,
+    title: r.title,
+    ministry: r.ministry,
+    agency: r.agency,
+    category: r.category,
+    dated: r.dated,
+    resultDated: r.result_dated,
+    criterion: r.criterion,
+    sourceUrl: r.source_url,
+    total: parseSenOrNull(r.total),
+    awards: awards.map((a) => ({ ordinal: a.ordinal, supplier: a.supplier, amount: parseSenOrNull(a.amount) })),
+  };
+}
+
 export async function searchContracts(f: ContractFilters): Promise<ContractResults> {
   const filter = where(f);
   const order =
     f.sort === "newest" ? sql`n.dated desc, n.id desc` : sql`n.total_sen desc nulls last, n.dated desc, n.id desc`;
   const offset = (f.page - 1) * CONTRACTS_PER_PAGE;
   const [rows, [summary]] = await Promise.all([
-    sql<
-      {
-        kind: ContractKind;
-        id: string;
-        reference: string | null;
-        title: string;
-        ministry: string;
-        agency: string;
-        category: string;
-        dated: string;
-        result_dated: boolean;
-        criterion: string | null;
-        source_url: string;
-        total: string | null;
-        awards: string;
-      }[]
-    >`
-      select n.kind, n.id, n.reference, n.title, n.ministry, n.agency, n.category, n.dated::text as dated,
-             coalesce(n.dated = n.result_date, false) as result_dated, n.criterion, n.source_url, n.total_sen::text as total,
-             (select json_agg(json_build_object('ordinal', a.ordinal, 'supplier', a.supplier, 'amount', a.amount_sen::text)
-                              order by a.ordinal)
-              from procurement_award a where a.kind = n.kind and a.notice_id = n.id)::text as awards
+    sql<ContractRow[]>`
+      select ${contractColumns()}
       from procurement_notice n
       ${filter}
       order by ${order}
@@ -214,25 +273,7 @@ export async function searchContracts(f: ContractFilters): Promise<ContractResul
   ]);
   const count = Number(summary?.count ?? 0);
   return {
-    rows: rows.map((r) => ({
-      kind: r.kind,
-      id: Number(r.id),
-      reference: r.reference,
-      title: r.title,
-      ministry: r.ministry,
-      agency: r.agency,
-      category: r.category,
-      dated: r.dated,
-      resultDated: r.result_dated,
-      criterion: r.criterion,
-      sourceUrl: r.source_url,
-      total: parseSenOrNull(r.total),
-      awards: (JSON.parse(r.awards) as { ordinal: number; supplier: string; amount: string | null }[]).map((a) => ({
-        ordinal: a.ordinal,
-        supplier: a.supplier,
-        amount: parseSenOrNull(a.amount),
-      })),
-    })),
+    rows: rows.map(toContract),
     count,
     total: parseSen(summary?.total ?? 0),
     pages: Math.max(1, Math.ceil(count / CONTRACTS_PER_PAGE)),

@@ -45,6 +45,10 @@ A route is a thin `.astro` file under `src/pages/` that calls its view in `src/v
 | `/budget/[budgetYear]`             | The MOF budget by vote: two years of actuals, the current and the proposed budget                                                                   |
 | `/budget/[budgetYear]/vote/[code]` | A vote's proposed budget: programmes and activities with posts (T, B), or projects (P)                                                              |
 | `/methodology`                     | Sources and the live reconciliation result for both statements                                                                                      |
+| `/contracts`                       | Search MyProcurement's award results by item, company, buyer or reference, with ministry, method and year filters                                   |
+| `/contracts/[kind]/[id]`           | One result read: where it sits, the tender limit, the buyer's market, the winner's record (specs/contracts-commentary.md)                           |
+| `/contracts/company/[slug]`        | A company's record: by year, method, ministry and buyer, with the same checks                                                                       |
+| `/contracts/method`                | How the contract pages read results: every check's formula, limits and sources                                                                      |
 | `/brand`                           | The Carta logo system: construction, colours, lockups, motion and downloadable files (`/brand/files/[name]`)                                        |
 
 Vote codes use a dot-free URL slug: `T.03` → `/2025/vote/T03`. A year that is not loaded returns 404.

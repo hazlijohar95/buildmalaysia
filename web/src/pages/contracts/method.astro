@@ -1,0 +1,9 @@
+---
+import Base from "@/layouts/Base.astro";
+import Static from "@/components/Static";
+import page from "@/views/contracts-method";
+
+const { head, body } = await page();
+---
+
+<Base {...head}><Static node={body} /></Base>
