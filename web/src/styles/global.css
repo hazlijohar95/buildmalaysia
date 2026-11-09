@@ -161,6 +161,18 @@ main a:not([class]):hover {
 ::view-transition-group(root) {
   animation-duration: 180ms;
 }
+/* A contract's title moves from its row in the list to its page's heading (and back), so the reader keeps their
+   place. Text is left unstretched while it grows, and settles a beat after the page fade. */
+::view-transition-group(.contract-title) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(.contract-title),
+::view-transition-new(.contract-title) {
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
 @media (prefers-reduced-motion: reduce) {
   @view-transition {
     navigation: none;
@@ -215,6 +227,18 @@ main a:not([class]):hover {
     animation: carta-fade-in 240ms var(--ease-out) 300ms both;
   }
 }
+/* SectionSkeleton holds the place of a page's deferred part (PageBody.astro) on the same terms: shown only while
+   nothing follows it, after 300ms, so a cached page, which arrives whole, never shows it. */
+.section-skeleton {
+  display: none;
+}
+@supports selector(:has(+ *)) {
+  .section-skeleton:not(:has(+ *)) {
+    display: block;
+    animation: carta-fade-in 240ms var(--ease-out) 300ms both;
+  }
+}
+
 .skeleton-bar {
   border-radius: 2px;
   background: linear-gradient(
