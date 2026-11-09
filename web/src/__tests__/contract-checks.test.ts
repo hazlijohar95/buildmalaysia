@@ -13,7 +13,7 @@ import {
   yearsBefore,
 } from "@/lib/contract-checks";
 import { contractObservations, supplierObservations } from "@/lib/contract-commentary";
-import { parseSupplierSlug, supplierKey, supplierSlug, type Contract } from "@/lib/contracts";
+import { contractTitleTransition, parseSupplierSlug, supplierKey, supplierSlug, type Contract } from "@/lib/contracts";
 import type { Sen } from "@/lib/money";
 import type { ContractReading } from "@/lib/queries/contract";
 import type { SupplierRecord } from "@/lib/queries/supplier";
@@ -108,6 +108,18 @@ describe("formatting and dates", () => {
     expect(addDays("2024-02-28", 2)).toBe("2024-03-01");
     expect(addDays("2026-01-15", -30)).toBe("2025-12-16");
     expect(yearsBefore("2026-05-25", 3)).toBe("2023-05-25");
+  });
+});
+
+describe("title transitions", () => {
+  it("gives each contract its own name, and every title the shared class", () => {
+    expect(contractTitleTransition({ kind: "tender", id: 7 })).toEqual({
+      viewTransitionName: "contract-tender-7",
+      viewTransitionClass: "contract-title",
+    });
+    expect(contractTitleTransition({ kind: "tender", id: 7 }).viewTransitionName).not.toBe(
+      contractTitleTransition({ kind: "quotation", id: 7 }).viewTransitionName,
+    );
   });
 });
 

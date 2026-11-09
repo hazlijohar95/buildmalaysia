@@ -1,20 +1,13 @@
 // A company's record across every award result MyProcurement publishes: what it won, from whom, by which method,
-// and how many of its quotations sat just under the tender limit. One query gathers its awards, then summarises them.
-import sql from "@/lib/db";
-import { perRequest } from "@/lib/db";
+// and how many of its quotations sat just under the tender limit. One query gathers its awards, then summarises them;
+// the site-wide figures it is read against are computed once an hour.
+import sql, { sharedFor } from "@/lib/db";
 import { parseSen, type Sen } from "@/lib/money";
 import { parseSupplierSlug, type ContractKind } from "@/lib/contracts";
-import { NEAR_LIMIT_SHARE, QUOTATION_LIMITS } from "@/lib/contract-checks";
+import { NEAR_LIMIT_SHARE, QUOTATION_LIMITS, type ProcurementClass } from "@/lib/contract-checks";
 import { awardKey } from "@/lib/queries/contract";
 
-/** QUOTATION_LIMITS as a table: (class, from_date, to_date, sen). */
-function limitsTable() {
-  const rows = QUOTATION_LIMITS.map(
-    (l) => sql`(${l.class}::text, ${l.from}::date, ${l.to ?? "9999-12-31"}::date, ${l.sen}::bigint)`,
-  );
-  const values = rows.slice(1).reduce((all, row) => sql`${all}, ${row}`, rows[0]);
-  return sql`(values ${values}) as lim(class, from_date, to_date, sen)`;
-}
+const space = (parts: ReturnType<typeof sql>[]) => parts.slice(1).reduce((all, p) => sql`${all} ${p}`, parts[0]);
 
 /** procurementClass() in SQL; alias the notice `n`. */
 const noticeClass = () => sql`
@@ -22,36 +15,60 @@ const noticeClass = () => sql`
        when lower(n.category) like '%bukan perunding%' or lower(n.category) like 'bekalan%' then 'goods' end
 `;
 
+/** quotationLimit() in SQL: the limit in force for the notice's class on its date, or null. Built from
+ * QUOTATION_LIMITS, so the two cannot disagree; a CASE rather than a join keeps it to one pass. Alias the notice `n`. */
+const limitOf = () => {
+  const branch = (cls: ProcurementClass) =>
+    sql`case ${space(
+      QUOTATION_LIMITS.filter((l) => l.class === cls).map(
+        (l) => sql`when n.dated between ${l.from}::date and ${l.to ?? "9999-12-31"}::date then ${l.sen}::bigint`,
+      ),
+    )} end`;
+  return sql`(case ${noticeClass()} when 'works' then ${branch("works")} when 'goods' then ${branch("goods")} end)`;
+};
+
 /** True for a quotation priced within NEAR_LIMIT_SHARE under the limit in force on its date; alias the notice `n`. */
 export const nearLimitTest = () => sql`
-  (n.kind = 'quotation' and exists (
-    select 1 from ${limitsTable()}
-    where lim.class = ${noticeClass()} and n.dated between lim.from_date and lim.to_date
-      and n.total_sen > lim.sen * ${NEAR_LIMIT_SHARE}::numeric and n.total_sen <= lim.sen))
+  (n.kind = 'quotation' and n.total_sen > ${limitOf()} * ${NEAR_LIMIT_SHARE}::numeric and n.total_sen <= ${limitOf()})
 `;
 
-/** Of the quotations a tender limit applies to, how many sit within 5% under it: the base rate a company's is read
- * against. Shared by every company page a request renders. */
-export const getNearLimitBaseRate = perRequest(async () => {
-  const [row] = await sql<{ quotations: number; near: number }[]>`
-    select count(*)::int as quotations, count(*) filter (where ${nearLimitTest()})::int as near
-    from procurement_notice n
-    where n.kind = 'quotation' and n.total_sen is not null
-      and exists (select 1 from ${limitsTable()} where lim.class = ${noticeClass()} and n.dated between lim.from_date and lim.to_date)
+export interface LimitReading {
+  /** Quotations a tender limit applies to, and how many sit within 5% under it: the base rate. */
+  quotations: number;
+  near: number;
+  /** Quotations by price as a percentage of the limit, from 60% to 120%. Bin k holds prices over k% and up to k+1%,
+   * so bins 95 to 99 are exactly the quotations isNearLimit() counts. */
+  bins: { bin: number; count: number }[];
+}
+
+/** One pass over the quotations for both the base rate and the chart. The same for every reader, so it is kept for
+ * an hour (sharedFor) rather than recomputed on each company page: cold, the scan takes seconds. */
+export const getLimitReading = sharedFor(60 * 60 * 1000, async (): Promise<LimitReading> => {
+  const [row] = await sql<{ quotations: number; near: number; bins: LimitReading["bins"] }[]>`
+    with q as (
+      select n.total_sen, ${limitOf()} as lim from procurement_notice n
+      where n.kind = 'quotation' and n.total_sen is not null
+    )
+    select (select count(*) from q where lim is not null)::int as quotations,
+           (select count(*) from q where total_sen > lim * ${NEAR_LIMIT_SHARE}::numeric and total_sen <= lim)::int as near,
+           (select coalesce(json_agg(b order by b.bin), '[]')
+            from (select ceil(total_sen * 100.0 / lim)::int - 1 as bin, count(*)::int as count from q
+                  where total_sen > lim * 0.6 and total_sen <= lim * 1.2 group by 1) b) as bins
   `;
-  return { quotations: row?.quotations ?? 0, near: row?.near ?? 0 };
+  return { quotations: row?.quotations ?? 0, near: row?.near ?? 0, bins: row?.bins ?? [] };
 });
 
-/** Quotations by their value as a percentage of the limit in force, one bin a point from 60% to 120%. Bin k holds
- * prices over k% and up to k+1%, so bins 95 to 99 are exactly the quotations isNearLimit() counts. */
-export async function getLimitBunching(): Promise<{ bin: number; count: number }[]> {
-  return sql<{ bin: number; count: number }[]>`
-    select ceil(n.total_sen * 100.0 / lim.sen)::int - 1 as bin, count(*)::int as count
-    from procurement_notice n join ${limitsTable()}
-      on lim.class = ${noticeClass()} and n.dated between lim.from_date and lim.to_date
-    where n.kind = 'quotation' and n.total_sen > lim.sen * 0.6 and n.total_sen <= lim.sen * 1.2
-    group by 1 order by 1
+/** A company's names as MyProcurement prints them: enough for its page's heading, and empty for an unknown slug.
+ * The trigram index answers it in milliseconds, so the page can stream its heading while the record loads. */
+export async function getSupplierNames(slug: string): Promise<string[]> {
+  const parsed = parseSupplierSlug(slug);
+  if (!parsed) return [];
+  const rows = await sql<{ supplier: string }[]>`
+    select distinct a.supplier from procurement_award a
+    where a.supplier ilike ${`%${parsed.words.join("%")}%`} and ${awardKey()} = ${parsed.key}
+    order by 1
   `;
+  return rows.map((r) => r.supplier);
 }
 
 export interface SupplierContract {

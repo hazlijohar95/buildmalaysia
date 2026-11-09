@@ -64,3 +64,18 @@ Bidder counts, bid prices, the buyer's estimate, contract changes, payments and 
 - `web/src/__tests__/contract-checks.test.ts`: every formula, limit boundary and commentary rule.
 - `web/src/__tests__/contracts-db.test.ts`: the queries against a loaded database
   (`DATABASE_URL=postgresql:///buildmalaysia pnpm test`); skipped in CI.
+
+## Loading
+
+A page returns `deferred` (`web/src/lib/route.ts`) when part of it waits on slower queries. `PageBody.astro` renders
+the body, a `SectionSkeleton` and the deferred part as three separate renders, so Astro flushes the first two while the
+third waits on the database. The skeleton shows only while nothing follows it, after 300 ms, so a cached page never
+flashes it. A deferred part that fails renders a notice in place and marks the page uncacheable (`Streamed`).
+
+- Contract page: the record (one primary-key lookup) streams first; the reading, charts and full record follow.
+- Company page: the name (trigram index) streams first; 404 is decided on it, before streaming starts.
+- `getLimitReading` (the base rate and the bunching chart) scans every quotation, seconds when cold on the hosted
+  database. It is the same for every reader, so `sharedFor` keeps it for an hour per isolate, the same as the page
+  cache.
+- A contract's title carries `contractTitleTransition`, so it moves from its list row to its page heading in the
+  site's cross-document view transition. A named element must be a block, or the browser skips the transition.

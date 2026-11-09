@@ -146,11 +146,11 @@ export async function getContractReading(c: Contract): Promise<ContractReading> 
           limit 50
         `
       : Promise.resolve(null),
-    leadKey && c.agency.trim()
+    lead && leadKey && c.agency.trim()
       ? sql<{ contracts: number; value: string | null; first: string | null }[]>`
           select count(distinct (n.kind, n.id))::int as contracts, sum(a.amount_sen)::text as value, min(n.dated)::text as first
           from procurement_notice n join procurement_award a on a.kind = n.kind and a.notice_id = n.id
-          where n.agency = ${c.agency} and ${awardKey()} = ${leadKey}
+          where n.agency = ${c.agency} and a.supplier ilike ${supplierPattern(lead.supplier)} and ${awardKey()} = ${leadKey}
             and not (n.kind = ${c.kind}::procurement_kind and n.id = ${c.id})
         `
       : Promise.resolve([]),

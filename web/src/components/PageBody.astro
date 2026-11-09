@@ -1,0 +1,15 @@
+---
+// A page's body, then, for a page with a deferred part, its skeleton and the part itself. Each is a separate render, so
+// Astro flushes the body while the deferred part still waits on the database; one React render would hold it all
+// back. The skeleton shows only while nothing follows it (global.css), so it leaves the moment the part arrives.
+import Static from "@/components/Static";
+import Streamed from "@/components/Streamed";
+import type { Page } from "@/lib/route";
+
+type Props = Pick<Page, "body" | "deferred">;
+const { body, deferred } = Astro.props;
+---
+
+<Static node={body} />
+{deferred && <Static node={deferred.skeleton} />}
+{deferred && <Streamed load={deferred.load} scope="section" />}

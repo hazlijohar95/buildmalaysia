@@ -1,6 +1,7 @@
 // Government contracts: the award results MyProcurement publishes, searched by what was bought, who won it and who
 // bought it. The filters travel in the URL so every result list has an address worker.ts can cache and a reader can
 // share.
+import type { CSSProperties } from "react";
 import sql from "@/lib/db";
 import { escapeWildcard } from "@/lib/search";
 import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
@@ -8,6 +9,12 @@ import { titleCase } from "@/lib/queries/sankey";
 
 export const CONTRACTS_PER_PAGE = 25;
 export const CONTRACTS_QUERY_MAX = 100;
+
+/** The view-transition name a contract's title carries in the list and on its page, so it moves between them. The
+ * element must be a block: a named element that wraps as inline text makes the browser skip the transition. */
+export function contractTitleTransition(c: { kind: ContractKind; id: number }): CSSProperties {
+  return { viewTransitionName: `contract-${c.kind}-${c.id}`, viewTransitionClass: "contract-title" } as CSSProperties;
+}
 
 /** A contract's page on this site. */
 export function contractHref(c: { kind: ContractKind; id: number }): string {

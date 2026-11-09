@@ -6,6 +6,7 @@ import {
   SORTS,
   canonicalMinistry,
   contractHref,
+  contractTitleTransition,
   contractsHref,
   getContractsMeta,
   ministryLabel,
@@ -260,8 +261,9 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
         <div className="min-w-0">
           <a
             href={contractHref(c)}
+            style={contractTitleTransition(c)}
             lang="ms"
-            className="font-display text-lg font-semibold leading-snug text-foreground no-underline [overflow-wrap:anywhere] hover:text-biru-800 md:text-xl"
+            className="block font-display text-lg font-semibold leading-snug text-foreground no-underline [overflow-wrap:anywhere] hover:text-biru-800 md:text-xl"
           >
             <Highlight text={readableCase(c.title)} q={filters.q} />
           </a>

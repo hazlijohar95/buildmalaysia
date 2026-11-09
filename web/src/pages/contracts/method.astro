@@ -1,9 +1,9 @@
 ---
 import Base from "@/layouts/Base.astro";
-import Static from "@/components/Static";
+import PageBody from "@/components/PageBody.astro";
 import page from "@/views/contracts-method";
 
-const { head, body } = await page();
+const { head, body, deferred } = page();
 ---
 
-<Base {...head}><Static node={body} /></Base>
+<Base {...head}><PageBody body={body} deferred={deferred} /></Base>

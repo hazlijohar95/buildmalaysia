@@ -4,7 +4,7 @@ import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { withRequestScope } from "@/lib/db";
 import { getContract, getContractReading } from "@/lib/queries/contract";
-import { getLimitBunching, getNearLimitBaseRate, getSupplier } from "@/lib/queries/supplier";
+import { getLimitReading, getSupplier, getSupplierNames } from "@/lib/queries/supplier";
 import { supplierSlug } from "@/lib/contracts";
 import sql from "@/lib/db";
 
@@ -44,6 +44,8 @@ describe.skipIf(!url)("contract and company queries", () => {
     expect(await inScope(() => getContract("bribe", "1"))).toBeNull();
     expect(await inScope(() => getContract("tender", "1; drop"))).toBeNull();
     expect(await inScope(() => getSupplier("Not A Slug"))).toBeNull();
+    expect(await inScope(() => getSupplierNames("Not A Slug"))).toEqual([]);
+    expect(await inScope(() => getSupplierNames("zzzz-not-a-company"))).toEqual([]);
   });
 
   it("gathers a company's record under every spelling of its name", async () => {
@@ -51,7 +53,10 @@ describe.skipIf(!url)("contract and company queries", () => {
       const [top] = await sql<{ supplier: string }[]>`
         select max(supplier) as supplier from procurement_award
         group by regexp_replace(upper(supplier), '[^A-Z0-9]+', '', 'g') order by count(*) desc limit 1`;
-      return getSupplier(supplierSlug(top.supplier));
+      const slug = supplierSlug(top.supplier);
+      const [names, record] = await Promise.all([getSupplierNames(slug), getSupplier(slug)]);
+      expect(names).toEqual([...(record?.names ?? [])].sort());
+      return record;
     });
     expect(record).not.toBeNull();
     const r = record!;
@@ -64,7 +69,8 @@ describe.skipIf(!url)("contract and company queries", () => {
   });
 
   it("counts quotations bunched under the tender limit", async () => {
-    const [bins, base] = await inScope(() => Promise.all([getLimitBunching(), getNearLimitBaseRate()]));
+    const base = await inScope(() => getLimitReading());
+    const bins = base.bins;
     const sum = (from: number, to: number) =>
       bins.filter((x) => x.bin >= from && x.bin < to).reduce((s, x) => s + x.count, 0);
     expect(sum(95, 100)).toBeGreaterThan(sum(100, 105) * 5); // just under the limit against just over it

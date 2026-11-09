@@ -20,6 +20,11 @@ export interface Head {
 export interface Page {
   head: Head;
   body: ReactNode;
+  /**
+   * The rest of the page, when it waits on slower queries: `body` is sent at once, `skeleton` holds its place, and
+   * `load` streams in behind it (PageBody.astro). Decide a 404 or redirect before returning, not in `load`.
+   */
+  deferred?: { skeleton: ReactNode; load: () => Promise<ReactNode> };
 }
 
 /** Marks a page whose body failed after the layout had streamed (Streamed.tsx); worker.ts never caches it. */

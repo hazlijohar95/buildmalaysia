@@ -36,6 +36,22 @@ export function perRequest<T>(load: () => Promise<T>): () => Promise<T> {
   };
 }
 
+/**
+ * Keeps a figure that is the same for every reader, such as a base rate over the whole dataset, for `ttlMs` in this
+ * isolate, so the pages that quote it do not each recompute it. Pages are cached for an hour (worker.ts), so an hour
+ * is no staler than they are. Only a settled value is shared: a Worker request must not await another's pending I/O.
+ * A failure is not kept.
+ */
+export function sharedFor<T>(ttlMs: number, load: () => Promise<T>): () => Promise<T> {
+  let kept: { value: T; at: number } | null = null;
+  return async () => {
+    if (kept && Date.now() - kept.at < ttlMs) return kept.value;
+    const value = await load();
+    kept = { value, at: Date.now() };
+    return value;
+  };
+}
+
 // Opened on first use, so cached pages and assets never touch the database. Hyperdrive keeps the real connections warm.
 function client(): Sql {
   const current = currentScope();
