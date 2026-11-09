@@ -6,6 +6,10 @@ from pathlib import Path
 
 import psycopg
 
+from pipeline.bills import BillsError
+from pipeline.bills import fetch_snapshot as fetch_bills_snapshot
+from pipeline.bills import latest_snapshot as latest_bills_snapshot
+from pipeline.bills import load_snapshot as load_bills_snapshot
 from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
@@ -194,6 +198,36 @@ def load_procurement(database_url: str, raw_dir: Path, snapshot: Path | None) ->
     return 0
 
 
+def fetch_bills(raw_dir: Path) -> int:
+    try:
+        folder = fetch_bills_snapshot(raw_dir)
+    except (OSError, BillsError) as error:
+        print(f"fetch-bills failed: {error}", file=sys.stderr)
+        return 1
+    print(f"saved {folder}")
+    return 0
+
+
+def load_bills(database_url: str, raw_dir: Path, snapshot: Path | None) -> int:
+    try:
+        folder = snapshot or latest_bills_snapshot(raw_dir)
+        with psycopg.connect(database_url) as conn:
+            result = load_bills_snapshot(conn, folder)
+    except (OSError, BillsError) as error:
+        print(f"load-bills failed: {error}", file=sys.stderr)
+        return 1
+    print(
+        f"loaded {folder}: {result.bills} bills ({result.houses} house records), {result.acts} Acts;"
+        f" {result.by_title} bills matched to their Act by title, {result.by_file} decided in act_links.csv"
+    )
+    print(f"  passed since 2011 with no Act found on LOM: {len(result.passed_without_act)}")
+    for line in result.passed_without_act:
+        print(f"    {line}")
+    for line in result.out_of_order:
+        print(f"  dates out of order, loaded as printed: {line}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -218,7 +252,17 @@ def main() -> int:
     proc_cmd.add_argument("--database-url", required=True)
     proc_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     proc_cmd.add_argument("--snapshot", type=Path, help="a data/raw/myprocurement/<date> folder; the newest by default")
+    fetch_bills_cmd = commands.add_parser("fetch-bills", help="save Parliament's bill listings and LOM's Act lists")
+    fetch_bills_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    bills_cmd = commands.add_parser("load-bills", help="replace the bill and Act tables from a saved snapshot")
+    bills_cmd.add_argument("--database-url", required=True)
+    bills_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    bills_cmd.add_argument("--snapshot", type=Path, help="a data/raw/bills/<date> folder; the newest by default")
     args = parser.parse_args()
+    if args.command == "fetch-bills":
+        return fetch_bills(args.raw_dir)
+    if args.command == "load-bills":
+        return load_bills(args.database_url, args.raw_dir, args.snapshot)
     if args.command == "fetch-procurement":
         return fetch_procurement(args.raw_dir)
     if args.command == "load-procurement":

@@ -22,6 +22,14 @@ Kementerian Kewangan's [MyProcurement](https://myprocurement.treasury.gov.my/): 
 
 Each contract and company has its own page with commentary worked out by formula. The checks, limits and loading design are in [`specs/contracts-commentary.md`](specs/contracts-commentary.md); the reader-facing version is `/contracts/method`.
 
+### Bills and Acts
+
+Parliament's bill listings for the [Dewan Rakyat](https://www.parlimen.gov.my/bills-dewan-rakyat.html?uweb=dr&) and the [Dewan Negara](https://www.parlimen.gov.my/bills-dewan-negara.html?uweb=dn&): the current bills as an HTML table, and every year from 1990 as the XML tree each archive page loads. Bills keep their Dewan Rakyat number (D.R. n/yyyy) in the Dewan Negara, so the houses join on it, and `load-bills` stops when the two houses print different titles under one number until `data/bills/house_links.csv` decides whether to keep or drop the Dewan Negara's record (`bill`, `dewan_negara` keep or drop, `evidence`); titles that differ only in an apostrophe or a `-DR` mark after the year count as the same. The archive gives no dates before about 2012, prints an empty date as `30/11/-0001`, cuts some titles at 100 characters (and prints others longer whole), and lists some 2017 bills twice (the two printings must agree). parlimen.gov.my sends its certificate without its intermediate, so the pipeline carries that intermediate in `pipeline/src/pipeline/certs/`.
+
+The Acts come from the Attorney General's Chambers' [Laws of Malaysia](https://lom.agc.gov.my/): principal, amending (A-numbers, online from 2011) and repealed Acts, with the Royal Assent, gazette and commencement dates. Its listing endpoints return each list whole but encrypted (AES-256-GCM, under a key each listing page carries for the browser); `fetch-bills` decrypts them the way the page does. Neither side names the other, so `load-bills` matches a passed bill to the Act with its title, allowing a later year where the bill passed later, assented after the bill's passage and within a year of it; where several Acts fit, an exact title beats a later year and then the first assented after the passage is taken. Several Acts fitting an undated bill, or an Act two bills claim, stops the load until `data/bills/act_links.csv` decides it (`bill`, `act` or empty for none, `evidence`). The load prints the bills passed since 2011 that found no Act, and the dates the listings print out of order, which are loaded as printed.
+
+`fetch-bills` saves every listing under `data/raw/bills/<date>/` (git-ignored); `load-bills` replaces the four tables from the newest snapshot.
+
 ## Layout
 
 | Path                   | What                                                                                                                                                             |
@@ -45,6 +53,7 @@ Each contract and company has its own page with commentary worked out by formula
 - `body`, `body_alias`, `vote_holder`, `lineage_edge`, `citation`: which institution stood behind each vote in each year. A vote number is a funding line, not a ministry: B/P.15 and B/P.33 have each been used by two different ministries, and most ministries have been renamed. `body` is the institution and carries the name the site shows; `body_alias` every name it has carried, printed or gazetted, with the dates; `vote_holder` the body behind each vote code over a range of fiscal years; `lineage_edge` each reorganisation between two bodies, with the date it took effect and the functions that moved. Every alias and edge cites its source in `citation`. `ministry_spending` adds `body_id`, `body_name_ms` and `residual` (true when a number was still printed, with zero, after its body was dissolved). The rows come from the reviewable files in `data/lineage/`, never from a PDF, and carry no amounts; the share of a partial move is computed from the loaded spending.
 - `procurement_notice`, `procurement_award`, `procurement_snapshot`: one row per published result (`kind` tender, quotation or direct) with its MyProcurement id and link, one per winner with the price in sen, and the snapshot they came from. `dated` files a result under its decision date, or the date it was published where no decision date is printed or the printed one falls after publication.
 - `vote_lineage_check` (view): every printed vote name in the statements and budget books, with the body that held it and a `problem` when the lineage does not cover it. `ingest` and `ingest-budget` roll back a document with a problem row, so the next reshuffle is caught at ingest.
+- `bill`, `bill_house`, `act`, `bill_snapshot`: one row per bill number, one per house that lists it (status, readings, passage, select committee, presenters and PDF as printed), one per Act on Laws of Malaysia, and the snapshot. `bill.act_no` is the bill's Act, with `act_link` `title` or `file`. `bill_progress` (view) gives each bill one `stage`: `enacted`, `passed`, `passed_dewan_rakyat`, `dewan_rakyat`, `committee`, `withdrawn` or `defeated`.
 
 ## Local development
 
@@ -58,6 +67,8 @@ for y in $(seq 2016 2025); do uv run python -m pipeline ingest --year $y --datab
 for y in 2025 2026 2027; do uv run python -m pipeline ingest-budget --year $y --database-url postgresql:///buildmalaysia; done
 uv run python -m pipeline fetch-procurement   # about 1,650 pages, 1–2 hours; rerun to resume
 uv run python -m pipeline load-procurement --database-url postgresql:///buildmalaysia
+uv run python -m pipeline fetch-bills         # about 75 requests, a minute
+uv run python -m pipeline load-bills --database-url postgresql:///buildmalaysia
 uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
 uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
@@ -86,6 +97,7 @@ The site runs on Cloudflare Workers through Astro's [Cloudflare adapter](https:/
 supabase link --project-ref <ref> && supabase db push    # schema
 SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage tables included, checked row for row
 uv run --project pipeline python scripts/publish-procurement.py  # only the procurement tables, through `supabase login`
+uv run --project pipeline python scripts/publish-procurement.py --set bills  # only the bill and Act tables
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
 cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```
@@ -113,7 +125,7 @@ Hyperdrive connects as `web_reader` straight to the database host (IPv6), not th
 ## Rules
 
 - Never type a number in by hand. A figure the parser cannot read is a parser fix, or a `KnownMisprint`, `KnownGap` or `ManualReading` registered with its page and evidence.
-- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py`.
+- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py` (`--set procurement` or `--set bills`).
 - `main` is protected: open a pull request from a short-lived branch; merging deploys.
 
 ## Contributing
