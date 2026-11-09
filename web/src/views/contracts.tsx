@@ -4,8 +4,10 @@ import { cn } from "@/lib/cn";
 import {
   KINDS,
   SORTS,
+  canonicalMinistry,
   contractsHref,
   getContractsMeta,
+  ministryLabel,
   parseContractFilters,
   searchContracts,
   CONTRACTS_PER_PAGE,
@@ -13,8 +15,10 @@ import {
   type Contract,
   type ContractFilters,
   type ContractKind,
+  type ContractsMeta,
 } from "@/lib/contracts";
 import { formatSen, formatSenCompact } from "@/lib/money";
+import { readableCase } from "@/lib/readable-case";
 import type { Page, RouteContext } from "@/lib/route";
 
 const SOURCE_URL = "https://myprocurement.treasury.gov.my/";
@@ -24,6 +28,11 @@ const formatDay = (iso: string) => day.format(new Date(`${iso}T00:00:00Z`));
 
 // w-full and min-w-0: a menu is otherwise as wide as its longest option, wider than a phone.
 const field = "min-h-11 w-full min-w-0 border-2 border-foreground bg-background px-3 py-2 font-mono text-sm";
+// The boxed tabs of YearNav: each overlaps its neighbour's border, so a row reads as one ruled strip.
+const tab = cn(
+  kicker,
+  "inline-flex min-h-11 items-center gap-2 border-2 border-foreground -ml-[2px] px-4 no-underline",
+);
 
 export default async function contractsPage({ searchParams }: RouteContext): Promise<Page> {
   const filters = parseContractFilters(searchParams);
@@ -51,6 +60,7 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
           }
         >
           <SearchForm filters={filters} meta={meta} />
+          {filtered && <ActiveFilters filters={filters} />}
         </PageHeader>
 
         <StatRow
@@ -86,27 +96,29 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
             </p>
           ) : (
             <>
-              <div className={cn(kicker, "flex flex-wrap items-baseline justify-between gap-4 text-charcoal-700")}>
-                <span>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <span className={cn(kicker, "text-charcoal-700")}>
                   {count.format((filters.page - 1) * CONTRACTS_PER_PAGE + 1)}–
                   {count.format(Math.min(filters.page * CONTRACTS_PER_PAGE, results.count))} of{" "}
                   {count.format(results.count)}
                 </span>
-                <span className="flex gap-4">
-                  {(Object.keys(SORTS) as (keyof typeof SORTS)[]).map((s) => (
-                    <a
-                      key={s}
-                      href={contractsHref(filters, { sort: s })}
-                      aria-current={filters.sort === s ? "true" : undefined}
-                      className={cn(
-                        "no-underline",
-                        filters.sort === s ? "text-foreground underline" : "hover:text-biru-800",
-                      )}
-                    >
-                      {SORTS[s]}
-                    </a>
-                  ))}
-                </span>
+                <nav aria-label="Sort" className="flex pl-[2px]">
+                  {(Object.keys(SORTS) as (keyof typeof SORTS)[]).map((s) =>
+                    filters.sort === s ? (
+                      <span key={s} aria-current="true" className={cn(tab, "bg-foreground text-background")}>
+                        {SORTS[s]}
+                      </span>
+                    ) : (
+                      <a
+                        key={s}
+                        href={contractsHref(filters, { sort: s })}
+                        className={cn(tab, "tap text-foreground hover:bg-linen-200")}
+                      >
+                        {SORTS[s]}
+                      </a>
+                    ),
+                  )}
+                </nav>
               </div>
               <ol role="list" className="m-0 mt-6 list-none divide-y-2 divide-foreground/15 p-0">
                 {results.rows.map((c) => (
@@ -149,13 +161,12 @@ export default async function contractsPage({ searchParams }: RouteContext): Pro
   };
 }
 
-function SearchForm({
-  filters,
-  meta,
-}: {
-  filters: ContractFilters;
-  meta: Awaited<ReturnType<typeof getContractsMeta>>;
-}) {
+function SearchForm({ filters, meta }: { filters: ContractFilters; meta: ContractsMeta }) {
+  const groups = [
+    { label: "Ministries", options: meta.ministries.current },
+    { label: "Former ministries and names", options: meta.ministries.former },
+    { label: "State governments", options: meta.ministries.states },
+  ].filter((g) => g.options.length > 0);
   return (
     <form action="/contracts" method="get" role="search" data-filters className="grid max-w-4xl grid-cols-1 gap-3">
       <div className="flex">
@@ -184,10 +195,14 @@ function SearchForm({
           <span className={cn(kicker, "text-charcoal-700")}>Ministry</span>
           <select name="ministry" defaultValue={filters.ministry ?? ""} className={field}>
             <option value="">All ministries</option>
-            {meta.ministries.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+            {groups.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.options.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
@@ -220,6 +235,8 @@ function SearchForm({
 }
 
 function ContractRow({ contract: c, filters }: { contract: Contract; filters: ContractFilters }) {
+  const ministry = ministryLabel(c.ministry);
+  const agency = canonicalMinistry(c.agency) !== canonicalMinistry(c.ministry) ? readableCase(c.agency) : null;
   return (
     <li className="py-6 first:pt-0">
       <div className={cn(kicker, "flex flex-wrap gap-x-3 gap-y-1 text-charcoal-700")}>
@@ -231,7 +248,9 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
         {c.reference && (
           <>
             <span aria-hidden="true">·</span>
-            <span className="normal-case tracking-normal">{c.reference}</span>
+            <span className="normal-case tracking-normal">
+              <Highlight text={c.reference} q={filters.q} />
+            </span>
           </>
         )}
       </div>
@@ -242,28 +261,48 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
             lang="ms"
             className="font-display text-lg font-semibold leading-snug text-foreground no-underline hover:text-biru-800 md:text-xl"
           >
-            {c.title}
+            <Highlight text={readableCase(c.title)} q={filters.q} />
           </a>
           <p className="m-0 mt-1 text-sm text-charcoal-700" lang="ms">
-            <a href={contractsHref(filters, { ministry: c.ministry })} className="text-charcoal-700">
-              {c.ministry}
-            </a>
-            {c.agency !== c.ministry && <> · {c.agency}</>} · {c.category}
-            {c.criterion && <> · {c.criterion}</>}
+            {ministry ? (
+              <a
+                href={contractsHref(filters, { ministry: canonicalMinistry(c.ministry) })}
+                className="text-charcoal-700"
+              >
+                {ministry}
+              </a>
+            ) : (
+              <span lang="en">Ministry not stated</span>
+            )}
+            {agency && (
+              <>
+                {" "}
+                · <Highlight text={agency} q={filters.q} />
+              </>
+            )}{" "}
+            · {readableCase(c.category)}
+            {c.criterion && <> · {readableCase(c.criterion)}</>}
           </p>
           <ul className="m-0 mt-3 list-none space-y-1 p-0 text-sm">
-            {c.awards.map((a) => (
-              <li key={a.ordinal} className="flex flex-wrap justify-between gap-x-6">
-                <a href={contractsHref(filters, { q: a.supplier })} className="font-medium text-foreground">
-                  {a.supplier}
-                </a>
-                {c.awards.length > 1 && (
-                  <span className="font-mono tabular-nums text-charcoal-700">
-                    {a.amount === null ? "No price printed" : formatSen(a.amount)}
-                  </span>
-                )}
-              </li>
-            ))}
+            {c.awards.map((a) => {
+              const supplier = readableCase(a.supplier);
+              return (
+                <li key={a.ordinal} className="flex flex-wrap justify-between gap-x-6">
+                  <a
+                    href={contractsHref(filters, { q: a.supplier })}
+                    title={`Every result ${supplier} won`}
+                    className="font-medium text-foreground"
+                  >
+                    <Highlight text={supplier} q={filters.q} />
+                  </a>
+                  {c.awards.length > 1 && (
+                    <span className="font-mono tabular-nums text-charcoal-700">
+                      {a.amount === null ? "No price printed" : formatSen(a.amount)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
         <div className="font-display text-2xl font-semibold tabular-nums whitespace-nowrap md:text-right">
@@ -279,6 +318,64 @@ function ContractRow({ contract: c, filters }: { contract: Contract; filters: Co
       </div>
     </li>
   );
+}
+
+/** The search and filters in force, each with a link that removes it, and one that removes them all. */
+function ActiveFilters({ filters }: { filters: ContractFilters }) {
+  const chips = [
+    filters.q && { label: `“${readableCase(filters.q)}”`, href: contractsHref(filters, { q: "" }) },
+    filters.ministry && { label: ministryLabel(filters.ministry), href: contractsHref(filters, { ministry: null }) },
+    filters.kind && { label: KINDS[filters.kind].label, href: contractsHref(filters, { kind: null }) },
+    filters.year && { label: String(filters.year), href: contractsHref(filters, { year: null }) },
+  ].filter((c): c is { label: string; href: string } => Boolean(c && c.label));
+  if (chips.length === 0) return null;
+  const none = contractsHref(filters, { q: "", ministry: null, kind: null, year: null });
+  return (
+    <div className="mt-4 flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-2">
+      <span className={cn(kicker, "text-charcoal-700")}>Showing</span>
+      <ul role="list" className="m-0 flex list-none flex-wrap gap-2 p-0">
+        {chips.map((c) => (
+          <li key={c.href}>
+            <a
+              href={c.href}
+              aria-label={`Remove ${c.label}`}
+              className="tap inline-flex min-h-11 items-center gap-3 border-2 border-foreground bg-linen-200 px-3 text-sm text-foreground no-underline hover:bg-foreground hover:text-background"
+            >
+              <span lang="ms">{c.label}</span>
+              <span aria-hidden="true" className="font-mono">
+                ×
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {chips.length > 1 && (
+        <a href={none} className={cn(kicker, "text-charcoal-700 hover:text-merah-600")}>
+          Clear all
+        </a>
+      )}
+    </div>
+  );
+}
+
+/** Marks where the search matches, case aside: the search itself matches regardless of case. */
+function Highlight({ text, q }: { text: string; q: string }) {
+  const needle = q.toLowerCase();
+  if (!needle) return <>{text}</>;
+  const haystack = text.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let from = 0;
+  for (let at = haystack.indexOf(needle); at !== -1; at = haystack.indexOf(needle, from)) {
+    if (at > from) parts.push(text.slice(from, at));
+    parts.push(
+      <mark key={at} className="bg-copper-100 text-current">
+        {text.slice(at, at + needle.length)}
+      </mark>,
+    );
+    from = at + needle.length;
+  }
+  parts.push(text.slice(from));
+  return <>{parts}</>;
 }
 
 function Pager({ filters, pages }: { filters: ContractFilters; pages: number }) {

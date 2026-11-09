@@ -4,9 +4,71 @@
 import sql from "@/lib/db";
 import { escapeWildcard } from "@/lib/search";
 import { parseSen, parseSenOrNull, type Sen } from "@/lib/money";
+import { titleCase } from "@/lib/queries/sankey";
 
 export const CONTRACTS_PER_PAGE = 25;
 export const CONTRACTS_QUERY_MAX = 100;
+
+// MyProcurement spells some ministries more than one way. Each variant here is filed under the one name it maps to,
+// so the menu lists the ministry once and old links to a variant still work. Renamed ministries stay apart: a new
+// name usually comes with a new remit.
+const MINISTRY_VARIANTS: Record<string, string> = {
+  "KEMENTERIAN PENDIDIKAN": "KEMENTERIAN PENDIDIKAN MALAYSIA",
+  "KEMENTERIAN SAINS TEKNOLOGI DAN INOVASI": "KEMENTERIAN SAINS, TEKNOLOGI DAN INOVASI",
+  "KEMENTERIAN PENDIDIKAN TINGGI (SEHINGGA 30 SEPT 2018)": "KEMENTERIAN PENDIDIKAN TINGGI",
+  "KEMENTERIAN TENAGA, TEKNOLOGI HIJAU DAN AIR (SEHINGGA 30 SEPT 2018)": "KEMENTERIAN TENAGA, TEKNOLOGI HIJAU DAN AIR",
+};
+
+/** The one name a ministry is filed under, whichever way MyProcurement spelled it. */
+export function canonicalMinistry(name: string): string {
+  return MINISTRY_VARIANTS[name] ?? name;
+}
+
+/** Every spelling MyProcurement uses for a ministry, for matching its rows. */
+export function ministrySpellings(name: string): string[] {
+  const canonical = canonicalMinistry(name);
+  return [canonical, ...Object.keys(MINISTRY_VARIANTS).filter((v) => MINISTRY_VARIANTS[v] === canonical)];
+}
+
+/** A ministry's name as the page shows it: "Kementerian Kesihatan". MyProcurement prints "-" when it names none. */
+export function ministryLabel(name: string): string | null {
+  return /^[\s-]*$/.test(name) ? null : titleCase(canonicalMinistry(name));
+}
+
+/** A ministry with no results in the year before the latest one is listed as a former ministry or name. */
+const CURRENT_WITHIN_DAYS = 365;
+const STATE_GOVERNMENT = /KERAJAAN NEGERI|SARAWAK|SABAH/;
+
+export interface MinistryOption {
+  value: string;
+  label: string;
+}
+
+export interface MinistryGroups {
+  current: MinistryOption[];
+  former: MinistryOption[];
+  states: MinistryOption[];
+}
+
+/** Sorts the ministries MyProcurement names into current ones, former ones and state governments, by name. */
+export function groupMinistries(rows: { ministry: string; latest: string }[]): MinistryGroups {
+  const latest = new Map<string, string>();
+  for (const r of rows) {
+    if (ministryLabel(r.ministry) === null) continue;
+    const name = canonicalMinistry(r.ministry);
+    if ((latest.get(name) ?? "") < r.latest) latest.set(name, r.latest);
+  }
+  const newest = Math.max(0, ...[...latest.values()].map((d) => Date.parse(d)));
+  const cutoff = newest - CURRENT_WITHIN_DAYS * 86_400_000;
+  const groups: MinistryGroups = { current: [], former: [], states: [] };
+  for (const [name, day] of latest) {
+    const group = STATE_GOVERNMENT.test(name) ? "states" : Date.parse(day) >= cutoff ? "current" : "former";
+    groups[group].push({ value: name, label: titleCase(name) });
+  }
+  const byLabel = (a: MinistryOption, b: MinistryOption) => a.label.localeCompare(b.label, "ms");
+  for (const list of [groups.current, groups.former, groups.states]) list.sort(byLabel);
+  return groups;
+}
 
 export const KINDS = {
   tender: { label: "Tender", ms: "Tender" },
@@ -37,7 +99,7 @@ export function parseContractFilters(params: URLSearchParams): ContractFilters {
   return {
     q: (params.get("q") ?? "").replaceAll("\u0000", "").trim().slice(0, CONTRACTS_QUERY_MAX),
     kind: kind && kind in KINDS ? (kind as ContractKind) : null,
-    ministry: ministry || null,
+    ministry: ministry ? canonicalMinistry(ministry) : null,
     year: Number.isInteger(year) && year >= 2000 && year <= 2100 ? year : null,
     sort: sort && sort in SORTS ? (sort as ContractSort) : "value",
     page: Number.isInteger(page) && page >= 1 && page <= 10_000 ? page : 1,
@@ -89,7 +151,7 @@ export interface ContractResults {
 
 export interface ContractsMeta {
   snapshot: { id: string; lastPageAt: string; notices: number; awards: number } | null;
-  ministries: string[];
+  ministries: MinistryGroups;
   years: number[];
   earliest: Record<ContractKind, number | null>;
 }
@@ -99,7 +161,7 @@ function where(f: ContractFilters) {
   return sql`
     where true
     ${f.kind ? sql`and n.kind = ${f.kind}::procurement_kind` : sql``}
-    ${f.ministry ? sql`and n.ministry = ${f.ministry}` : sql``}
+    ${f.ministry ? sql`and n.ministry in ${sql(ministrySpellings(f.ministry))}` : sql``}
     ${f.year ? sql`and n.dated >= make_date(${f.year}::int, 1, 1) and n.dated < make_date(${f.year}::int + 1, 1, 1)` : sql``}
     ${
       pattern
@@ -182,7 +244,9 @@ export async function getContractsMeta(): Promise<ContractsMeta> {
     sql<{ id: string; last_page_at: string; notices: number; awards: number }[]>`
       select id, last_page_at::text, notices, awards from procurement_snapshot order by id desc limit 1
     `,
-    sql<{ ministry: string }[]>`select distinct ministry from procurement_notice order by ministry`,
+    sql<{ ministry: string; latest: string }[]>`
+      select ministry, max(dated)::text as latest from procurement_notice group by ministry
+    `,
     sql<{ year: number }[]>`
       select distinct extract(year from dated)::int as year from procurement_notice order by year desc
     `,
@@ -195,7 +259,7 @@ export async function getContractsMeta(): Promise<ContractsMeta> {
     snapshot: snapshot
       ? { id: snapshot.id, lastPageAt: snapshot.last_page_at, notices: snapshot.notices, awards: snapshot.awards }
       : null,
-    ministries: ministries.map((m) => m.ministry),
+    ministries: groupMinistries(ministries),
     years: years.map((y) => y.year),
     earliest: { tender: first.tender ?? null, quotation: first.quotation ?? null, direct: first.direct ?? null },
   };
