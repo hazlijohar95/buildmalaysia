@@ -8,6 +8,7 @@ import {
   getBudgetSource,
   getBudgetTotals,
   getBudgetVotes,
+  getVoteComparisons,
   type BudgetVoteRow,
   type BudgetYearTotal,
 } from "@/lib/queries/budget";
@@ -16,7 +17,9 @@ import { titleCase } from "@/lib/queries/sankey";
 import { formatSen, parseSen, type Sen } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
 import { columnLabel, columnLabelMs, requireBudgetYear } from "@/lib/budgetYear";
+import { budgetMoves } from "@/lib/budget-moves";
 import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
+import BudgetMovesBand from "@/components/BudgetMoves";
 import Segments from "@/components/Segments";
 import CitationLink from "@/components/CitationLink";
 import { Money, Term, change, formatRinggit, money } from "@/components/Figures";
@@ -52,7 +55,7 @@ const SECTIONS: { letter: string; title: string; tab: string; note: React.ReactN
 
 export default async function budgetPage({ params }: RouteContext): Promise<Page> {
   const year = await requireBudgetYear(params.budgetYear ?? "");
-  const [source, totals, votes, check, years, dropped, names] = await Promise.all([
+  const [source, totals, votes, check, years, dropped, names, comparisons] = await Promise.all([
     getBudgetSource(year),
     getBudgetTotals(year),
     getBudgetVotes(year),
@@ -60,6 +63,7 @@ export default async function budgetPage({ params }: RouteContext): Promise<Page
     getBudgetYears(),
     getDroppedProjects(year),
     getPrintedVoteNames(year),
+    getVoteComparisons(year),
   ]);
   const proposed = totals.at(-1);
   const current = totals.at(-2);
@@ -71,7 +75,11 @@ export default async function budgetPage({ params }: RouteContext): Promise<Page
   const onCurrent = (now: Sen, before: Sen) => `${change(now, before)} on the ${current.fiscal_year} budget`;
 
   return {
-    head: { title: `Budget ${year}`, og: previews.budget(year) },
+    head: {
+      title: `Budget ${year}`,
+      description: `What the Malaysian federal government set out to spend in ${year}, ministry by ministry, from the Ministry of Finance's budget estimates.`,
+      og: previews.budget(year),
+    },
     body: (
       <>
         <PageHeader
@@ -132,6 +140,8 @@ export default async function budgetPage({ params }: RouteContext): Promise<Page
             )}
           </p>
         </Band>
+
+        <BudgetMovesBand year={year} url={source.url} moves={budgetMoves(comparisons, year)} />
 
         <Segments
           label="Votes in this budget"

@@ -6,3 +6,5 @@ public
 worker-configuration.d.ts
 THIRD_PARTY_NOTICES.md
 .wrangler
+.emdash
+emdash-env.d.ts

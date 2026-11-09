@@ -12,7 +12,11 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
   const hasResults = hits.length > 0;
 
   return {
-    head: { title: "Search" },
+    head: {
+      title: "Search",
+      description:
+        "Search Malaysian federal ministries, votes, programmes, activities and projects by name or code, in English or Bahasa Malaysia.",
+    },
     body: (
       <>
         <PageHeader eyebrow="Search" title="Find anything">
@@ -50,7 +54,8 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
           <Band>
             <p className="text-charcoal-800 max-w-xl">
               Search ministries, votes, programmes, activities, and development projects by name or code. You can type
-              in English or Bahasa Malaysia.
+              in English or Bahasa Malaysia. To find a contract or the company that won it, search{" "}
+              <a href="/contracts">government contracts</a>.
             </p>
           </Band>
         )}
@@ -59,7 +64,8 @@ export default async function searchPage({ searchParams }: RouteContext): Promis
           <Band>
             <p className="max-w-xl text-charcoal-800">
               No results for &ldquo;{query}&rdquo;. Search a name in English or Bahasa Malaysia, such as health or
-              kesihatan, or a vote code such as B.42.
+              kesihatan, or a vote code such as B.42. Looking for a contract or a company?{" "}
+              <a href={`/contracts?${new URLSearchParams({ q: query }).toString()}`}>Search government contracts</a>.
             </p>
           </Band>
         )}
@@ -131,7 +137,7 @@ function HitRow({ hit }: { hit: SearchHit }) {
     <li className="py-4">
       <a href={hit.href} className="group flex items-start justify-between gap-6 no-underline">
         <div className="min-w-0">
-          <span className="font-mono text-xs text-charcoal-600 mr-2">{hit.code}</span>
+          <span className="font-mono text-xs text-charcoal-600 mr-2">{hit.code}</span>{" "}
           <span
             lang="ms"
             className="font-medium text-foreground group-hover:text-biru-800 transition-colors duration-150"

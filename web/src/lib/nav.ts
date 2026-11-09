@@ -69,6 +69,12 @@ async function buildNav(): Promise<SiteNav> {
               },
             ]
           : []),
+        {
+          href: "/contracts",
+          label: "Government contracts",
+          note: "Every published tender and quotation award",
+          match: ["/contracts"],
+        },
         ...(covidYear
           ? [
               {
@@ -98,6 +104,7 @@ async function buildNav(): Promise<SiteNav> {
         ]
       : []),
     { kind: "link", href: "/methodology", label: "Methodology", match: ["/methodology"] },
+    { kind: "link", href: "/blog", label: "Blog", match: ["/blog"] },
     { kind: "link", href: "/about", label: "About", match: ["/about"] },
   ];
   return {

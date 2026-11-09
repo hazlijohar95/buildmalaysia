@@ -1,0 +1,62 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Band, PageHeader, kicker } from "@/components/Boxed";
+import { getEmDashCollection } from "emdash";
+import { Image } from "emdash/ui";
+import { readingMinutes } from "@/lib/blog";
+
+const { entries: posts, error } = await getEmDashCollection("posts", {
+  status: "published",
+  orderBy: { published_at: "desc" },
+});
+if (error) throw error;
+
+const dateFormat = new Intl.DateTimeFormat("en-MY", { day: "numeric", month: "long", year: "numeric" });
+---
+
+<Base title="Blog" description="Explainers and notes on how Malaysia's federal government raises and spends money.">
+  <PageHeader
+    eyebrow="Blog"
+    title="Notes on the numbers"
+    intro="Explainers on the budget and the accounts, written from the same documents as the rest of the site."
+  />
+  <Band>
+    {
+      posts.length === 0 ? (
+        <p class="m-0 text-lg text-charcoal-800">No posts yet.</p>
+      ) : (
+        <ul role="list" class="m-0 list-none divide-y-2 divide-foreground/15 p-0">
+          {posts.map((post) => (
+            <li class="py-10 first:pt-0 last:pb-0">
+              <a
+                href={`/blog/${post.id}`}
+                class="group grid gap-6 no-underline md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-10"
+              >
+                {post.data.featured_image && (
+                  <div class="border-2 border-foreground">
+                    <Image image={post.data.featured_image} />
+                  </div>
+                )}
+                <div class:list={[!post.data.featured_image && "md:col-span-2"]}>
+                  <div class:list={["flex flex-wrap gap-x-3 text-charcoal-700", kicker]}>
+                    {post.data.publishedAt && (
+                      <time datetime={post.data.publishedAt.toISOString()}>
+                        {dateFormat.format(post.data.publishedAt)}
+                      </time>
+                    )}
+                    <span aria-hidden="true">·</span>
+                    <span>{readingMinutes(post.data.content)} min read</span>
+                  </div>
+                  <h2 class="mt-3 mb-0 font-display text-2xl font-semibold tracking-tight group-hover:text-biru-800 md:text-3xl">
+                    {post.data.title}
+                  </h2>
+                  {post.data.excerpt && <p class="mt-3 mb-0 text-lg text-charcoal-800">{post.data.excerpt}</p>}
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </Band>
+</Base>

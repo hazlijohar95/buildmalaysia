@@ -1,0 +1,30 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "defaultLocale": "en",
+  "meta": {
+    "name": "Build Malaysia blog",
+    "description": "Posts for buildmalaysia.com/blog"
+  },
+  "settings": {
+    "title": "Build Malaysia",
+    "tagline": "Notes on the numbers",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "collections": [
+    {
+      "slug": "posts",
+      "label": "Posts",
+      "labelSingular": "Post",
+      "supports": ["drafts", "revisions", "preview", "seo"],
+      "urlPattern": "/blog/{slug}",
+      "titleField": "title",
+      "fields": [
+        { "slug": "title", "label": "Title", "type": "string", "required": true },
+        { "slug": "excerpt", "label": "Summary", "type": "text" },
+        { "slug": "featured_image", "label": "Cover image", "type": "image" },
+        { "slug": "content", "label": "Content", "type": "portableText" }
+      ]
+    }
+  ]
+}

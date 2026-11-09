@@ -1,0 +1,452 @@
+<div>
+            <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 8 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 8, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 07/02/2017
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN PEROLEHAN SECARA RUNDINGAN TERUS BAGI MEMBEKAL, MENGHANTAR-SERAH, MEMUNGGAH DAN MENYUSUN BAHAN MAKANAN TERNAKAN LEMBU TENUSU KE TAPAK PUSAT TERNAKAN BERSEPADU KENINGAU (KILC)</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: JABATAN PERDANA MENTERI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: PIHAK BERKUASA PEMBANGUNAN EKONOMI DAN PELABURAN SABAH (SEDIA)
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: BEKALAN
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: DESA CARGILL SDN. BHD
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 3,791,097.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 5 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 5, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 19/05/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN KELULUSAN KHAS UNTUK MELANTIK BRANDWORTH CORP.  SECARA RUNDINGAN TERUS BAGI PERKHIDMATAN PRODUKSI VIDEO PROMOSI SERTA MENYEDIAKAN PAPAN TANDA BAGI TUJUAN PUBLISITI SEMPENA PENGANJURAN FORUM EKONOMI DUNIA PERINGKAT ASEAN PADA 1-2 JUN 2016 DI HOTEL SHANGRI-LA KUALA LUMPUR</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: BRANDWORTH CORP.
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 78,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 4 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 4, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 13/04/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN KELULUSAN KHAS UNTUK MELANTIK ASTRO AWANI NETWORK SDN BHD SECARA RUNDINGAN TERUS BAGI MENYEDIAKAN PERKHIDMATAN MEDIA, PROMOSI DAN PUBLISITI TERMASUK MENYEDIAKAN PUSAT MEDIA SEMPENA PENGANJURAN FORUM EKONOMI DUNIA PERINGKAT ASEAN PADA 1-2 JUN 2016 DI HOTEL SHANGRI-LA KUALA LUMPUR</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: ASTRO AWANI NETWORK SDN. BHD.
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 150,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 7 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 7, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 28/03/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN KELULUSAN KHAS UNTUK MELANTIK MYKRIS ASIA SDN. BHD. SECARA RUNDINGAN TERUS BAGI MENYEDIAKAN KEMUDAHAN INFRASTRUKTUR TEKNOLOGI MAKLUMAT DAN KOMUNIKASI SEMPENA FORUM EKONOMI DUNIA PERINGKAT ASEAN PADA 1-2 JUN 2016 DI HOTEL SHANGRI-LA KUALA LUMPUR</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: MYKRIS ASIA SDN BHD
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 153,888.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 6 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 6, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 28/03/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN KELULUSAN KHAS UNTUK MELANTIK MUSLIHAH TRAVEL &amp;amp; TOURS SDN. BHD. SECARA RUNDINGAN TERUS UNTUK MENYEDIAKAN PERKHIDMATAN PEMANDU, PERKHIDMATAN PENYEDIAAN PENGANGKUTAN DAN LAIN-LAIN PERKHIDMATAN SEMASA FORUM EKONOMI DUNIA PERINGKAT ASEAN PADA 1-2 JUN 2016 DI KUALA LUMPUR</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: MUSLIHAH TRAVEL &amp; TOURS SDN. BHD.
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 120,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 2 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 2, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 25/03/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PELAKSANAAN LATIHAN BAGI BAREFOOT LEADERSHIP CIRCLES 5.0 ATAU PROGRAM PEMBANGUNAN KEPIMPINAN STRATEGIK &amp;amp; PELAN PENGGANTIAN MITI</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: STORY CIRCLE
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 250,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: BAGI MAKSUD PENYERAGAMAN
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 1 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 1, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 24/03/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PELAKSANAAN KURSUS ENGLISH LANGUAGE SKILLS FOR BUSINESS COMMUNICATION UNTUK PEGAWAI GRED 48-52</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: MAJORY SDN BHD
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 73,800.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: BAGI MAKSUD PENYERAGAMAN
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 3 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 3, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 23/03/2016
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERKHIDMATAN PENYEDIAAN PAKEJ MESYUARAT, SEWAAN DEWAN DAN BILIK MESYUARAT, MAKAN MALAM DAN PAKEJ INTERNET SEMASA MESYUARAT PEGAWAI-PEGAWAI KANAN EKONOMI ASEAN 2/47 DAN MESYUARAT- MESYUARAT BERKAITAN PADA 4-8 APRIL 2016 DI KUALA LUMPUR</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN PERDAGANGAN ANTARABANGSA DAN INDUSTRI
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: BAHAGIAN SUMBER MANUSIA, KEWANGAN &amp;amp; TEKNOLOGI MAKLUMAT
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: PERKHIDMATAN BUKAN PERUNDING
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: BAHAGIA INVESTMENT CORPORATION (MALAYSIA) SDN BHD TRADING AS GRAND HYATT KUALA LUMPUR
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 191,086.79
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: KESEGERAAN ATAS KEPENTINGAN AWAM
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 280 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 280, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 20/11/2015
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN KELULUSAN PEROLEHAN SECARA RUNDINGAN TERUS BAGI CADANGAN PEMBINAAN TANGGA BERGERAK (ESCALATOR) DI PASAR SENTRAL WILAYAH PERSEKUTUAN LABUAN (TEMPOH SIAP PROJEK - 15 FEBRUARI 2016)</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN WILAYAH
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: PERBADANAN LABUAN
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: Kerja
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: MAYSIGN NETWORK SDN. BHD.
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 1,470,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: Keperluan Mendesak, Penyeragaman
+                </div>
+            </div>
+                        </div>
+        <div x-data="{ selected: false, open: true }" 
+        x-on:clear-selection.window="selected = false"
+        class="flex flex-col sm:flex-row gap-4 p-4 mt-4 shadow-md bg-background border-2 rounded-xl border-gray-200">
+        <div class="flex">
+            <button x-on:click="selected = !selected; $dispatch('select-procurement', { id: 285 })"
+                x-on:select-all.window="selected = true; $dispatch('select-procurement', { id: 285, all: true })"
+                x-bind:class="selected ? 'bg-primary' : 'bg-white'"
+                class="relative w-6 h-6 aspect-square rounded-md border-2 border-gray-200 hover:border-blue-300 duration-100 transition-colors">
+                <i  x-show="selected" 
+                    class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 fa-solid fa-check text-white"></i>
+            </button>
+            <button class="flex-grow flex justify-end md:hidden" x-on:click="open = !open" type="button">
+                <i class="fa-solid fa-chevron-down" x-show="open"></i>
+                <i class="fa-solid fa-chevron-up" x-show="!open"></i>
+            </button>
+        </div>
+                                <div class="flex-grow text-sm md:text-base">
+                <div class="mx-4 px-4 py-2 inline-block rounded-md bg-primary/20">
+                    Tarikh Permohonan: 12/11/2015
+                </div>
+                <div class="px-4 py-2 rounded-md font-bold text-primary">
+                    <span>PERMOHONAN PEROLEHAN SECARA RUNDINGAN TERUS BAGI PENYUMBERAN LUAR (OUTSOURCE) PERKHIDMATAN KARDIOLOGI DAN RADIOLOGI (1 MEI 2016 - 31 OKTOBER 2016)</span>
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kementerian</span>: KEMENTERIAN KESIHATAN
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Agensi</span>: HOSPITAL SERDANG
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kategori Perolehan</span>: Perkhidmatan Bukan Perunding
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nama Syarikat</span>: INSTITUT JANTUNG NEGARA SDN. BHD.
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Nilai Perolehan</span>: RM 8,100,000.00
+                </div>
+                <div class="px-4 py-2 rounded-md">
+                    <span class="font-bold">Kriteria Rundingan Terus</span>: Satu Punca Bekalan/ Perkhidmatan (Pembuat/ Pemegang Frachais), Keperluan Mendesak
+                </div>
+            </div>
+                        </div>
+            <div id="pagination-wrapper" x-on:click.prevent="paginationClick" class="mt-4">
+        <form class="flex justify-center rounded-md border-2 border-gray-300 w-fit mx-auto overflow-hidden h-12" x-on:submit.prevent="paginationForm">
+                        <span class="flex items-center p-3 aspect-square text-gray-400 cursor-not-allowed">
+                <i class="fa-solid fa-chevron-left"></i>
+            </span>
+                        <input name="page" type="number" class="w-16 text-center my-1 p-0 rounded-md" min="1" max="30" value="1"/>
+            <div class="flex items-center px-4">
+                <span class="hidden sm:inline">
+                daripada
+                </span>
+                <span class="sm:hidden">/</span>
+            </div>
+            <a href="https://myprocurement.treasury.gov.my/procurements/fetch?type=archive&amp;category=direct-negotiations&amp;itemsPerPage=10&amp;page=30" class="flex items-center p-3 aspect-square">
+                30
+            </a>
+                        <a href="https://myprocurement.treasury.gov.my/procurements/fetch?type=archive&amp;category=direct-negotiations&amp;itemsPerPage=10&amp;page=2" class="flex items-center p-3 aspect-square">
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+                    </form>
+    </div>
+</div>

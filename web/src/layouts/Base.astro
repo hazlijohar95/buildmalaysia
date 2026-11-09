@@ -7,16 +7,15 @@ import { MenuSheet, Sheet, TabBar } from "@/components/MainLayout/MobileNav";
 import PageSkeleton from "@/components/PageSkeleton";
 import { SUBSCRIBE_SCRIPT } from "@/components/SubscribeForm";
 import { PALETTE } from "@/brand/carta";
-import { brandFileUrl } from "@/brand/files";
+import { brandFileUrl } from "@/brand/paths";
+import { FEED_PATH, FEED_TITLE } from "@/lib/feed";
 import { loadNav } from "@/lib/nav";
 import { previews } from "@/lib/previews";
+import { markdownPath } from "@/lib/representation";
 import type { Head } from "@/lib/route";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site";
 
 type Props = Head;
-
-const SITE_TITLE = "Build Malaysia: the facts about government spending";
-const SITE_DESCRIPTION =
-  "How the Malaysian federal government budgets and spends public money, from the audited statements and the budget books. Every figure links to the page it came from.";
 
 const {
   title,
@@ -27,7 +26,11 @@ const {
 } = Astro.props;
 const fullTitle = title ? `${title} | Build Malaysia` : SITE_TITLE;
 const ogImage = new URL(og.path, Astro.site).href;
+const ogSize: NonNullable<Head["og"]> = og;
+const ogWidth = String(ogSize.width ?? 1200);
+const ogHeight = String(ogSize.height ?? 630);
 const nav = await loadNav();
+const markdownHref = markdownPath(Astro.url.pathname) + Astro.url.search;
 
 // Fetches a page as soon as the reader shows intent (hovering a link, or pressing on it), so the click lands on a
 // page that is already here. Prefetch only: nothing runs until the reader navigates. Downloads, the API, images
@@ -68,6 +71,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="alternate" type="text/markdown" href={markdownHref} />
+    <link rel="alternate" type="application/atom+xml" title={FEED_TITLE} href={FEED_PATH} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:site_name" content="Build Malaysia" />
@@ -75,8 +80,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <meta property="og:image:alt" content={og.alt} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content={ogWidth} />
+    <meta property="og:image:height" content={ogHeight} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />
@@ -84,8 +89,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <meta name="twitter:image:alt" content={og.alt} />
     <meta name="twitter:image:type" content="image/png" />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:width" content="1200" />
-    <meta name="twitter:image:height" content="630" />
+    <meta name="twitter:image:width" content={ogWidth} />
+    <meta name="twitter:image:height" content={ogHeight} />
     <link rel="icon" href={brandFileUrl("icon.svg")} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={brandFileUrl("apple-touch-icon.png")} sizes="180x180" />
     <script is:inline set:html={INTRO_SCRIPT} />
@@ -121,6 +126,8 @@ const INTRO_SCRIPT = `document.documentElement.classList.add("js");addEventListe
     <script>
       import "@/components/MainLayout/nav";
       import "@/components/MainLayout/mobile";
+      import "@/components/MainLayout/filters";
+      import "@/components/MainLayout/scroll-regions";
     </script>
     <!-- Cloudflare Web Analytics: cookie-free page counts. Its automatic injection skips Worker responses. -->
     <script

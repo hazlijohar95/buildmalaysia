@@ -21,6 +21,18 @@
       "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/buildmalaysia",
     },
   ],
+  // The blog (EmDash): posts in D1, images in R2, admin sign-in sessions in KV. All three are in APAC.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "buildmalaysia-blog",
+      "database_id": "496c92d9-bc08-4e75-b735-08db28bc3218",
+    },
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "buildmalaysia-blog-media" }],
+  "kv_namespaces": [{ "binding": "SESSION", "id": "d1bdb82c5b5d45e4bee9e5bd0d3e087f" }],
+  // Runs worker.ts's scheduled handler: publishes scheduled posts and runs EmDash's backups.
+  "triggers": { "crons": ["* * * * *"] },
   // The site is served only on its own domain.
   "workers_dev": false,
   "preview_urls": false,
@@ -29,6 +41,8 @@
   "vars": {
     "RESEND_SEGMENT_ID": "14fa098d-760b-48d3-920e-374c78508ee8",
     "RESEND_TOPIC_ID": "990c84d1-4480-4a6e-9043-571d699b8509",
+    // The blog admin's address: passkeys and sign-in links are tied to it.
+    "EMDASH_SITE_URL": "https://buildmalaysia.com",
   },
   // Set with `wrangler secret put`; listed so `wrangler types` declares them.
   "secrets": { "required": ["RESEND_API_KEY", "SUBSCRIBE_SECRET"] },

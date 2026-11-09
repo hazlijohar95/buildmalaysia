@@ -23,7 +23,7 @@ export default function StackedBars({
   const width = rows.length * (barWidth + gap);
   const scale = (v: number) => (v / max) * (height - 40);
   return (
-    <figure className="overflow-x-auto m-0">
+    <figure data-scroll-x className="overflow-x-auto m-0">
       {/* Never narrower than 3/4 scale, so the 12-unit labels stay legible; a narrow screen scrolls the figure. */}
       <svg
         viewBox={`0 0 ${width} ${height + 40}`}

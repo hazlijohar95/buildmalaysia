@@ -2,6 +2,7 @@ import { Band, PageHeader } from "@/components/Boxed";
 import { Logo } from "@/components/brand/Logo";
 import { SubscribeForm } from "@/components/SubscribeForm";
 import { cn } from "@/lib/cn";
+import { FEED_PATH } from "@/lib/feed";
 import { STATUS_COPY, type SubscribeStatus } from "@/lib/subscribe/types";
 import type { Page, RouteContext } from "@/lib/route";
 
@@ -19,7 +20,11 @@ export default async function subscribePage({ searchParams }: RouteContext): Pro
   const status = pickStatus(searchParams.get("sent"), searchParams.get("confirmed"), searchParams.get("error"));
 
   return {
-    head: { title: "Get alerts" },
+    head: {
+      title: "Get alerts",
+      description:
+        "One email when Build Malaysia loads new figures: a new budget book or audited statement. Nothing else.",
+    },
     body: (
       <>
         <PageHeader eyebrow="Alerts" title="Get alerts" />
@@ -38,6 +43,10 @@ export default async function subscribePage({ searchParams }: RouteContext): Pro
             </div>
           )}
           {status !== "unavailable" && <SubscribeForm tone="light" invalid={status === "invalid"} />}
+          <p className="mt-8 max-w-md text-sm text-charcoal-800">
+            Or follow the <a href={FEED_PATH}>source documents feed</a> in a feed reader: one entry for each document as
+            it is loaded.
+          </p>
         </Band>
       </>
     ),

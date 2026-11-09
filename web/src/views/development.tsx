@@ -59,7 +59,11 @@ export default async function developmentPage({ params, searchParams }: RouteCon
   ]);
   const planCode = plan ?? "Plan";
 
-  const head = { title: `Development expenditure ${year}`, og: previews.year(year) };
+  const head = {
+    title: `Development expenditure ${year}`,
+    description: `What the Malaysian federal government spent on development projects in ${year}, vote by vote, from the audited statement.`,
+    og: previews.year(year),
+  };
 
   if (!total) {
     return {

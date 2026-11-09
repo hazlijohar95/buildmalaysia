@@ -1,0 +1,9 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageBody from "@/components/PageBody.astro";
+import page from "@/views/contract";
+
+const { head, body, deferred } = await page({ params: Astro.params, searchParams: Astro.url.searchParams });
+---
+
+<Base {...head}><PageBody body={body} deferred={deferred} /></Base>

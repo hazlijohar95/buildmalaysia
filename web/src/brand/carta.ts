@@ -43,16 +43,22 @@ export const STRIPES: readonly Stripe[] = Array.from({ length: 14 }, (_, n) => {
 
 const num = (v: number) => +v.toFixed(2);
 
-/** The crescent is the part of the outer circle the inner circle does not cover; it opens toward the fly. */
-export const CRESCENT_PATH = (() => {
+/** Where the crescent's two circles cross: its horns, unrounded. */
+export const CRESCENT_HORNS = (() => {
   const { cy, outer, inner } = SHEET.crescent;
   const R = outer.r * STRIPE;
   const r = inner.r * STRIPE;
   const d = (inner.cx - outer.cx) * STRIPE;
   const a = (R * R - r * r + d * d) / (2 * d);
   const h = Math.sqrt(R * R - a * a);
-  const x = num(outer.cx * STRIPE + a);
-  const [top, bottom] = [num(cy * STRIPE - h), num(cy * STRIPE + h)];
+  return { x: outer.cx * STRIPE + a, top: cy * STRIPE - h, bottom: cy * STRIPE + h };
+})();
+
+/** The crescent is the part of the outer circle the inner circle does not cover; it opens toward the fly. */
+export const CRESCENT_PATH = (() => {
+  const R = SHEET.crescent.outer.r * STRIPE;
+  const r = SHEET.crescent.inner.r * STRIPE;
+  const [x, top, bottom] = [num(CRESCENT_HORNS.x), num(CRESCENT_HORNS.top), num(CRESCENT_HORNS.bottom)];
   return `M${x} ${top}A${R} ${R} 0 1 0 ${x} ${bottom}A${r} ${r} 0 1 1 ${x} ${top}Z`;
 })();
 
@@ -143,25 +149,42 @@ const cantonMarkup = () =>
   `<rect width="${CANTON.width}" height="${CANTON.height}" fill="${PALETTE.biru.hex}"/>` +
   `<path d="${CRESCENT_PATH}" fill="${PALETTE.kuning.hex}"/><path d="${STAR_PATH}" fill="${PALETTE.kuning.hex}"/>`;
 
+/** The clear space every lockup keeps on each side: four stripes. */
+export const CLEAR_SPACE = 4 * STRIPE;
+
 /**
  * Self-contained SVG for files, icons and link previews: fills only, no classes, so it renders the same in a
- * browser, an image renderer, or a design tool.
+ * browser, an image renderer, or a design tool. With a `ground`, the image is set on that colour with its clear
+ * space around it; without one it is cropped to the lockup on a transparent ground.
  */
 export function svgImage(
   lockup: Lockup,
-  opts: { tone?: Tone; width?: number; maskable?: boolean } = {},
+  opts: { tone?: Tone; width?: number; maskable?: boolean; ground?: string } = {},
 ): { svg: string; width: number; height: number } {
-  const { tone = "light", maskable = false } = opts;
+  const { tone = "light", maskable = false, ground } = opts;
   const l = layout(lockup);
-  const box = maskable ? MASKABLE_VIEWBOX : l.viewBox;
+  const art = maskable ? MASKABLE_VIEWBOX : l.viewBox;
+  const box = ground
+    ? {
+        x: art.x - CLEAR_SPACE,
+        y: art.y - CLEAR_SPACE,
+        width: art.width + 2 * CLEAR_SPACE,
+        height: art.height + 2 * CLEAR_SPACE,
+      }
+    : art;
   const width = opts.width ?? box.width;
   const height = num((width * box.height) / box.width);
   const parts: string[] = [];
+  if (ground) {
+    parts.push(`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${ground}"/>`);
+  }
   if (lockup === "icon") {
+    // The icon is the canton cropped to a square: clipped here, since a ground widens the viewBox past the crop.
+    const square = `x="${art.x}" y="${art.y}" width="${art.width}" height="${art.height}"`;
     parts.push(
-      `<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${PALETTE.biru.hex}"/>`,
+      `<clipPath id="icon-square"><rect ${square}/></clipPath>`,
+      `<g clip-path="url(#icon-square)"><rect ${square} fill="${PALETTE.biru.hex}"/>${cantonMarkup()}</g>`,
     );
-    parts.push(cantonMarkup());
   } else {
     if (l.word) {
       const { x, y, scale } = l.word;
