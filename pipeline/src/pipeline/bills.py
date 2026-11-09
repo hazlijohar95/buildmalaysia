@@ -2,7 +2,8 @@
 
 Parliament lists each house's bills twice: the current ones as an HTML table, and every earlier year (from 1990) as
 an XML tree its archive page loads. Bills keep their Dewan Rakyat number (D.R. n/yyyy) in the Dewan Negara, so the
-two houses join on it. The Attorney General's Chambers lists principal, amending and repealed Acts on LOM, through
+two houses join on it, and must print the same title under it; `data/bills/house_links.csv` decides where they do
+not. The Attorney General's Chambers lists principal, amending and repealed Acts on LOM, through
 endpoints that return each listing whole but encrypted with AES-256-GCM, under a key every listing page carries for
 the browser to decrypt it with. No bill names its Act nor any Act its bill, so `link_acts` matches them by title,
 and `data/bills/act_links.csv` holds the reviewed decisions where a title alone cannot decide.
@@ -41,6 +42,7 @@ LOM = "https://lom.agc.gov.my"
 USER_AGENT = "buildmalaysia-pipeline (+https://buildmalaysia.com/about)"
 PAUSE_SECONDS = 0.5  # between requests
 DEFAULT_LINKS_FILE = REPO_ROOT / "data" / "bills" / "act_links.csv"
+DEFAULT_HOUSE_LINKS_FILE = REPO_ROOT / "data" / "bills" / "house_links.csv"
 # parlimen.gov.my sends its certificate without the intermediate that signed it, so no client can verify it alone.
 # This is that intermediate, from the address the certificate itself names (http://crt.sectigo.com/...); it is
 # trusted only as a link to a root certifi already trusts.
@@ -247,7 +249,7 @@ def archive_years(xml: str) -> list[str]:
 _SPACE = re.compile(r"\s+")
 _CODE = re.compile(r"D\.?\s*[RN]\.?\s*0*(\d+)\s*/+\s*(\d{4})(?:\s+ARKIB)?", re.IGNORECASE)
 _LOAD_RESULT = re.compile(r"loadResult\('([^']+)'")
-TITLE_LIMIT = 100  # the archive tree cuts a title at this many characters
+TITLE_LIMIT = 100  # the archive tree cuts some titles at this many characters, and prints others longer whole
 
 # The labels the listings print for a bill's dates, and the field each fills.
 DATE_LABELS = {
@@ -262,14 +264,14 @@ PRESENTER_LABEL = "Dibentang Oleh"
 
 def _text(fragment: str) -> str:
     """Tags removed and entities decoded, as often as the listing escaped them (the archive escapes up to three
-    times: '&amp;amp;amp;ndash;')."""
+    times: '&amp;amp;amp;ndash;'), and the backslash the archive prints before some apostrophes ('Al-Qur\\'an')."""
     text = re.sub(r"<[^>]+>", " ", fragment)
     for _ in range(4):
         decoded = unescape(text)
         if decoded == text:
             break
         text = decoded
-    return _SPACE.sub(" ", text).strip()
+    return _SPACE.sub(" ", text.replace("\\'", "'")).strip()
 
 
 def parse_code(text: str) -> tuple[int, int]:
@@ -382,9 +384,8 @@ def parse_archive_year(xml: str, house: HouseListing, retrieved_at: str) -> list
                 year=year,
                 number=number,
                 title=title,
-                # A cut title ends wherever the limit fell, not with the bill's year.
-                title_truncated=len(found.group("title").strip()) >= TITLE_LIMIT - 1
-                and not re.search(r"\d{4}\)?$", title),
+                # A cut title ends wherever the limit fell (a space there is dropped), not with the bill's year.
+                title_truncated=TITLE_LIMIT - 1 <= len(title) <= TITLE_LIMIT and not re.search(r"\d{4}\)?$", title),
                 status=_text(found.group("status")),
                 **_fields(pairs, f"{house.house} {found.group('code')}"),
                 pdf_url=_pdf_url(pdf),
@@ -457,7 +458,10 @@ def _lom_pdf(link_html: str | None) -> str | None:
     if not found:
         return None
     token = urllib.parse.unquote(found.group(1))
-    url = base64.b64decode(token + "=" * (-len(token) % 4)).decode("utf-8").split("|", 1)[0]
+    try:
+        url = base64.b64decode(token + "=" * (-len(token) % 4)).decode("utf-8").split("|", 1)[0]
+    except ValueError as error:  # bad base64 (binascii.Error), non-ASCII or a URL that is not UTF-8
+        raise BillsError(f"LOM: cannot read a PDF token {token[:40]!r}: {error}") from error
     if not url.startswith(f"{LOM}/"):
         raise BillsError(f"LOM: a PDF token points outside LOM: {url!r}")
     return urllib.parse.quote(url, safe=":/()',-._~")
@@ -713,7 +717,75 @@ def _record(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
-def read_snapshot(folder: Path) -> Snapshot:
+@dataclass(frozen=True)
+class HouseDecision:
+    bill: tuple[int, int]
+    dewan_negara: Literal["keep", "drop"]
+    evidence: str
+
+
+def read_house_decisions(path: Path = DEFAULT_HOUSE_LINKS_FILE) -> dict[tuple[int, int], HouseDecision]:
+    """data/bills/house_links.csv: `bill` (D.R. n/yyyy), `dewan_negara` (keep or drop that house's record, where
+    the two houses print different bills under one number) and `evidence`."""
+    decisions: dict[tuple[int, int], HouseDecision] = {}
+    with path.open(newline="", encoding="utf-8") as f:
+        for line, row in enumerate(csv.DictReader(f), start=2):
+            key = parse_code(row["bill"])
+            choice = (row.get("dewan_negara") or "").strip()
+            evidence = (row.get("evidence") or "").strip()
+            if choice not in ("keep", "drop"):
+                raise BillsError(f"{path.name} line {line}: dewan_negara must be keep or drop, not {choice!r}")
+            if not evidence:
+                raise BillsError(f"{path.name} line {line}: {row['bill']} gives no evidence")
+            if key in decisions:
+                raise BillsError(f"{path.name} line {line}: {row['bill']} is decided twice")
+            decisions[key] = HouseDecision(key, choice, evidence)  # type: ignore[arg-type]
+    return decisions
+
+
+def _house_key(title: str) -> str:
+    """A title as both houses print it alike: also without apostrophes ('Al-Qur'an', 'Al-Quran') or the house mark
+    the archive sometimes adds after the year ('2010-DR')."""
+    return re.sub(r"\s*-\s*D[RN]$", "", title_key(title).replace("'", ""))
+
+
+def houses_agree(dr: HouseEntry, dn: HouseEntry) -> bool:
+    """Whether two houses' records under one number name the same bill. A cut title is compared as a beginning."""
+    a, b = _house_key(dr.title), _house_key(dn.title)
+    if dr.title_truncated or dn.title_truncated:
+        return a.startswith(b) or b.startswith(a)
+    return a == b
+
+
+def join_houses(
+    by_house: dict[House, dict[tuple[int, int], HouseEntry]], decisions: dict[tuple[int, int], HouseDecision]
+) -> dict[tuple[int, int], Bill]:
+    """One bill per D.R. number. Where the two houses print different titles under one number, the load stops until
+    house_links.csv decides whether the Dewan Negara's record belongs to the bill."""
+    dr_all, dn_all = by_house.get("dewan_rakyat", {}), by_house.get("dewan_negara", {})
+    problems: list[str] = []
+    for key in decisions:
+        if key not in dr_all or key not in dn_all:
+            problems.append(f"house_links.csv names D.R.{key[1]}/{key[0]}, which the two houses do not both print")
+    bills: dict[tuple[int, int], Bill] = {}
+    for key in sorted(set(dr_all) | set(dn_all)):
+        houses = {h: m[key] for h, m in by_house.items() if key in m}
+        dr, dn = houses.get("dewan_rakyat"), houses.get("dewan_negara")
+        if dr and dn and not houses_agree(dr, dn):
+            decision = decisions.get(key)
+            if decision is None:
+                problems.append(f"D.R.{key[1]}/{key[0]}: Dewan Rakyat {dr.title!r}, Dewan Negara {dn.title!r}")
+            elif decision.dewan_negara == "drop":
+                del houses["dewan_negara"]
+        bills[key] = Bill(key[0], key[1], houses)
+    if problems:
+        raise BillsError(
+            "these bills need a decision in data/bills/house_links.csv:\n  " + "\n  ".join(sorted(set(problems)))
+        )
+    return bills
+
+
+def read_snapshot(folder: Path, house_links_file: Path = DEFAULT_HOUSE_LINKS_FILE) -> Snapshot:
     times: list[str] = []
     by_house: dict[House, dict[tuple[int, int], HouseEntry]] = {}
     for h in HOUSES:
@@ -730,8 +802,7 @@ def read_snapshot(folder: Path) -> Snapshot:
             entries += parse_archive_year(record["body"], h, record["retrieved_at"])
             times.append(record["retrieved_at"])
         by_house[h.house] = merge_house(entries)
-    keys = sorted(set().union(*(set(m) for m in by_house.values())))
-    bills = {k: Bill(k[0], k[1], {h: m[k] for h, m in by_house.items() if k in m}) for k in keys}
+    bills = join_houses(by_house, read_house_decisions(house_links_file))
     acts: list[Act] = []
     for listing in ACT_LISTINGS:
         record = _record(folder / "lom" / f"{listing.kind}.json")
@@ -779,8 +850,13 @@ class LoadResult:
     out_of_order: list[str]
 
 
-def load_snapshot(conn: psycopg.Connection, folder: Path, links_file: Path = DEFAULT_LINKS_FILE) -> LoadResult:
-    snap = read_snapshot(folder)
+def load_snapshot(
+    conn: psycopg.Connection,
+    folder: Path,
+    links_file: Path = DEFAULT_LINKS_FILE,
+    house_links_file: Path = DEFAULT_HOUSE_LINKS_FILE,
+) -> LoadResult:
+    snap = read_snapshot(folder, house_links_file)
     links = link_acts(snap.bills, snap.acts, read_link_decisions(links_file))
     houses = sum(len(b.houses) for b in snap.bills.values())
     with conn.transaction(), conn.cursor() as cur:

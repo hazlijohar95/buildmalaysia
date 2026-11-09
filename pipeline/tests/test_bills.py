@@ -11,6 +11,9 @@ from pipeline.bills import (
     Bill,
     BillsError,
     LinkDecision,
+    _lom_pdf,
+    _text,
+    join_houses,
     link_acts,
     merge_acts,
     merge_house,
@@ -19,6 +22,7 @@ from pipeline.bills import (
     parse_code,
     parse_current,
     parse_date,
+    read_house_decisions,
     read_link_decisions,
     title_key,
 )
@@ -171,3 +175,50 @@ def test_an_act_two_titles_reach_needs_a_decision() -> None:
         link_acts(bills, acts(), {})
     decided = {(2020, 99): LinkDecision((2020, 99), None, "a duplicate made up for this test")}
     assert link_acts(bills, acts(), decided)[(2020, 99)].act_no is None
+
+
+def _houses(dn_title: str, *, dn_cut: bool = False) -> dict:
+    dr = next(e for e in archive(2020) if e.number == 15)
+    dn = replace(dr, house="dewan_negara", title=dn_title, title_truncated=dn_cut)
+    return {"dewan_rakyat": {(2020, 15): dr}, "dewan_negara": {(2020, 15): dn}}
+
+
+def test_the_houses_join_when_they_print_one_title() -> None:
+    dr = next(e for e in archive(2020) if e.number == 15)
+    bills = join_houses(_houses(dr.title.replace("'", "") + "-DR"), {})
+    assert set(bills[(2020, 15)].houses) == {"dewan_rakyat", "dewan_negara"}
+    assert (
+        join_houses(_houses(dr.title[:40], dn_cut=True), {})[(2020, 15)].houses.keys()
+        == bills[(2020, 15)].houses.keys()
+    )
+
+
+def test_two_houses_printing_different_bills_under_one_number_need_a_decision(tmp_path: Path) -> None:
+    houses = _houses("RUU Pencegahan Jenayah (Pindaan dan Pemerluasan) 2020")
+    with pytest.raises(BillsError, match="house_links.csv"):
+        join_houses(houses, {})
+    path = tmp_path / "house_links.csv"
+    path.write_text("bill,dewan_negara,evidence\nD.R.15/2020,drop,a test\n")
+    assert set(join_houses(houses, read_house_decisions(path))[(2020, 15)].houses) == {"dewan_rakyat"}
+    path.write_text("bill,dewan_negara,evidence\nD.R.15/2020,keep,a test\n")
+    assert len(join_houses(houses, read_house_decisions(path))[(2020, 15)].houses) == 2
+    path.write_text("bill,dewan_negara,evidence\nD.R.15/2020,maybe,a test\n")
+    with pytest.raises(BillsError, match="keep or drop"):
+        read_house_decisions(path)
+    path.write_text("bill,dewan_negara,evidence\nD.R.99/2020,drop,a test\n")
+    with pytest.raises(BillsError, match="do not both print"):
+        join_houses(houses, read_house_decisions(path))
+
+
+def test_the_repository_decisions_read() -> None:
+    assert read_house_decisions()[(2013, 11)].dewan_negara == "drop"
+    read_link_decisions()
+
+
+def test_an_escaped_apostrophe_is_read_as_one() -> None:
+    assert _text("Pencetakan Teks Al-Qur\\'an") == "Pencetakan Teks Al-Qur'an"
+
+
+def test_a_malformed_pdf_token_is_a_load_error() -> None:
+    with pytest.raises(BillsError, match="PDF token"):
+        _lom_pdf('<a href="processFile.php?token=%FF%FE">')

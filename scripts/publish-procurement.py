@@ -32,7 +32,7 @@ SETS = {
     "bills": ("bill_snapshot", "act", "bill", "bill_house"),
 }
 LOADERS = {"procurement": "load-procurement", "bills": "load-bills"}
-STAGING = "publish_staging"
+STAGING = "{}_staging"  # one schema per set, so publishing one set never drops another's staging tables
 CHUNK_BYTES = 1_500_000  # the Management API rejects a request body over about 2 MB
 ROWS_PER_INSERT = 500
 
@@ -78,10 +78,10 @@ def columns(conn: psycopg.Connection, table: str) -> list[str]:
     return [name for (name,) in rows]
 
 
-def insert_chunks(conn: psycopg.Connection, table: str) -> Iterator[str]:
+def insert_chunks(conn: psycopg.Connection, table: str, staging: str) -> Iterator[str]:
     """Multi-row INSERTs of every local row into the staging copy of `table`, grouped into request-sized chunks."""
     cols = sql.SQL(", ").join(map(sql.Identifier, columns(conn, table)))
-    head = sql.SQL("insert into {}.{} ({}) values ").format(sql.Identifier(STAGING), sql.Identifier(table), cols)
+    head = sql.SQL("insert into {}.{} ({}) values ").format(sql.Identifier(staging), sql.Identifier(table), cols)
     head_text = head.as_string(conn)
     chunk: list[str] = []
     size = 0
@@ -105,12 +105,12 @@ def insert_chunks(conn: psycopg.Connection, table: str) -> Iterator[str]:
     yield from flush()
 
 
-def swap_sql(conn: psycopg.Connection, tables: tuple[str, ...], counts: dict[str, int]) -> str:
+def swap_sql(conn: psycopg.Connection, tables: tuple[str, ...], counts: dict[str, int], staging: str) -> str:
     """One transaction: empty the public tables, fill them from staging, check every count, drop staging."""
     moves = []
     for table in tables:
         cols = ", ".join(columns(conn, table))
-        moves.append(f"insert into public.{table} ({cols}) select {cols} from {STAGING}.{table};")
+        moves.append(f"insert into public.{table} ({cols}) select {cols} from {staging}.{table};")
     checks = [
         f"if (select count(*) from public.{t}) <> {n} then raise exception '{t} has % rows, expected {n}',"
         f" (select count(*) from public.{t}); end if;"
@@ -124,7 +124,7 @@ def swap_sql(conn: psycopg.Connection, tables: tuple[str, ...], counts: dict[str
             "do $$ begin",
             *checks,
             "end $$;",
-            f"drop schema {STAGING} cascade;",
+            f"drop schema {staging} cascade;",
             "commit;",
         ]
     )
@@ -140,6 +140,7 @@ def main() -> int:
     args = parser.parse_args()
     hosted = Hosted(args.target)
     tables = SETS[args.set]
+    staging = STAGING.format(args.set)
 
     with psycopg.connect(os.environ.get("DATABASE_URL", "postgresql:///buildmalaysia")) as conn:
         conn.execute("set time zone 'UTC'")
@@ -151,18 +152,18 @@ def main() -> int:
             return 1
         print("local: " + ", ".join(f"{t} {n:,}" for t, n in counts.items()))
 
-        staging = "".join(f"create table {STAGING}.{t} (like public.{t} including defaults);\n" for t in tables)
-        hosted.run(f"drop schema if exists {STAGING} cascade;\ncreate schema {STAGING};\n{staging}")
+        create = "".join(f"create table {staging}.{t} (like public.{t} including defaults);\n" for t in tables)
+        hosted.run(f"drop schema if exists {staging} cascade;\ncreate schema {staging};\n{create}")
         try:
             sent = 0
             for table in tables:
-                for chunk in insert_chunks(conn, table):
+                for chunk in insert_chunks(conn, table, staging):
                     hosted.run(chunk)
                     sent += 1
                 print(f"  staged {table} ({sent} requests so far)")
-            hosted.run(swap_sql(conn, tables, counts))
+            hosted.run(swap_sql(conn, tables, counts, staging))
         except BaseException:
-            hosted.run(f"drop schema if exists {STAGING} cascade;")
+            hosted.run(f"drop schema if exists {staging} cascade;")
             raise
 
         local = {t: conn.execute(FINGERPRINT.format(table=t)).fetchone() for t in tables}
