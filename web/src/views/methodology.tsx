@@ -98,6 +98,22 @@ async function MethodologyBody() {
                       Plan, so there the year&apos;s actual must equal plan spending to date.
                     </p>
 
+                    <p id="projects" className="target:bg-linen-200">
+                      The statements print no identifier that spans years, so <a href="/projects">each project</a> is
+                      followed by rule. A row is linked to the next year&apos;s row with the same code in the same vote
+                      when the next year&apos;s plan spending up to the previous year equals this year&apos;s plan
+                      spending to date and is not zero, or when the two names match once case and spacing are ignored.
+                      Zero matching zero proves nothing: in a plan&apos;s first year most projects print it. Codes are
+                      local to a vote, so a row is linked to a row in another vote only when it has no successor in its
+                      own, the names match and the spending agrees, as when higher education moved from P.64 to P.63 in
+                      2019. In 2018 the statement printed some projects that changed ministry twice, under the old vote
+                      and the new; 2019 prints one row whose spending to 2018 is exactly the sum of the two, and both
+                      are linked to it. A code printed twice in a vote in one year is never linked, and neither is a row
+                      that would have two successors. Where a statement&apos;s spending up to the previous year differs
+                      from what the previous statement printed to date, the project&apos;s page shows both figures with
+                      their pages instead of choosing one.
+                    </p>
+
                     <p>
                       From 2020 to 2023 the statements also include Lampiran 3,{" "}
                       <em>Penyata Perbelanjaan Kumpulan Wang COVID-19</em>: the COVID-19 Fund&apos;s programmes, each

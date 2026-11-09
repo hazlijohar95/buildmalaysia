@@ -8,6 +8,7 @@ import type {
 } from "@/lib/queries/development";
 import { formatSen, utilisation } from "@/lib/money";
 import { voteCodeToSlug } from "@/lib/citations";
+import { projectHref } from "@/lib/queries/projects";
 import { titleCase } from "@/lib/queries/sankey";
 import { planName } from "@/lib/plans";
 import { Band, BiLabel, H2, PageHeader, StatRow } from "@/components/Boxed";
@@ -230,14 +231,14 @@ export default function DevelopmentVote({
                         These projects count toward the vote total but are not printed under a group heading.
                       </p>
                     )}
-                    <Projects year={year} plan={plan} projects={s.projects} />
+                    <Projects year={year} vote={vote.code} plan={plan} projects={s.projects} />
                   </div>
                 </details>
               ) : null,
             )}
           </div>
         ) : (
-          <Projects year={year} plan={plan} projects={detail.projects} />
+          <Projects year={year} vote={vote.code} plan={plan} projects={detail.projects} />
         )}
         <p className="mt-12 text-sm text-charcoal-700 max-w-lg">
           Source: Jabatan Akauntan Negara, <em lang="ms">Penyata Kewangan Kerajaan Persekutuan {year}</em>, Statement of
@@ -273,7 +274,17 @@ function GroupFigures({ year, amounts, source }: { year: number; amounts: Develo
   );
 }
 
-function Projects({ year, plan, projects }: { year: number; plan: string; projects: DevelopmentProjectRow[] }) {
+function Projects({
+  year,
+  vote,
+  plan,
+  projects,
+}: {
+  year: number;
+  vote: string;
+  plan: string;
+  projects: DevelopmentProjectRow[];
+}) {
   const seen = new Set<string>();
   return (
     <div className="table-scroll mt-4">
@@ -316,7 +327,7 @@ function Projects({ year, plan, projects }: { year: number; plan: string; projec
               <tr key={`${p.code}-${i}`} id={firstOccurrence ? `d${p.code}` : undefined}>
                 <td className="font-mono text-xs">{p.code}</td>
                 <td lang="ms">
-                  {p.name_ms}
+                  <a href={projectHref({ fiscal_year: year, vote_code: vote, code: p.code })}>{p.name_ms}</a>
                   {p.footnote && (
                     <span className="block text-xs mt-0.5 text-charcoal-700">
                       Note: {p.footnote.replace(/^\*/, "")}
