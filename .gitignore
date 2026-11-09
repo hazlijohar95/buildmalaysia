@@ -14,3 +14,4 @@ __pycache__/
 supabase/.temp/
 .pnpm-store/
 data/raw/myprocurement/
+data/raw/bills/

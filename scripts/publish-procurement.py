@@ -1,7 +1,9 @@
-"""Publish the procurement tables to the hosted database, leaving every other table alone.
+"""Publish one set of tables to the hosted database, leaving every other table alone.
 
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py
+    DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set bills
 
+`--set procurement` (the default) publishes the procurement tables; `--set bills` the bill and Act tables.
 The rows go up through `supabase db query --remote` (the linked project, signed in with `supabase login`), so no
 database password is needed. They are written in chunks to a private staging schema, then swapped into the public
 tables in one transaction that commits only if every row count matches. Finally each table's checksum is compared
@@ -23,9 +25,14 @@ import psycopg
 from psycopg import sql
 from psycopg.rows import dict_row
 
-# Parents before children: the swap inserts in this order and truncates all three at once.
-TABLES = ("procurement_snapshot", "procurement_notice", "procurement_award")
-STAGING = "procurement_staging"
+# Each set's tables, parents before children: the swap inserts in this order and truncates them all at once. The
+# first table is the snapshot, which must not be empty.
+SETS = {
+    "procurement": ("procurement_snapshot", "procurement_notice", "procurement_award"),
+    "bills": ("bill_snapshot", "act", "bill", "bill_house"),
+}
+LOADERS = {"procurement": "load-procurement", "bills": "load-bills"}
+STAGING = "publish_staging"
 CHUNK_BYTES = 1_500_000  # the Management API rejects a request body over about 2 MB
 ROWS_PER_INSERT = 500
 
@@ -98,10 +105,10 @@ def insert_chunks(conn: psycopg.Connection, table: str) -> Iterator[str]:
     yield from flush()
 
 
-def swap_sql(conn: psycopg.Connection, counts: dict[str, int]) -> str:
+def swap_sql(conn: psycopg.Connection, tables: tuple[str, ...], counts: dict[str, int]) -> str:
     """One transaction: empty the public tables, fill them from staging, check every count, drop staging."""
     moves = []
-    for table in TABLES:
+    for table in tables:
         cols = ", ".join(columns(conn, table))
         moves.append(f"insert into public.{table} ({cols}) select {cols} from {STAGING}.{table};")
     checks = [
@@ -112,7 +119,7 @@ def swap_sql(conn: psycopg.Connection, counts: dict[str, int]) -> str:
     return "\n".join(
         [
             "begin;",
-            f"truncate {', '.join(f'public.{t}' for t in TABLES)};",
+            f"truncate {', '.join(f'public.{t}' for t in tables)};",
             *moves,
             "do $$ begin",
             *checks,
@@ -129,47 +136,46 @@ def main() -> int:
         "--target",
         help="publish to this Postgres URL instead of the linked project",
     )
+    parser.add_argument("--set", choices=sorted(SETS), default="procurement", help="which tables to publish")
     args = parser.parse_args()
     hosted = Hosted(args.target)
+    tables = SETS[args.set]
 
     with psycopg.connect(os.environ.get("DATABASE_URL", "postgresql:///buildmalaysia")) as conn:
         conn.execute("set time zone 'UTC'")
         counts = {
-            t: conn.execute(sql.SQL("select count(*) from {}").format(sql.Identifier(t))).fetchone()[0] for t in TABLES
+            t: conn.execute(sql.SQL("select count(*) from {}").format(sql.Identifier(t))).fetchone()[0] for t in tables
         }
-        if not counts["procurement_snapshot"]:
-            print(
-                "The local procurement tables are empty: run load-procurement first.",
-                file=sys.stderr,
-            )
+        if not counts[tables[0]]:
+            print(f"The local {args.set} tables are empty: run {LOADERS[args.set]} first.", file=sys.stderr)
             return 1
         print("local: " + ", ".join(f"{t} {n:,}" for t, n in counts.items()))
 
-        staging = "".join(f"create table {STAGING}.{t} (like public.{t} including defaults);\n" for t in TABLES)
+        staging = "".join(f"create table {STAGING}.{t} (like public.{t} including defaults);\n" for t in tables)
         hosted.run(f"drop schema if exists {STAGING} cascade;\ncreate schema {STAGING};\n{staging}")
         try:
             sent = 0
-            for table in TABLES:
+            for table in tables:
                 for chunk in insert_chunks(conn, table):
                     hosted.run(chunk)
                     sent += 1
                 print(f"  staged {table} ({sent} requests so far)")
-            hosted.run(swap_sql(conn, counts))
+            hosted.run(swap_sql(conn, tables, counts))
         except BaseException:
             hosted.run(f"drop schema if exists {STAGING} cascade;")
             raise
 
-        local = {t: conn.execute(FINGERPRINT.format(table=t)).fetchone() for t in TABLES}
+        local = {t: conn.execute(FINGERPRINT.format(table=t)).fetchone() for t in tables}
     remote = {}
-    for table in TABLES:
+    for table in tables:
         [row] = hosted.run(f"set time zone 'UTC';\n{FINGERPRINT.format(table=table)};")
         remote[table] = (int(row["rows"]), row["checksum"])
     if local != remote:
-        for t in TABLES:
+        for t in tables:
             print(f"{t}: local {local[t]}, hosted {remote[t]}", file=sys.stderr)
-        print("The hosted procurement tables differ from the local ones.", file=sys.stderr)
+        print(f"The hosted {args.set} tables differ from the local ones.", file=sys.stderr)
         return 1
-    print("Published: " + ", ".join(f"{t} {local[t][0]:,} rows" for t in TABLES) + ", identical on both sides.")
+    print("Published: " + ", ".join(f"{t} {local[t][0]:,} rows" for t in tables) + ", identical on both sides.")
     return 0
 
 
