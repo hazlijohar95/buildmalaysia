@@ -30,6 +30,10 @@ The Acts come from the Attorney General's Chambers' [Laws of Malaysia](https://l
 
 `fetch-bills` saves every listing under `data/raw/bills/<date>/` (git-ignored); `load-bills` replaces the four tables from the newest snapshot.
 
+### State financial statements
+
+Each state's audited _Penyata Kewangan Kerajaan Negeri_, from its treasury's site. Loaded: Melaka 2023, Perak 2024, Sabah 2024 and Terengganu 2024 (URLs, hashes and table layouts in `pipeline/src/pipeline/state_sources.py`). From each, two notes are read: revenue by type (_Hasil mengikut penjenisannya_) and operating expenditure by vote (_Perbelanjaan Mengurus mengikut Maksud Perbelanjaan_). Each state draws them its own way, so the parser (`pipeline/src/pipeline/state.py`) reads the words' positions from `pdftotext -bbox` under a `TableSpec` per note, and a wrongly placed name is fixed by a `RowName` with its page and evidence. The states and years not loaded, and why, are `STATE_GAPS` in the same file, shown on `/states`. The survey of all 13 states and the design are in [`specs/state-finances.md`](specs/state-finances.md).
+
 ## Layout
 
 | Path                   | What                                                                                                                                                             |
@@ -54,6 +58,7 @@ The Acts come from the Attorney General's Chambers' [Laws of Malaysia](https://l
 - `procurement_notice`, `procurement_award`, `procurement_snapshot`: one row per published result (`kind` tender, quotation or direct) with its MyProcurement id and link, one per winner with the price in sen, and the snapshot they came from. `dated` files a result under its decision date, or the date it was published where no decision date is printed or the printed one falls after publication.
 - `vote_lineage_check` (view): every printed vote name in the statements and budget books, with the body that held it and a `problem` when the lineage does not cover it. `ingest` and `ingest-budget` roll back a document with a problem row, so the next reshuffle is caught at ingest.
 - `bill`, `bill_house`, `act`, `bill_snapshot`: one row per bill number, one per house that lists it (status, readings, passage, select committee, presenters and PDF as printed), one per Act on Laws of Malaysia, and the snapshot. `bill.act_no` is the bill's Act, with `act_link` `title` or `file`. `bill_progress` (view) gives each bill one `stage`: `enacted`, `passed`, `passed_dewan_rakyat`, `dewan_rakyat`, `committee`, `withdrawn` or `defeated`.
+- `state`, `state_statement`, `state_line`, `state_printed_total`, `state_gap`: the 13 states (seeded by the migration), one row per loaded statement, one per revenue item or operating vote with its original, revised and actual amounts in sen, every total the two notes print, and the states and years not loaded. `state_reconciliation` (view) recomputes each printed total from the rows, adding or taking off the transfer to the state's Development Fund where the total's `scope` says the note prints it so; `matches` must be true for every row except a registered `StateMisprint`.
 
 ## Local development
 
@@ -69,6 +74,8 @@ uv run python -m pipeline fetch-procurement   # about 1,650 pages, 1–2 hours; 
 uv run python -m pipeline load-procurement --database-url postgresql:///buildmalaysia
 uv run python -m pipeline fetch-bills         # about 75 requests, a minute
 uv run python -m pipeline load-bills --database-url postgresql:///buildmalaysia
+for s in melaka:2023 perak:2024 sabah:2024 terengganu:2024; do uv run python -m pipeline ingest-state --state ${s%:*} --year ${s#*:} --database-url postgresql:///buildmalaysia; done
+uv run python -m pipeline load-state-gaps --database-url postgresql:///buildmalaysia
 uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
 uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
@@ -98,6 +105,7 @@ supabase link --project-ref <ref> && supabase db push    # schema
 SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage tables included, checked row for row
 uv run --project pipeline python scripts/publish-procurement.py  # only the procurement tables, through `supabase login`
 uv run --project pipeline python scripts/publish-procurement.py --set bills  # only the bill and Act tables
+uv run --project pipeline python scripts/publish-procurement.py --set states  # only the state finance tables
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
 cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```
@@ -125,7 +133,7 @@ Hyperdrive connects as `web_reader` straight to the database host (IPv6), not th
 ## Rules
 
 - Never type a number in by hand. A figure the parser cannot read is a parser fix, or a `KnownMisprint`, `KnownGap` or `ManualReading` registered with its page and evidence.
-- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py` (`--set procurement` or `--set bills`).
+- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py` (`--set procurement`, `--set bills` or `--set states`).
 - `main` is protected: open a pull request from a short-lived branch; merging deploys.
 
 ## Contributing

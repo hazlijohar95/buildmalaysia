@@ -30,6 +30,9 @@ from pipeline.sources import (
     page_count,
     retrieved_at,
 )
+from pipeline.state import StateParseError
+from pipeline.state_load import StateReconciliationError, load_gaps, load_state, parse_state
+from pipeline.state_sources import STATE_GAPS, STATE_SOURCES
 from pipeline.tax_schedule import ScheduleError, write_schedule
 from pipeline.year import parse_year
 
@@ -228,6 +231,45 @@ def load_bills(database_url: str, raw_dir: Path, snapshot: Path | None) -> int:
     return 0
 
 
+def ingest_state(state: str, year: int, database_url: str, raw_dir: Path) -> int:
+    source = STATE_SOURCES.get((state, year))
+    if source is None:
+        known = ", ".join(f"{s} {y}" for s, y in sorted(STATE_SOURCES))
+        print(f"no statement registered for {state} {year}; known: {known}", file=sys.stderr)
+        return 2
+    try:
+        pdf = ensure_pdf(source, raw_dir, source.intermediate)
+        pages = page_count(pdf)
+        if pages != source.page_count:
+            raise SourceError(f"{pdf} has {pages} pages, expected {source.page_count}")
+        tables = parse_state(pdf, source)
+        with psycopg.connect(database_url, autocommit=True) as conn:
+            result = load_state(conn, source, tables, pages, retrieved_at(pdf))
+    except (SourceError, StateParseError, StateReconciliationError) as error:
+        print(f"ingest-state {state} {year} failed: {error}", file=sys.stderr)
+        return 1
+    print(f"ingested {source.id} from {pdf}")
+    for table in tables:
+        print(
+            f"  {table.section}: rows {result.lines[table.section]}, printed totals reconciled"
+            f" {result.totals[table.section]}, transfers {len(table.transfers)}"
+        )
+        for fix in table.fixes:
+            print(f"  row name fix: {fix}")
+    for misprint in result.misprints:
+        print(
+            f"  known misprint accepted: {misprint.section} {misprint.label!r} {misprint.diffs_sen}: {misprint.evidence}"
+        )
+    return 0
+
+
+def load_state_gaps(database_url: str) -> int:
+    with psycopg.connect(database_url, autocommit=True) as conn:
+        count = load_gaps(conn, STATE_GAPS)
+    print(f"loaded {count} state gaps")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -258,7 +300,18 @@ def main() -> int:
     bills_cmd.add_argument("--database-url", required=True)
     bills_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     bills_cmd.add_argument("--snapshot", type=Path, help="a data/raw/bills/<date> folder; the newest by default")
+    state_cmd = commands.add_parser("ingest-state", help="fetch, parse and load one state's financial statement")
+    state_cmd.add_argument("--state", required=True, help="the state's slug, e.g. perak")
+    state_cmd.add_argument("--year", type=int, required=True)
+    state_cmd.add_argument("--database-url", required=True)
+    state_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    gaps_cmd = commands.add_parser("load-state-gaps", help="replace state_gap: the states and years not loaded")
+    gaps_cmd.add_argument("--database-url", required=True)
     args = parser.parse_args()
+    if args.command == "ingest-state":
+        return ingest_state(args.state, args.year, args.database_url, args.raw_dir)
+    if args.command == "load-state-gaps":
+        return load_state_gaps(args.database_url)
     if args.command == "fetch-bills":
         return fetch_bills(args.raw_dir)
     if args.command == "load-bills":

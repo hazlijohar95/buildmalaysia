@@ -33,6 +33,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
               { href: "/ministries", label: "Ministries" },
               { href: "/contracts", label: "Contracts" },
               { href: "/bills", label: "Bills" },
+              { href: "/states", label: "States" },
               { href: "/tax", label: "Your taxes" },
               ...(budgetYear ? [{ href: `/budget/${budgetYear}`, label: `Budget ${budgetYear}` }] : []),
               ...(spendingYear ? [{ href: `/${spendingYear}`, label: "By year" }] : []),
