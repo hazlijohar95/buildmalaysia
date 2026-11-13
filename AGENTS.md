@@ -34,6 +34,10 @@ The Acts come from the Attorney General's Chambers' [Laws of Malaysia](https://l
 
 Each state's audited _Penyata Kewangan Kerajaan Negeri_, from its treasury's site. Loaded: Melaka 2023, Perak 2024, Sabah 2024 and Terengganu 2024 (URLs, hashes and table layouts in `pipeline/src/pipeline/state_sources.py`). From each, two notes are read: revenue by type (_Hasil mengikut penjenisannya_) and operating expenditure by vote (_Perbelanjaan Mengurus mengikut Maksud Perbelanjaan_). Each state draws them its own way, so the parser (`pipeline/src/pipeline/state.py`) reads the words' positions from `pdftotext -bbox` under a `TableSpec` per note, and a wrongly placed name is fixed by a `RowName` with its page and evidence. The states and years not loaded, and why, are `STATE_GAPS` in the same file, shown on `/states`. The survey of all 13 states and the design are in [`specs/state-finances.md`](specs/state-finances.md).
 
+### Economic indicators
+
+data.gov.my's open API (CC BY 4.0, the only openly licensed source loaded): annual GDP and GNI, nominal and real (DOSM), CPI inflation (DOSM), the labour force survey (DOSM), federal finance (JANM) and federal debt by maturity (BNM). The datasets are `DATASETS` in `pipeline/src/pipeline/indicators.py`. `fetch-indicators` saves each dataset's API reply and its catalogue page, which carries the title, publisher and field definitions, under `data/raw/datagovmy/<date>/` (git-ignored). `load-indicators` replaces the three tables from the newest snapshot, and refuses a reply whose row count differs from the count the API reports, a column the catalogue does not define, or a figure published twice. Values are kept as the exact decimal the API prints; `/economy` works out its ratios when the page is rendered: federal spending (from the statements), debt and the budget balance, each as a share of nominal GDP.
+
 ## Layout
 
 | Path                   | What                                                                                                                                                             |
@@ -57,6 +61,7 @@ Each state's audited _Penyata Kewangan Kerajaan Negeri_, from its treasury's sit
 - `body`, `body_alias`, `vote_holder`, `lineage_edge`, `citation`: which institution stood behind each vote in each year. A vote number is a funding line, not a ministry: B/P.15 and B/P.33 have each been used by two different ministries, and most ministries have been renamed. `body` is the institution and carries the name the site shows; `body_alias` every name it has carried, printed or gazetted, with the dates; `vote_holder` the body behind each vote code over a range of fiscal years; `lineage_edge` each reorganisation between two bodies, with the date it took effect and the functions that moved. Every alias and edge cites its source in `citation`. `ministry_spending` adds `body_id`, `body_name_ms` and `residual` (true when a number was still printed, with zero, after its body was dissolved). The rows come from the reviewable files in `data/lineage/`, never from a PDF, and carry no amounts; the share of a partial move is computed from the loaded spending.
 - `procurement_notice`, `procurement_award`, `procurement_snapshot`: one row per published result (`kind` tender, quotation or direct) with its MyProcurement id and link, one per winner with the price in sen, and the snapshot they came from. `dated` files a result under its decision date, or the date it was published where no decision date is printed or the printed one falls after publication.
 - `vote_lineage_check` (view): every printed vote name in the statements and budget books, with the body that held it and a `problem` when the lineage does not cover it. `ingest` and `ingest-budget` roll back a document with a problem row, so the next reshuffle is caught at ingest.
+- `indicator_snapshot`, `indicator_dataset`, `indicator_value`: the data.gov.my snapshot, one row per dataset with what its catalogue page says (title, publisher, field definitions and units, URLs, when retrieved), and one per published figure, named by its date, its row's string columns (`dims`, e.g. `{"series": "abs"}`) and its numeric column (`measure`), with the value as printed.
 - `bill`, `bill_house`, `act`, `bill_snapshot`: one row per bill number, one per house that lists it (status, readings, passage, select committee, presenters and PDF as printed), one per Act on Laws of Malaysia, and the snapshot. `bill.act_no` is the bill's Act, with `act_link` `title` or `file`. `bill_progress` (view) gives each bill one `stage`: `enacted`, `passed`, `passed_dewan_rakyat`, `dewan_rakyat`, `committee`, `withdrawn` or `defeated`.
 - `state`, `state_statement`, `state_line`, `state_printed_total`, `state_gap`: the 13 states (seeded by the migration), one row per loaded statement, one per revenue item or operating vote with its original, revised and actual amounts in sen, every total the two notes print, and the states and years not loaded. `state_reconciliation` (view) recomputes each printed total from the rows, adding or taking off the transfer to the state's Development Fund where the total's `scope` says the note prints it so; `matches` must be true for every row except a registered `StateMisprint`.
 
@@ -76,6 +81,8 @@ uv run python -m pipeline fetch-bills         # about 75 requests, a minute
 uv run python -m pipeline load-bills --database-url postgresql:///buildmalaysia
 for s in melaka:2023 perak:2024 sabah:2024 terengganu:2024; do uv run python -m pipeline ingest-state --state ${s%:*} --year ${s#*:} --database-url postgresql:///buildmalaysia; done
 uv run python -m pipeline load-state-gaps --database-url postgresql:///buildmalaysia
+uv run python -m pipeline fetch-indicators    # 12 requests to data.gov.my
+uv run python -m pipeline load-indicators --database-url postgresql:///buildmalaysia
 uv run pytest                       # all tests; the integration ones use the PDFs and the buildmalaysia_pipeline db
 uv run pytest -m "not integration"  # unit tests only, as CI runs them
 
@@ -106,6 +113,7 @@ SUPABASE_DB_URL=<session pooler URL> scripts/publish-db.sh  # data, the lineage 
 uv run --project pipeline python scripts/publish-procurement.py  # only the procurement tables, through `supabase login`
 uv run --project pipeline python scripts/publish-procurement.py --set bills  # only the bill and Act tables
 uv run --project pipeline python scripts/publish-procurement.py --set states  # only the state finance tables
+uv run --project pipeline python scripts/publish-procurement.py --set indicators  # only the economic indicator tables
 psql "$SUPABASE_DB_URL" -v web_password=<password> -f scripts/hosted-roles.sql  # access: the site's read-only role; safe to rerun
 cd web && pnpm preview                                     # build, then run the built Worker locally against local Postgres
 ```
@@ -133,7 +141,7 @@ Hyperdrive connects as `web_reader` straight to the database host (IPv6), not th
 ## Rules
 
 - Never type a number in by hand. A figure the parser cannot read is a parser fix, or a `KnownMisprint`, `KnownGap` or `ManualReading` registered with its page and evidence.
-- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py` (`--set procurement`, `--set bills` or `--set states`).
+- Never write to the hosted database except through `scripts/publish-db.sh` or `scripts/publish-procurement.py` (`--set procurement`, `--set bills`, `--set states` or `--set indicators`).
 - `main` is protected: open a pull request from a short-lived branch; merging deploys.
 
 ## Contributing

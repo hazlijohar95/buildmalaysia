@@ -34,6 +34,7 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
               { href: "/contracts", label: "Contracts" },
               { href: "/bills", label: "Bills" },
               { href: "/states", label: "States" },
+              { href: "/economy", label: "Economy" },
               { href: "/tax", label: "Your taxes" },
               ...(budgetYear ? [{ href: `/budget/${budgetYear}`, label: `Budget ${budgetYear}` }] : []),
               ...(spendingYear ? [{ href: `/${spendingYear}`, label: "By year" }] : []),
@@ -56,7 +57,11 @@ export default function Footer({ spendingYear, budgetYear }: { spendingYear?: nu
           <div className="text-sm/6 text-linen-200 space-y-2">
             <p>
               Data: Jabatan Akauntan Negara Malaysia, <em>Penyata Kewangan Kerajaan Persekutuan</em>; Kementerian
-              Kewangan, <em>Anggaran Perbelanjaan Persekutuan</em>.
+              Kewangan, <em>Anggaran Perbelanjaan Persekutuan</em>; economic indicators from{" "}
+              <a href="https://data.gov.my" className="underline hover:text-kuning">
+                data.gov.my
+              </a>{" "}
+              (CC BY 4.0).
             </p>
             <p>
               Design adapted from Build Canada&apos;s{" "}

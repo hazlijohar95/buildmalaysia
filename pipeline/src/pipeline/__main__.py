@@ -14,6 +14,10 @@ from pipeline.budget import parse_budget_summary
 from pipeline.budget_detail import parse_operating_estimates
 from pipeline.budget_development import parse_development_estimates, parse_dropped_projects
 from pipeline.budget_word import parse_budget_summary_word
+from pipeline.indicators import IndicatorError
+from pipeline.indicators import fetch_snapshot as fetch_indicators_snapshot
+from pipeline.indicators import latest_snapshot as latest_indicators_snapshot
+from pipeline.indicators import load_snapshot as load_indicators_snapshot
 from pipeline.lineage import DEFAULT_LINEAGE_DIR, LineageError, load_lineage, read_lineage
 from pipeline.load import ReconciliationError, load_budget, load_year
 from pipeline.model import Correction
@@ -270,6 +274,30 @@ def load_state_gaps(database_url: str) -> int:
     return 0
 
 
+def fetch_indicators(raw_dir: Path) -> int:
+    try:
+        folder = fetch_indicators_snapshot(raw_dir)
+    except (OSError, IndicatorError) as error:
+        print(f"fetch-indicators failed: {error}", file=sys.stderr)
+        return 1
+    print(f"saved {folder}")
+    return 0
+
+
+def load_indicators(database_url: str, raw_dir: Path, snapshot: Path | None) -> int:
+    try:
+        folder = snapshot or latest_indicators_snapshot(raw_dir)
+        with psycopg.connect(database_url) as conn:
+            result = load_indicators_snapshot(conn, folder)
+    except (OSError, IndicatorError) as error:
+        print(f"load-indicators failed: {error}", file=sys.stderr)
+        return 1
+    print(f"loaded {folder}: {result.datasets} datasets, {result.values} figures; every row count matches the API's")
+    for dataset_id, (rows, figures, first, last) in result.by_dataset.items():
+        print(f"  {dataset_id}: {rows} rows, {figures} figures, {first} to {last}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="pipeline")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -307,11 +335,21 @@ def main() -> int:
     state_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     gaps_cmd = commands.add_parser("load-state-gaps", help="replace state_gap: the states and years not loaded")
     gaps_cmd.add_argument("--database-url", required=True)
+    fetch_ind_cmd = commands.add_parser("fetch-indicators", help="save data.gov.my's indicator datasets under data/raw")
+    fetch_ind_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    ind_cmd = commands.add_parser("load-indicators", help="replace the indicator tables from a saved snapshot")
+    ind_cmd.add_argument("--database-url", required=True)
+    ind_cmd.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    ind_cmd.add_argument("--snapshot", type=Path, help="a data/raw/datagovmy/<date> folder; the newest by default")
     args = parser.parse_args()
     if args.command == "ingest-state":
         return ingest_state(args.state, args.year, args.database_url, args.raw_dir)
     if args.command == "load-state-gaps":
         return load_state_gaps(args.database_url)
+    if args.command == "fetch-indicators":
+        return fetch_indicators(args.raw_dir)
+    if args.command == "load-indicators":
+        return load_indicators(args.database_url, args.raw_dir, args.snapshot)
     if args.command == "fetch-bills":
         return fetch_bills(args.raw_dir)
     if args.command == "load-bills":
