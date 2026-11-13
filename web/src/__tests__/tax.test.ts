@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { calculateTax, SCHEDULE } from "@/lib/tax";
+import {
+  bandsProblem,
+  calculateTax,
+  compare,
+  currentBands,
+  formatBands,
+  MAX_BANDS,
+  parseBands,
+  SCHEDULE,
+  scenarioRules,
+} from "@/lib/tax";
 
 // Chargeable income of exactly `x` with no KWSP: income is x plus the individual relief.
 const at = (x: number) => calculateTax({ income: x + SCHEDULE.reliefs.individual.amount, epf: false, otherReliefs: 0 });
@@ -44,5 +54,47 @@ describe("calculateTax", () => {
       tax: 0,
       marginalRatePct: 0,
     });
+  });
+});
+
+describe("a reader's own bands", () => {
+  it("round-trips the published bands through the URL parameter", () => {
+    const text = formatBands(currentBands());
+    expect(text).toBe("0:0,5000:1,20000:3,35000:6,50000:11,70000:19,100000:25,400000:26,600000:28,2000000:30");
+    expect(parseBands(text)).toEqual(currentBands());
+  });
+
+  it("taxes exactly as the published schedule when the bands are unchanged", () => {
+    for (const income of [20_000, 60_000, 250_000, 3_000_000]) {
+      const input = { income, epf: true, otherReliefs: 0 };
+      expect(calculateTax(input, scenarioRules(currentBands())).tax).toBe(calculateTax(input).tax);
+    }
+    expect(compare([60_000, 500_000], { epf: true, otherReliefs: 0 }, currentBands()).map((c) => c.difference)).toEqual(
+      [0, 0],
+    );
+  });
+
+  it("charges a reader's flat rate on all chargeable income above the rebate", () => {
+    const flat = [{ lower: 0, ratePct: 10 }];
+    const r = calculateTax({ income: 109_000, epf: false, otherReliefs: 0 }, scenarioRules(flat));
+    expect(r.chargeable).toBe(100_000);
+    expect(r.tax).toBe(10_000);
+  });
+
+  it("accepts rates to two decimal places, including ones floating point cannot hold exactly", () => {
+    expect(parseBands("0:1.1,5000:2.55,9000:0.29")).toEqual([
+      { lower: 0, ratePct: 1.1 },
+      { lower: 5000, ratePct: 2.55 },
+      { lower: 9000, ratePct: 0.29 },
+    ]);
+    expect(bandsProblem([{ lower: 0, ratePct: 1.234 }])).toMatch(/two decimal places/);
+  });
+
+  it("refuses a parameter that is not a schedule", () => {
+    for (const text of [null, "", "5000:1", "0:1,0:2", "0:1,9000:2,5000:3", "0:101", "0:-1", "0:1;5000:2", "x"]) {
+      expect(parseBands(text)).toBeNull();
+    }
+    const many = Array.from({ length: MAX_BANDS + 1 }, (_, i) => `${i * 1000}:1`).join(",");
+    expect(parseBands(many)).toBeNull();
   });
 });
