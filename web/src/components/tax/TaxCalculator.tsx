@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 import { H2, StatRow, kicker as label } from "@/components/Boxed";
-import { calculateTax, SCHEDULE } from "@/lib/tax";
+import TaxSimulator from "@/components/tax/TaxSimulator";
+import { calculateTax, currentBands, formatBands, sameBands, SCHEDULE, type ScenarioBand } from "@/lib/tax";
 import type { SpendingShare } from "@/lib/queries/allocation";
 import { REST as REST_SERIES, SERIES } from "@/styles/charts/series";
 
@@ -25,7 +26,7 @@ interface Props {
   year: number;
   totalSpentSen: number;
   shares: SpendingShare[];
-  initial: { income: number; epf: boolean; otherReliefs: number };
+  initial: { income: number; epf: boolean; otherReliefs: number; bands: ScenarioBand[] };
 }
 
 function AmountInput({
@@ -69,13 +70,16 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
   const [income, setIncome] = useState(initial.income);
   const [epf, setEpf] = useState(initial.epf);
   const [otherReliefs, setOtherReliefs] = useState(initial.otherReliefs);
+  const [bands, setBands] = useState(initial.bands);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams({ income: String(income), epf: epf ? "1" : "0" });
     if (otherReliefs > 0) params.set("other", String(otherReliefs));
-    window.history.replaceState(null, "", `?${params}`);
-  }, [income, epf, otherReliefs]);
+    // Written out rather than encoded, so a shared link reads as the bands it holds: bands=0:0,5000:1,…
+    const own = sameBands(bands, currentBands()) ? "" : `&bands=${formatBands(bands)}`;
+    window.history.replaceState(null, "", `?${params}${own}${window.location.hash}`);
+  }, [income, epf, otherReliefs, bands]);
 
   const t = useMemo(() => calculateTax({ income, epf, otherReliefs }), [income, epf, otherReliefs]);
   // With no tax to spread, the same breakdown is shown per RM 100 of spending.
@@ -374,6 +378,8 @@ export default function TaxCalculator({ year, totalSpentSen, shares, initial }: 
           </div>
         </div>
       </section>
+
+      <TaxSimulator income={income} epf={epf} otherReliefs={otherReliefs} bands={bands} onBands={setBands} />
 
       <section className="border-b-2 border-foreground px-6 py-14 md:px-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 text-base leading-relaxed">

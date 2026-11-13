@@ -2,6 +2,7 @@
 import Base from "@/layouts/Base.astro";
 import TaxCalculator from "@/components/tax/TaxCalculator";
 import { notFound } from "@/lib/abort";
+import { currentBands, parseBands } from "@/lib/tax";
 import { getSpendingShares } from "@/lib/queries/allocation";
 import { getLoadedYears } from "@/lib/years";
 import { previews } from "@/lib/previews";
@@ -32,6 +33,7 @@ const params = Astro.url.searchParams;
       income: amount(params.get("income"), 60_000),
       epf: params.get("epf") !== "0",
       otherReliefs: amount(params.get("other"), 0),
+      bands: parseBands(params.get("bands")) ?? currentBands(),
     }}
   />
 </Base>
