@@ -2,8 +2,10 @@
 
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set bills
+    DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set states
 
-`--set procurement` (the default) publishes the procurement tables; `--set bills` the bill and Act tables.
+`--set procurement` (the default) publishes the procurement tables; `--set bills` the bill and Act tables; `--set states`
+the state finance tables.
 The rows go up through `supabase db query --remote` (the linked project, signed in with `supabase login`), so no
 database password is needed. They are written in chunks to a private staging schema, then swapped into the public
 tables in one transaction that commits only if every row count matches. Finally each table's checksum is compared
@@ -30,8 +32,10 @@ from psycopg.rows import dict_row
 SETS = {
     "procurement": ("procurement_snapshot", "procurement_notice", "procurement_award"),
     "bills": ("bill_snapshot", "act", "bill", "bill_house"),
+    # The `state` names come with the migration; state_gap only references them.
+    "states": ("state_statement", "state_line", "state_printed_total", "state_gap"),
 }
-LOADERS = {"procurement": "load-procurement", "bills": "load-bills"}
+LOADERS = {"procurement": "load-procurement", "bills": "load-bills", "states": "ingest-state"}
 STAGING = "{}_staging"  # one schema per set, so publishing one set never drops another's staging tables
 CHUNK_BYTES = 1_500_000  # the Management API rejects a request body over about 2 MB
 ROWS_PER_INSERT = 500

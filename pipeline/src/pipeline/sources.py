@@ -822,8 +822,14 @@ BUDGET_SOURCES: dict[int, BudgetSource] = {
 }
 
 
-def ensure_pdf(source: Fetchable, raw_dir: Path) -> Path:
-    """Return the local PDF, downloading it if absent. Refuses any file whose hash differs."""
+CERTS_DIR = Path(__file__).parent / "certs"
+
+
+def ensure_pdf(source: Fetchable, raw_dir: Path, intermediate: str | None = None) -> Path:
+    """Return the local PDF, downloading it if absent. Refuses any file whose hash differs.
+
+    `intermediate` names a CA certificate in pipeline/certs/ for a site that sends its
+    certificate without its intermediate; the chain is still verified to a trusted root."""
     path = raw_dir / source.raw_path
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -831,6 +837,8 @@ def ensure_pdf(source: Fetchable, raw_dir: Path) -> Path:
         request = urllib.request.Request(source.url, headers={"User-Agent": "buildmalaysia-pipeline"})
         # certifi's CA bundle: some Python installs (python.org on macOS) ship without one.
         context = ssl.create_default_context(cafile=certifi.where())
+        if intermediate is not None:
+            context.load_verify_locations(cafile=CERTS_DIR / intermediate)
         try:
             with urllib.request.urlopen(request, context=context) as response, partial.open("wb") as out:
                 shutil.copyfileobj(response, out)
