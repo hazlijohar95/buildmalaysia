@@ -1,0 +1,302 @@
+person_id,body_id,role,title_ms,started,ended,end_basis,confidence,citation_id,end_citation_id,acting
+najib-razak,jpm,prime_minister,Perdana Menteri,2009-04-03,2018-05-10,secondary,medium,WP-NAJIB,WP-NAJIB,false
+abdul-wahid-omar,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2016-06-05,stated,medium,WP-NAJIB2,G228-2016,false
+jamil-khir-baharom,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+joseph-entulu,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+joseph-kurup,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+nancy-shukri,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+paul-low,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+shahidan-kassim,jpm,minister,Menteri di Jabatan Perdana Menteri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+khairy-jamaluddin,kbs,minister,Menteri Belia dan Sukan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ahmad-zahid-hamidi,kdn,minister,Menteri Dalam Negeri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+maximus-ongkili,kettha,minister,"Menteri Tenaga, Teknologi Hijau dan Air",2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+fadillah-yusof,kkr,minister,Menteri Kerja Raya,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+anifah-aman,kln,minister,Menteri Luar Negeri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+douglas-uggah,kpk,minister,Menteri Perusahaan Perladangan dan Komoditi,2013-05-16,2016-05-09,stated,medium,WP-NAJIB2,G228-2016,false
+abdul-rahman-dahlan,kpkt,minister,"Menteri Kesejahteraan Bandar, Perumahan dan Kerajaan Tempatan",2013-05-16,2016-06-28,replaced,medium,WP-NAJIB2,G228-2016,false
+rohani-abdul-karim,kpwkm,minister,"Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+richard-riot,ksm,minister,Menteri Sumber Manusia,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+tengku-adnan,kwp,minister,Menteri Wilayah Persekutuan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+hishammuddin-hussein,mindef,minister,Menteri Pertahanan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+mustapa-mohamed,miti,minister,Menteri Perdagangan Antarabangsa dan Industri,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ahmad-husni-hanadzlah,mof,minister,Menteri Kewangan II,2013-05-16,2016-06-28,replaced,medium,WP-NAJIB2,G228-2016,false
+najib-razak,mof,minister,Menteri Kewangan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+subramaniam-sathasivam,moh,minister,Menteri Kesihatan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+nazri-aziz,motac,minister,Menteri Pelancongan dan Kebudayaan,2013-05-16,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+mah-siew-keong,jpm,minister,Menteri di Jabatan Perdana Menteri,2014-06-27,2016-06-28,replaced,medium,WP-NAJIB2,G228-2016,false
+wee-ka-siong,jpm,minister,Menteri di Jabatan Perdana Menteri,2014-06-27,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+liow-tiong-lai,mot,minister,Menteri Pengangkutan,2014-06-27,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ahmad-zahid-hamidi,jpm,deputy_prime_minister,Timbalan Perdana Menteri,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+azalina-othman,jpm,minister,Menteri di Jabatan Perdana Menteri,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+salleh-said-keruak,komunikasi,minister,Menteri Komunikasi dan Multimedia,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+hamzah-zainudin,kpdn,minister,"Menteri Perdagangan Dalam Negeri, Koperasi dan Kepenggunaan",2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ismail-sabri,kplb,minister,Menteri Kemajuan Luar Bandar dan Wilayah,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+mahdzir-khalid,kpm,minister,Menteri Pendidikan,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+idris-jusoh,kpt,minister,Menteri Pendidikan Tinggi,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ong-ka-chuan,miti,minister,Menteri Perdagangan Antarabangsa dan Industri II,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+ahmad-shabery-cheek,moa,minister,Menteri Pertanian dan Industri Asas Tani,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+madius-tangau,mosti,minister,"Menteri Sains, Teknologi dan Inovasi",2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+wan-junaidi,nres,minister,Menteri Sumber Asli dan Alam Sekitar,2015-07-29,2018-05-09,secondary,medium,WP-NAJIB2,WP-NAJIB2,false
+nancy-shukri,kpk,minister,Menteri Perusahaan Perladangan dan Komoditi,2016-05-12,2016-06-28,secondary,medium,WP-NAJIB2,WP-NAJIB2,true
+abdul-rahman-dahlan,jpm,minister,Menteri di Jabatan Perdana Menteri,2016-06-28,2018-05-09,secondary,medium,G228-2016,WP-NAJIB2,false
+mah-siew-keong,kpk,minister,Menteri Perusahaan Perladangan dan Komoditi,2016-06-28,2018-05-09,secondary,medium,G228-2016,WP-NAJIB2,false
+noh-omar,kpkt,minister,"Menteri Kesejahteraan Bandar, Perumahan dan Kerajaan Tempatan",2016-06-28,2018-05-09,secondary,medium,G228-2016,WP-NAJIB2,false
+johari-abdul-ghani,mof,minister,Menteri Kewangan II,2016-06-28,2018-05-09,secondary,medium,G228-2016,WP-NAJIB2,false
+hishammuddin-hussein,jpm,minister,Menteri Tugas-Tugas Khas di Jabatan Perdana Menteri,2017-04-12,2018-05-09,secondary,medium,G358-2017,WP-NAJIB2,false
+mahathir-mohamad,jpm,prime_minister,Perdana Menteri,2018-05-10,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+wan-azizah,jpm,deputy_prime_minister,Timbalan Perdana Menteri,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+muhyiddin-yassin,kdn,minister,Menteri Dalam Negeri,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+gobind-singh-deo,komunikasi,minister,Menteri Komunikasi dan Multimedia,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+zuraida-kamaruddin,kpkt,minister,Menteri Perumahan dan Kerajaan Tempatan,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+rina-harun,kplb,minister,Menteri Pembangunan Luar Bandar,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+maszlee-malik,kpm,minister,Menteri Pendidikan,2018-05-21,2020-01-03,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+wan-azizah,kpwkm,minister,"Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+kulasegaran,ksm,minister,Menteri Sumber Manusia,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+azmin-ali,mea,minister,Menteri Hal Ehwal Ekonomi,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+mohamad-sabu,mindef,minister,Menteri Pertahanan,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+salahuddin-ayub,moa,minister,Menteri Pertanian dan Industri Asas Tani,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+lim-guan-eng,mof,minister,Menteri Kewangan,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+dzulkefly-ahmad,moh,minister,Menteri Kesihatan,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+loke-siew-fook,mot,minister,Menteri Pengangkutan,2018-05-21,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+liew-vui-keong,jpm,minister,Menteri di Jabatan Perdana Menteri (Undang-Undang),2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+mujahid-yusof,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+syed-saddiq,kbs,minister,Menteri Belia dan Sukan,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+baru-bian,kkr,minister,Menteri Kerja Raya,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+saifuddin-abdullah,kln,minister,Menteri Luar Negeri,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+saifuddin-nasution,kpdn,minister,Menteri Perdagangan Dalam Negeri dan Hal Ehwal Pengguna,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+teresa-kok,kpk,minister,Menteri Industri Utama,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+khalid-samad,kwp,minister,Menteri Wilayah Persekutuan,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+redzuan-yusof,medac,minister,Menteri Pembangunan Usahawan,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+darell-leiking,miti,minister,Menteri Perdagangan Antarabangsa dan Industri,2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+yeo-bee-yin,mosti,minister,"Menteri Tenaga, Sains, Teknologi, Alam Sekitar dan Perubahan Iklim",2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+mohammadin-ketapi,motac,minister,"Menteri Pelancongan, Seni dan Budaya",2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+xavier-jayakumar,nres,minister,"Menteri Air, Tanah dan Sumber Asli",2018-07-02,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+waytha-moorthy,jpm,minister,Menteri di Jabatan Perdana Menteri (Perpaduan Negara dan Kesejahteraan Sosial),2018-07-17,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,false
+mahathir-mohamad,kpm,minister,Menteri Pendidikan,2020-01-03,2020-02-24,secondary,medium,WP-MAHATHIR7,WP-MAHATHIR7,true
+muhyiddin-yassin,jpm,prime_minister,Perdana Menteri,2020-03-01,2021-08-21,replaced,medium,WP-MUHYIDDIN,G343-2021,false
+maximus-ongkili,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah dan Sarawak),2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+mustapa-mohamed,jpm,minister,Menteri di Jabatan Perdana Menteri (Ekonomi),2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+redzuan-yusof,jpm,minister,Menteri di Jabatan Perdana Menteri (Tugas-Tugas Khas),2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+takiyuddin-hassan,jpm,minister,Menteri di Jabatan Perdana Menteri (Parlimen dan Undang-Undang),2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+zulkifli-al-bakri,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+tuan-ibrahim,kasa,minister,Menteri Alam Sekitar dan Air,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+reezal-merican,kbs,minister,Menteri Belia dan Sukan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+hamzah-zainudin,kdn,minister,Menteri Dalam Negeri,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+fadillah-yusof,kkr,minister,Menteri Kanan Kerja Raya,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+hishammuddin-hussein,kln,minister,Menteri Luar Negeri,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+saifuddin-abdullah,komunikasi,minister,Menteri Komunikasi dan Multimedia,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+nanta-linggi,kpdn,minister,Menteri Perdagangan Dalam Negeri dan Hal Ehwal Pengguna,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+khairuddin-aman-razali,kpk,minister,Menteri Perusahaan Perladangan dan Komoditi,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+zuraida-kamaruddin,kpkt,minister,Menteri Perumahan dan Kerajaan Tempatan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+abdul-latiff-ahmad,kplb,minister,Menteri Pembangunan Luar Bandar,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+radzi-jidin,kpm,minister,Menteri Kanan Pendidikan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+halimah-sadique,kpn,minister,Menteri Perpaduan Negara,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+noraini-ahmad,kpt,minister,Menteri Pengajian Tinggi,2020-03-10,2021-08-05,stated,high,G350-2021,G350-2021,false
+rina-harun,kpwkm,minister,"Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+saravanan-murugan,ksm,minister,Menteri Sumber Manusia,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+annuar-musa,kwp,minister,Menteri Wilayah Persekutuan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+wan-junaidi,medac,minister,Menteri Pembangunan Usahawan dan Koperasi,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+ismail-sabri,mindef,minister,Menteri Kanan Pertahanan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+azmin-ali,miti,minister,Menteri Kanan Perdagangan Antarabangsa dan Industri,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+ronald-kiandee,moa,minister,Menteri Pertanian dan Industri Makanan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+zafrul-aziz,mof,minister,Menteri Kewangan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+adham-baba,moh,minister,Menteri Kesihatan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+khairy-jamaluddin,mosti,minister,"Menteri Sains, Teknologi dan Inovasi",2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+wee-ka-siong,mot,minister,Menteri Pengangkutan,2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+nancy-shukri,motac,minister,"Menteri Pelancongan, Seni dan Budaya",2020-03-10,2021-08-16,revoked,medium,WP-MUHYIDDIN,G337-2021,false
+shamsul-anuar,nres,minister,Menteri Tenaga dan Sumber Asli,2020-03-10,2021-08-02,stated,high,G350-2021,G350-2021,false
+ismail-sabri,jpm,deputy_prime_minister,Timbalan Perdana Menteri,2021-07-07,2021-08-16,revoked,high,G327-2021,G337-2021,false
+muhyiddin-yassin,nres,minister,Menteri Tenaga dan Sumber Asli,2021-08-03,2021-08-16,revoked,high,G350-2021,G337-2021,false
+muhyiddin-yassin,kpt,minister,Menteri Pengajian Tinggi,2021-08-06,2021-08-16,revoked,high,G350-2021,G337-2021,false
+ismail-sabri,jpm,prime_minister,Perdana Menteri,2021-08-21,2022-11-24,revoked,high,G383-2021,G370-2022,false
+abdul-latiff-ahmad,jpm,minister,Menteri di Jabatan Perdana Menteri (Tugas-Tugas Khas),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+idris-ahmad,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2021-08-30,2022-11-01,stated,high,G383-2021,G372-2022,false
+maximus-ongkili,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah dan Sarawak),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mustapa-mohamed,jpm,minister,Menteri di Jabatan Perdana Menteri (Ekonomi),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+wan-junaidi,jpm,minister,Menteri di Jabatan Perdana Menteri (Parlimen dan Undang-Undang),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ahmad-marzuk,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+eddin-syazlee,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Ekonomi),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+hanifah-hajar-taib,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah dan Sarawak),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mas-ermieyati,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Parlimen dan Undang-Undang),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mastura-yazid,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Tugas-Tugas Khas),2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+tuan-ibrahim,kasa,minister,Menteri Alam Sekitar dan Air,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mansor-othman,kasa,deputy_minister,Timbalan Menteri Alam Sekitar dan Air,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ahmad-faizal-azumu,kbs,minister,Menteri Belia dan Sukan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ti-lian-ker,kbs,deputy_minister,Timbalan Menteri Belia dan Sukan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+hamzah-zainudin,kdn,minister,Menteri Dalam Negeri,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ismail-mohamed-said,kdn,deputy_minister,Timbalan Menteri Dalam Negeri I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+jonathan-yasin,kdn,deputy_minister,Timbalan Menteri Dalam Negeri II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+fadillah-yusof,kkr,minister,Menteri Kanan Kerja Raya,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+arthur-kurup,kkr,deputy_minister,Timbalan Menteri Kerja Raya,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+saifuddin-abdullah,kln,minister,Menteri Luar Negeri,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+kamarudin-jaffar,kln,deputy_minister,Timbalan Menteri Luar Negeri,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+annuar-musa,komunikasi,minister,Menteri Komunikasi dan Multimedia,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+zahidi-zainul-abidin,komunikasi,deputy_minister,Timbalan Menteri Komunikasi dan Multimedia,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+nanta-linggi,kpdn,minister,Menteri Perdagangan Dalam Negeri dan Hal Ehwal Pengguna,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+rosol-wahid,kpdn,deputy_minister,Timbalan Menteri Perdagangan Dalam Negeri dan Hal Ehwal Pengguna,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+zuraida-kamaruddin,kpk,minister,Menteri Perusahaan Perladangan dan Komoditi,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+wee-jeck-seng,kpk,deputy_minister,Timbalan Menteri Perusahaan Perladangan dan Komoditi II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+willie-mongin,kpk,deputy_minister,Timbalan Menteri Perusahaan Perladangan dan Komoditi I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+reezal-merican,kpkt,minister,Menteri Perumahan dan Kerajaan Tempatan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ismail-muttalib,kpkt,deputy_minister,Timbalan Menteri Perumahan dan Kerajaan Tempatan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mahdzir-khalid,kplb,minister,Menteri Pembangunan Luar Bandar,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+abdul-rahman-mohamad,kplb,deputy_minister,Timbalan Menteri Pembangunan Luar Bandar I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+hasbi-habibollah,kplb,deputy_minister,Timbalan Menteri Pembangunan Luar Bandar II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+radzi-jidin,kpm,minister,Menteri Kanan Pendidikan,2021-08-30,2022-11-04,stated,high,G383-2021,G372-2022,false
+mah-hang-soon,kpm,deputy_minister,Timbalan Menteri Pendidikan I,2021-08-30,2022-11-01,stated,high,G383-2021,G372-2022,false
+halimah-sadique,kpn,minister,Menteri Perpaduan Negara,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+wan-ahmad-fayhsal,kpn,deputy_minister,Timbalan Menteri Perpaduan Negara,2021-08-30,2022-11-01,stated,high,G383-2021,G372-2022,false
+noraini-ahmad,kpt,minister,Menteri Pengajian Tinggi,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ahmad-masrizal,kpt,deputy_minister,Timbalan Menteri Pengajian Tinggi,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+rina-harun,kpwkm,minister,"Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+siti-zailah,kpwkm,deputy_minister,"Timbalan Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+saravanan-murugan,ksm,minister,Menteri Sumber Manusia,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+awang-hashim,ksm,deputy_minister,Timbalan Menteri Sumber Manusia,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+shahidan-kassim,kwp,minister,Menteri Wilayah Persekutuan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+jalaluddin-alias,kwp,deputy_minister,Timbalan Menteri Wilayah Persekutuan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+muslimin-yahaya,medac,deputy_minister,Timbalan Menteri Pembangunan Usahawan dan Koperasi,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+hishammuddin-hussein,mindef,minister,Menteri Kanan Pertahanan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ikmal-hisham,mindef,deputy_minister,Timbalan Menteri Pertahanan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+azmin-ali,miti,minister,Menteri Kanan Perdagangan Antarabangsa dan Industri,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+lim-ban-hong,miti,deputy_minister,Timbalan Menteri Perdagangan Antarabangsa dan Industri,2021-08-30,2022-11-01,stated,high,G383-2021,G372-2022,false
+ronald-kiandee,moa,minister,Menteri Pertanian dan Industri Makanan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ahmad-hamzah,moa,deputy_minister,Timbalan Menteri Pertanian dan Industri Makanan I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+nik-zawawi,moa,deputy_minister,Timbalan Menteri Pertanian dan Industri Makanan II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+zafrul-aziz,mof,minister,Menteri Kewangan,2021-08-30,2022-11-04,stated,high,G383-2021,G372-2022,false
+mohd-shahar-abdullah,mof,deputy_minister,Timbalan Menteri Kewangan I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+yamani-hafez,mof,deputy_minister,Timbalan Menteri Kewangan II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+khairy-jamaluddin,moh,minister,Menteri Kesihatan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+aaron-ago-dagang,moh,deputy_minister,Timbalan Menteri Kesihatan II,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+noor-azmi-ghazali,moh,deputy_minister,Timbalan Menteri Kesihatan I,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+adham-baba,mosti,minister,"Menteri Sains, Teknologi dan Inovasi",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ahmad-amzad,mosti,deputy_minister,"Timbalan Menteri Sains, Teknologi dan Inovasi",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+wee-ka-siong,mot,minister,Menteri Pengangkutan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+henry-sum-agong,mot,deputy_minister,Timbalan Menteri Pengangkutan,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+nancy-shukri,motac,minister,"Menteri Pelancongan, Seni dan Budaya",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+santhara-kumar,motac,deputy_minister,"Timbalan Menteri Pelancongan, Seni dan Budaya",2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+takiyuddin-hassan,nres,minister,Menteri Tenaga dan Sumber Asli,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+ali-biju,nres,deputy_minister,Timbalan Menteri Tenaga dan Sumber Asli,2021-08-30,2022-11-24,revoked,high,G383-2021,G370-2022,false
+mohamad-alamin,kpm,deputy_minister,Timbalan Menteri Pendidikan II,2021-09-11,2022-11-24,revoked,high,G383-2021,G370-2022,false
+noh-omar,medac,minister,Menteri Pembangunan Usahawan dan Koperasi,2021-09-11,2022-11-24,revoked,high,G383-2021,G370-2022,false
+anwar-ibrahim,jpm,prime_minister,Perdana Menteri,2022-11-24,,,high,G27-2023,,false
+rafizi-ramli,ekonomi,minister,Menteri Ekonomi,2022-12-03,2025-06-17,replaced,high,G27-2023,G342-2025,false
+ahmad-zahid-hamidi,jpm,deputy_prime_minister,Timbalan Perdana Menteri,2022-12-03,,,high,G27-2023,,false
+fadillah-yusof,jpm,deputy_prime_minister,Timbalan Perdana Menteri,2022-12-03,,,high,G27-2023,,false
+armizan-mohd-ali,jpm,minister,"Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah, Sarawak dan Tugas-Tugas Khas)",2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+azalina-othman,jpm,minister,Menteri di Jabatan Perdana Menteri (Undang-Undang dan Reformasi Institusi),2022-12-03,,,high,G27-2023,,false
+mohd-naim-mokhtar,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2022-12-03,2025-12-17,replaced,high,G27-2023,G166-2026,false
+yeoh-tseow-suan,kbs,minister,Menteri Belia dan Sukan,2022-12-03,2025-12-17,replaced,high,G27-2023,G166-2026,false
+saifuddin-nasution,kdn,minister,Menteri Dalam Negeri,2022-12-03,,,high,G27-2023,,false
+nanta-linggi,kkr,minister,Menteri Kerja Raya,2022-12-03,,,high,G27-2023,,false
+zambry-abd-kadir,kln,minister,Menteri Luar Negeri,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+fahmi-fadzil,komunikasi,minister,Menteri Komunikasi dan Digital,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+salahuddin-ayub,kpdn,minister,Menteri Perdagangan Dalam Negeri dan Kos Sara Hidup,2022-12-03,2023-07-25,replaced,high,G27-2023,G239-2023,false
+fadillah-yusof,kpk,minister,Menteri Perladangan dan Komoditi,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+nga-kor-ming,kpkt,minister,Menteri Pembangunan Kerajaan Tempatan,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+ahmad-zahid-hamidi,kplb,minister,Menteri Kemajuan Desa dan Wilayah,2022-12-03,,,high,G27-2023,,false
+fadhlina-sidek,kpm,minister,Menteri Pendidikan,2022-12-03,,,high,G27-2023,,false
+aaron-ago-dagang,kpn,minister,Menteri Perpaduan Negara,2022-12-03,,,high,G27-2023,,false
+mohamed-khaled-nordin,kpt,minister,Menteri Pendidikan Tinggi,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+nancy-shukri,kpwkm,minister,"Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2022-12-03,,,high,G27-2023,,false
+sivakumar-naidu,ksm,minister,Menteri Sumber Manusia,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+ewon-benedick,medac,minister,Menteri Pembangunan Usahawan dan Koperasi,2022-12-03,2025-12-03,replaced,high,G27-2023,G166-2026,false
+mohamad-hasan,mindef,minister,Menteri Pertahanan,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+zafrul-aziz,miti,minister,Menteri Perdagangan Antarabangsa dan Industri,2022-12-03,2025-12-03,replaced,high,G27-2023,G166-2026,false
+mohamad-sabu,moa,minister,Menteri Pertanian dan Keterjaminan Makanan,2022-12-03,,,high,G27-2023,,false
+anwar-ibrahim,mof,minister,Menteri Kewangan,2022-12-03,,,high,G27-2023,,false
+zaliha-mustafa,moh,minister,Menteri Kesihatan,2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+chang-lih-kang,mosti,minister,"Menteri Sains, Teknologi dan Inovasi",2022-12-03,,,high,G27-2023,,false
+loke-siew-fook,mot,minister,Menteri Pengangkutan,2022-12-03,,,high,G27-2023,,false
+tiong-king-sing,motac,minister,"Menteri Pelancongan, Seni dan Budaya",2022-12-03,,,high,G27-2023,,false
+nik-nazmi,nres,minister,"Menteri Sumber Asli, Alam Sekitar dan Perubahan Iklim",2022-12-03,2023-12-12,replaced,high,G27-2023,G20-2024,false
+hanifah-hajar-taib,ekonomi,deputy_minister,Timbalan Menteri Ekonomi,2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+ramkarpal-singh,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Undang-Undang dan Reformasi Institusi),2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+wilson-ugak,jpm,deputy_minister,"Timbalan Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah, Sarawak dan Tugas-Tugas Khas)",2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+adam-adli,kbs,deputy_minister,Timbalan Menteri Belia dan Sukan,2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+shamsul-anuar,kdn,deputy_minister,Timbalan Menteri Dalam Negeri,2022-12-10,,,high,G27-2023,,false
+abdul-rahman-mohamad,kkr,deputy_minister,Timbalan Menteri Kerja Raya,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+mohamad-alamin,kln,deputy_minister,Timbalan Menteri Luar Negeri,2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+teo-nie-ching,komunikasi,deputy_minister,Timbalan Menteri Komunikasi dan Digital,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+fuziah-salleh,kpdn,deputy_minister,Timbalan Menteri Perdagangan Dalam Negeri dan Kos Sara Hidup,2022-12-10,,,high,G27-2023,,false
+siti-aminah-aching,kpk,deputy_minister,Timbalan Menteri Perladangan dan Komoditi,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+akmal-nasrullah,kpkt,deputy_minister,Timbalan Menteri Pembangunan Kerajaan Tempatan,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+rubiah-wang,kplb,deputy_minister,Timbalan Menteri Kemajuan Desa dan Wilayah,2022-12-10,,,high,G27-2023,,false
+lim-hui-ying,kpm,deputy_minister,Timbalan Menteri Pendidikan,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+mohammad-yusof-apdal,kpt,deputy_minister,Timbalan Menteri Pendidikan Tinggi,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+raj-munni-sabu,kpwkm,deputy_minister,"Timbalan Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2022-12-10,2023-12-12,replaced,high,G114-2023,G20-2024,false
+mustapha-sakmud,ksm,deputy_minister,Timbalan Menteri Sumber Manusia,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+saraswathy-kandasami,medac,deputy_minister,Timbalan Menteri Pembangunan Usahawan dan Koperasi,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+adly-zahari,mindef,deputy_minister,Timbalan Menteri Pertahanan,2022-12-10,,,high,G27-2023,,false
+liew-chin-tong,miti,deputy_minister,Timbalan Menteri Perdagangan Antarabangsa dan Industri,2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+chan-foong-hin,moa,deputy_minister,Timbalan Menteri Pertanian dan Keterjaminan Makanan,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+ahmad-maslan,mof,deputy_minister,Timbalan Menteri Kewangan,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+steven-sim,mof,deputy_minister,Timbalan Menteri Kewangan,2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+lukanisman-awang-sauni,moh,deputy_minister,Timbalan Menteri Kesihatan,2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+arthur-kurup,mosti,deputy_minister,"Timbalan Menteri Sains, Teknologi dan Inovasi",2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+hasbi-habibollah,mot,deputy_minister,Timbalan Menteri Pengangkutan,2022-12-10,,,high,G27-2023,,false
+khairul-firdaus,motac,deputy_minister,"Timbalan Menteri Pelancongan, Seni dan Budaya",2022-12-10,2025-12-17,replaced,high,G27-2023,G166-2026,false
+huang-tiong-sii,nres,deputy_minister,"Timbalan Menteri Sumber Asli, Alam Sekitar dan Perubahan Iklim",2022-12-10,2023-12-12,replaced,high,G27-2023,G20-2024,false
+armizan-mohd-ali,kpdn,minister,Menteri Perdagangan Dalam Negeri dan Kos Sara Hidup,2023-07-25,,,high,G239-2023,,false
+zaliha-mustafa,jpm,minister,Menteri di Jabatan Perdana Menteri (Wilayah Persekutuan),2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+kulasegaran,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Undang-Undang dan Reformasi Institusi),2023-12-12,,,high,G20-2024,,false
+zulkifli-hasan,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+gobind-singh-deo,kd,minister,Menteri Digital,2023-12-12,,,high,G20-2024,,false
+wilson-ugak,kd,deputy_minister,Timbalan Menteri Digital,2023-12-12,,,high,G20-2024,,false
+ahmad-maslan,kkr,deputy_minister,Timbalan Menteri Kerja Raya,2023-12-12,,,high,G20-2024,,false
+mohamad-hasan,kln,minister,Menteri Luar Negeri,2023-12-12,,,high,G20-2024,,false
+fahmi-fadzil,komunikasi,minister,Menteri Komunikasi,2023-12-12,,,high,G20-2024,,false
+teo-nie-ching,komunikasi,deputy_minister,Timbalan Menteri Komunikasi,2023-12-12,,,high,G20-2024,,false
+johari-abdul-ghani,kpk,minister,Menteri Perladangan dan Komoditi,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+chan-foong-hin,kpk,deputy_minister,Timbalan Menteri Perladangan dan Komoditi,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+nga-kor-ming,kpkt,minister,Menteri Perumahan dan Kerajaan Tempatan,2023-12-12,,,high,G20-2024,,false
+raj-munni-sabu,kpkt,deputy_minister,Timbalan Menteri Perumahan dan Kerajaan Tempatan,2023-12-12,,,high,G20-2024,,false
+wong-kah-woh,kpm,deputy_minister,Timbalan Menteri Pendidikan,2023-12-12,,,high,G20-2024,,false
+saraswathy-kandasami,kpn,deputy_minister,Timbalan Menteri Perpaduan Negara,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+zambry-abd-kadir,kpt,minister,Menteri Pendidikan Tinggi,2023-12-12,,,high,G20-2024,,false
+mustapha-sakmud,kpt,deputy_minister,Timbalan Menteri Pendidikan Tinggi,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+noraini-ahmad,kpwkm,deputy_minister,"Timbalan Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+steven-sim,ksm,minister,Menteri Sumber Manusia,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+abdul-rahman-mohamad,ksm,deputy_minister,Timbalan Menteri Sumber Manusia,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+ramanan-ramakrishnan,medac,deputy_minister,Timbalan Menteri Pembangunan Usahawan dan Koperasi,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+mohamed-khaled-nordin,mindef,minister,Menteri Pertahanan,2023-12-12,,,high,G20-2024,,false
+arthur-kurup,moa,deputy_minister,Timbalan Menteri Pertanian dan Keterjaminan Makanan,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+amir-hamzah-azizan,mof,minister,Menteri Kewangan II,2023-12-12,,,high,G20-2024,,false
+lim-hui-ying,mof,deputy_minister,Timbalan Menteri Kewangan,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+dzulkefly-ahmad,moh,minister,Menteri Kesihatan,2023-12-12,,,high,G20-2024,,false
+mohammad-yusof-apdal,mosti,deputy_minister,"Timbalan Menteri Sains, Teknologi dan Inovasi",2023-12-12,,,high,G20-2024,,false
+nik-nazmi,nres,minister,Menteri Sumber Asli dan Kelestarian Alam,2023-12-12,2025-07-09,replaced,high,G20-2024,G342-2025,false
+huang-tiong-sii,nres,deputy_minister,Timbalan Menteri Sumber Asli dan Kelestarian Alam,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+fadillah-yusof,petra,minister,Menteri Peralihan Tenaga dan Daya Guna Awam,2023-12-12,,,high,G20-2024,,false
+akmal-nasrullah,petra,deputy_minister,Timbalan Menteri Peralihan Tenaga dan Daya Guna Awam,2023-12-12,2025-12-17,replaced,high,G20-2024,G166-2026,false
+amir-hamzah-azizan,ekonomi,minister,Menteri Ekonomi,2025-06-17,2025-12-17,replaced,high,G342-2025,G166-2026,false
+johari-abdul-ghani,nres,minister,Menteri Sumber Asli dan Kelestarian Alam,2025-07-09,2025-12-17,replaced,high,G342-2025,G166-2026,false
+nanta-linggi,medac,minister,Menteri Pembangunan Usahawan dan Koperasi,2025-12-03,2025-12-17,replaced,high,G166-2026,G166-2026,false
+anwar-ibrahim,miti,minister,"Menteri Pelaburan, Perdagangan dan Industri",2025-12-03,2025-12-17,replaced,high,G166-2026,G166-2026,false
+akmal-nasrullah,ekonomi,minister,Menteri Ekonomi,2025-12-17,,,high,G166-2026,,false
+mohd-shahar-abdullah,ekonomi,deputy_minister,Timbalan Menteri Ekonomi,2025-12-17,,,high,G166-2026,,false
+mustapha-sakmud,jpm,minister,"Menteri di Jabatan Perdana Menteri (Hal Ehwal Sabah, Sarawak dan Tugas-Tugas Khas)",2025-12-17,,,high,G166-2026,,false
+yeoh-tseow-suan,jpm,minister,Menteri di Jabatan Perdana Menteri (Wilayah Persekutuan),2025-12-17,,,high,G166-2026,,false
+zulkifli-hasan,jpm,minister,Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2025-12-17,,,high,G166-2026,,false
+lo-su-fui,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Wilayah Persekutuan),2025-12-17,,,high,G166-2026,,false
+marhamah-rosli,jpm,deputy_minister,Timbalan Menteri di Jabatan Perdana Menteri (Hal Ehwal Agama),2025-12-17,,,high,G166-2026,,false
+mohammed-taufiq-johari,kbs,minister,Menteri Belia dan Sukan,2025-12-17,,,high,G166-2026,,false
+mordi-bimol,kbs,deputy_minister,Timbalan Menteri Belia dan Sukan,2025-12-17,,,high,G166-2026,,false
+lukanisman-awang-sauni,kln,deputy_minister,Timbalan Menteri Luar Negeri,2025-12-17,,,high,G166-2026,,false
+noraini-ahmad,kpk,minister,Menteri Perladangan dan Komoditi,2025-12-17,,,high,G166-2026,,false
+huang-tiong-sii,kpk,deputy_minister,Timbalan Menteri Perladangan dan Komoditi,2025-12-17,,,high,G166-2026,,false
+yuneswaran-ramaraj,kpn,deputy_minister,Timbalan Menteri Perpaduan Negara,2025-12-17,,,high,G166-2026,,false
+adam-adli,kpt,deputy_minister,Timbalan Menteri Pendidikan Tinggi,2025-12-17,,,high,G166-2026,,false
+lim-hui-ying,kpwkm,deputy_minister,"Timbalan Menteri Pembangunan Wanita, Keluarga dan Masyarakat",2025-12-17,,,high,G166-2026,,false
+ramanan-ramakrishnan,ksm,minister,Menteri Sumber Manusia,2025-12-17,,,high,G166-2026,,false
+khairul-firdaus,ksm,deputy_minister,Timbalan Menteri Sumber Manusia,2025-12-17,,,high,G166-2026,,false
+steven-sim,medac,minister,Menteri Pembangunan Usahawan dan Koperasi,2025-12-17,,,high,G166-2026,,false
+mohamad-alamin,medac,deputy_minister,Timbalan Menteri Pembangunan Usahawan dan Koperasi,2025-12-17,,,high,G166-2026,,false
+johari-abdul-ghani,miti,minister,"Menteri Pelaburan, Perdagangan dan Industri",2025-12-17,,,high,G166-2026,,false
+sim-tze-tzin,miti,deputy_minister,"Timbalan Menteri Pelaburan, Perdagangan dan Industri",2025-12-17,,,high,G166-2026,,false
+chan-foong-hin,moa,deputy_minister,Timbalan Menteri Pertanian dan Keterjaminan Makanan,2025-12-17,,,high,G166-2026,,false
+liew-chin-tong,mof,deputy_minister,Timbalan Menteri Kewangan,2025-12-17,,,high,G166-2026,,false
+hanifah-hajar-taib,moh,deputy_minister,Timbalan Menteri Kesihatan,2025-12-17,,,high,G166-2026,,false
+chiew-choon-man,motac,deputy_minister,"Timbalan Menteri Pelancongan, Seni dan Budaya",2025-12-17,,,high,G166-2026,,false
+arthur-kurup,nres,minister,Menteri Sumber Asli dan Kelestarian Alam,2025-12-17,,,high,G166-2026,,false
+syed-ibrahim-syed-noh,nres,deputy_minister,Timbalan Menteri Sumber Asli dan Kelestarian Alam,2025-12-17,,,high,G166-2026,,false
+abdul-rahman-mohamad,petra,deputy_minister,Timbalan Menteri Peralihan Tenaga dan Transformasi Air,2025-12-17,,,high,G166-2026,,false
