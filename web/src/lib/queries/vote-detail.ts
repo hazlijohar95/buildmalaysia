@@ -212,3 +212,26 @@ export async function getLeafLines(year: number, voteCode: string): Promise<Leaf
   `;
   return rows.map((r) => ({ ...r, ...parseSens(r) }));
 }
+
+export interface VoteTotalPage {
+  pdf_page: number;
+  book_page: number;
+  doc_url: string;
+}
+
+/**
+ * Where every vote's total is printed, keyed "<year> <code>": Lampiran 1's vote total line for B and T votes, and the
+ * amounts page of Lampiran 2's vote total for P votes (the right-hand page of its spread, where the actual is).
+ */
+export async function getVoteTotalPages(): Promise<Map<string, VoteTotalPage>> {
+  const rows = await sql<(VoteTotalPage & { fiscal_year: number; vote_code: string })[]>`
+    select pt.fiscal_year, pt.vote_code, pt.pdf_page, pt.book_page, sd.url as doc_url
+    from printed_total pt join source_document sd on sd.id = pt.document_id
+    where pt.scope = 'vote' and pt.object_code is null
+    union all
+    select dt.fiscal_year, dt.vote_code, dt.amounts_pdf_page, dt.amounts_book_page, sd.url
+    from development_printed_total dt join source_document sd on sd.id = dt.document_id
+    where dt.scope = 'vote'
+  `;
+  return new Map(rows.map((r) => [`${r.fiscal_year} ${r.vote_code}`, r]));
+}
