@@ -105,6 +105,7 @@ async function buildNav(): Promise<SiteNav> {
       : []),
     { kind: "link", href: "/bills", label: "Bills", match: ["/bills"] },
     { kind: "link", href: "/states", label: "States", match: ["/states"] },
+    { kind: "link", href: "/economy", label: "Economy", match: ["/economy"] },
     { kind: "link", href: "/methodology", label: "Methodology", match: ["/methodology"] },
     { kind: "link", href: "/blog", label: "Blog", match: ["/blog"] },
     { kind: "link", href: "/about", label: "About", match: ["/about"] },

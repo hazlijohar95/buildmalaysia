@@ -3,9 +3,10 @@
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set bills
     DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set states
+    DATABASE_URL=postgresql:///buildmalaysia uv run --project pipeline python scripts/publish-procurement.py --set indicators
 
 `--set procurement` (the default) publishes the procurement tables; `--set bills` the bill and Act tables; `--set states`
-the state finance tables.
+the state finance tables; `--set indicators` the data.gov.my economic indicator tables.
 The rows go up through `supabase db query --remote` (the linked project, signed in with `supabase login`), so no
 database password is needed. They are written in chunks to a private staging schema, then swapped into the public
 tables in one transaction that commits only if every row count matches. Finally each table's checksum is compared
@@ -26,6 +27,7 @@ from collections.abc import Iterator
 import psycopg
 from psycopg import sql
 from psycopg.rows import dict_row
+from psycopg.types.string import TextLoader
 
 # Each set's tables, parents before children: the swap inserts in this order and truncates them all at once. The
 # first table is the snapshot, which must not be empty.
@@ -34,8 +36,14 @@ SETS = {
     "bills": ("bill_snapshot", "act", "bill", "bill_house"),
     # The `state` names come with the migration; state_gap only references them.
     "states": ("state_statement", "state_line", "state_printed_total", "state_gap"),
+    "indicators": ("indicator_snapshot", "indicator_dataset", "indicator_value"),
 }
-LOADERS = {"procurement": "load-procurement", "bills": "load-bills", "states": "ingest-state"}
+LOADERS = {
+    "procurement": "load-procurement",
+    "bills": "load-bills",
+    "states": "ingest-state",
+    "indicators": "load-indicators",
+}
 STAGING = "{}_staging"  # one schema per set, so publishing one set never drops another's staging tables
 CHUNK_BYTES = 1_500_000  # the Management API rejects a request body over about 2 MB
 ROWS_PER_INSERT = 500
@@ -148,6 +156,9 @@ def main() -> int:
 
     with psycopg.connect(os.environ.get("DATABASE_URL", "postgresql:///buildmalaysia")) as conn:
         conn.execute("set time zone 'UTC'")
+        # JSON columns are sent on as the text Postgres prints them: a parsed dict or list has no SQL literal.
+        for json_type in ("json", "jsonb"):
+            conn.adapters.register_loader(json_type, TextLoader)
         counts = {
             t: conn.execute(sql.SQL("select count(*) from {}").format(sql.Identifier(t))).fetchone()[0] for t in tables
         }

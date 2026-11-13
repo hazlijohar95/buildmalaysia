@@ -15,3 +15,4 @@ supabase/.temp/
 .pnpm-store/
 data/raw/myprocurement/
 data/raw/bills/
+data/raw/datagovmy/
