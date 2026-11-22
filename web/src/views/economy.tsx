@@ -242,8 +242,8 @@ export default async function economyPage(): Promise<Page> {
           <p className="mt-3 max-w-3xl text-charcoal-800">
             Rounded for reading: ringgit figures to the whole RM million (
             {fieldUnit(ds("gdpNominal")?.fields.find((f) => f.name === "gdp")) ?? "RM mil"} in the source), rates to one
-            decimal place. The three shares of GDP divide one published figure by another. The{" "}
-            <a href="/developers">API</a> returns every figure exactly as data.gov.my publishes it.
+            decimal place. The three shares of GDP divide one published figure by another. Each chart links to its
+            dataset on data.gov.my, which publishes every figure unrounded.
           </p>
           <div className="table-scroll mt-8">
             <table>
