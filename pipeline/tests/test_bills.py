@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
@@ -92,6 +93,32 @@ def test_the_current_listing_reads_every_field() -> None:
     assert committee.committee is not None
     failed = next(e for e in by_code.values() if e.status.startswith("Tidak Mendapat Undi"))
     assert failed.failed is not None
+
+
+def _with_third_reading(value: str) -> str:
+    """The current listing with a third-reading row after each second reading, as parlimen.gov.my prints it."""
+    third = (
+        '<tr><td style="vertical-align: top;">Bacaan Ketiga Pada</td>'
+        f'<td style="padding: 10px 8px;">:</td><td style="padding: 10px 12px;">{value}</td></tr>'
+    )
+    html, count = re.subn(
+        r"(>Bacaan Kedua Pada</td>.*?</tr>)",
+        lambda m: m.group(1) + third,
+        (FIXTURES / "current-dr.html").read_text(),
+        flags=re.DOTALL,
+    )
+    assert count > 0
+    return html
+
+
+def test_an_empty_third_reading_is_accepted() -> None:
+    entries = parse_current(_with_third_reading('<span style="color: #adb5bd;">-</span>'), DR, AT)
+    assert [(e.number, e.second_reading) for e in entries] == [(e.number, e.second_reading) for e in current()]
+
+
+def test_a_dated_third_reading_stops_the_load() -> None:
+    with pytest.raises(BillsError, match="Bacaan Ketiga Pada"):
+        parse_current(_with_third_reading("06/10/2026"), DR, AT)
 
 
 def test_the_archive_decodes_titles_escaped_several_times() -> None:
