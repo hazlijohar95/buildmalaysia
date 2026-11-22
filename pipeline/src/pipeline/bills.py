@@ -260,6 +260,9 @@ DATE_LABELS = {
     "Tidak Mendapat Undi 2/3 Pada": "failed",
 }
 PRESENTER_LABEL = "Dibentang Oleh"
+# Labels the listings print with no date on any bill so far. They are accepted while empty; a date under one stops
+# the load, so it gets a field rather than being dropped.
+EMPTY_LABELS = {"Bacaan Ketiga Pada"}
 
 
 def _text(fragment: str) -> str:
@@ -310,6 +313,9 @@ def _fields(pairs: list[tuple[str, str]], where: str) -> dict:
             presenters.append(_text(value) or None)
         elif label in DATE_LABELS:
             fields[DATE_LABELS[label]] = parse_date(_text(value))
+        elif label in EMPTY_LABELS:
+            if parse_date(_text(value)) is not None:
+                raise BillsError(f"{where}: {label!r} has a date, {_text(value)!r}, and no field to hold it")
         else:
             raise BillsError(f"{where}: unknown field {label!r}")
     if len(presenters) > 2:
